@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>PIX KI-Studio — Biometrisches Foto</title>
+<style>
+:root{
+  --ink:#1b2430;
+  --paper:#f6f4ef;
+  --line:#dcd6c9;
+  --accent:#2f5d50;
+  --accent2:#c96a3c;
+  --ok:#2f5d50;
+  --err:#b3402f;
+  --card:#ffffff;
+  --radius:14px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+header{
+  padding:20px 16px 14px;
+  text-align:center;
+  border-bottom:1px solid var(--line);
+  background:var(--card);
+}
+header h1{
+  font-size:1.25rem;
+  margin:0 0 4px;
+  letter-spacing:.2px;
+}
+header p{
+  margin:0;
+  font-size:.85rem;
+  color:#5b6470;
+}
+.wrap{
+  max-width:520px;
+  margin:0 auto;
+  padding:16px 14px 60px;
+}
+.step{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:18px 16px;
+  margin-bottom:16px;
+  display:none;
+}
+.step.active{display:block;}
+.step-label{
+  display:inline-block;
+  font-size:.7rem;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--accent);
+  background:#eaf0ec;
+  padding:3px 9px;
+  border-radius:20px;
+  margin-bottom:10px;
+}
+h2{font-size:1.05rem;margin:0 0 10px;}
+.hint{font-size:.83rem;color:#5b6470;line-height:1.5;margin-bottom:14px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+select,button,input[type=file]{
+  font-family:inherit;
+  font-size:.95rem;
+}
+select{
+  width:100%;
+  padding:11px 12px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--ink);
+  margin-bottom:12px;
+}
+.btn{
+  display:block;
+  width:100%;
+  padding:13px 14px;
+  border-radius:10px;
+  border:none;
+  background:var(--accent);
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+  text-align:center;
+  transition:opacity .15s;
+}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn.secondary{background:#eef0ec;color:var(--ink);}
+.btn.outline{background:transparent;color:var(--accent);border:1px solid var(--accent);}
+.upload-box{
+  border:2px dashed var(--line);
+  border-radius:12px;
+  padding:30px 14px;
+  text-align:center;
+  cursor:pointer;
+  background:#fbfaf7;
+  margin-bottom:10px;
+}
+.upload-box:active{background:#f0efe8;}
+.upload-box svg{margin-bottom:8px;}
+#fileInput{display:none;}
+.canvas-wrap{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  background:#eee;
+  border-radius:12px;
+  overflow:hidden;
+  margin-bottom:12px;
+  border:1px solid var(--line);
+}
+canvas{width:100%;height:100%;display:block;}
+.watermark{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+  font-size:1.1rem;font-weight:700;color:rgba(255,255,255,.55);
+  transform:rotate(-18deg);
+  text-shadow:0 1px 3px rgba(0,0,0,.5);
+  letter-spacing:1px;
+}
+.checklist{list-style:none;padding:0;margin:0 0 14px;}
+.checklist li{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 0;font-size:.88rem;border-bottom:1px solid #f0eee6;
+}
+.checklist li:last-child{border-bottom:none;}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:#c9c3b2;}
+.dot.ok{background:var(--ok);}
+.dot.err{background:var(--err);}
+.status-text{font-size:.78rem;color:#5b6470;margin-left:auto;text-align:right;flex-shrink:0;max-width:55%;}
+.sliderRow{margin-bottom:12px;}
+.sliderRow label{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px;color:#444;}
+input[type=range]{width:100%;}
+.loading{
+  display:flex;align-items:center;gap:10px;
+  font-size:.85rem;color:#5b6470;padding:20px 0;justify-content:center;
+}
+.spinner{
+  width:18px;height:18px;border-radius:50%;
+  border:3px solid #ddd;border-top-color:var(--accent);
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.price-box{
+  background:#f7f4ec;border:1px solid var(--line);border-radius:12px;
+  padding:14px;display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:14px;
+}
+.price-box .amt{font-size:1.3rem;font-weight:700;color:var(--accent2);}
+.legal{font-size:.72rem;color:#8a8f97;line-height:1.5;margin-top:10px;}
+.badge-info{
+  background:#fdf3ea;border:1px solid #ecd8c0;border-radius:10px;
+  padding:10px 12px;font-size:.78rem;color:#7a5330;margin-bottom:14px;
+}
+.print-card{
+  border:1px solid var(--line);border-radius:12px;padding:14px;
+  display:flex;align-items:center;gap:12px;margin-bottom:14px;background:#fbfaf7;
+}
+.print-card .txt{flex:1;font-size:.85rem;}
+.print-card .txt b{display:block;font-size:.92rem;margin-bottom:2px;}
+a.link-btn{color:var(--accent);font-weight:600;text-decoration:none;font-size:.85rem;white-space:nowrap;}
+.stepper{display:flex;gap:6px;margin-bottom:16px;}
+.stepper .seg{flex:1;height:4px;border-radius:3px;background:var(--line);}
+.stepper .seg.done{background:var(--accent);}
+footer{text-align:center;font-size:.72rem;color:#9aa0a8;padding:20px 14px 40px;}
+.errbox{
+  background:#fbeae6;border:1px solid #f0c7ba;color:var(--err);
+  border-radius:10px;padding:10px 12px;font-size:.82rem;margin-bottom:12px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📸 PIX KI-Studio: Ihr Biometrisches Foto — direkt am Handy</h1>
+  <p>Foto hochladen → automatisch prüfen &amp; zuschneiden → herunterladen. In wenigen Minuten fertig.</p>
+</header>
+
+<div class="wrap">
+
+  <div class="stepper" id="stepper">
+    <div class="seg done" data-i="1"></div>
+    <div class="seg" data-i="2"></div>
+    <div class="seg" data-i="3"></div>
+  </div>
+
+  <!-- STEP 1: Format wählen + Foto hochladen -->
+  <div class="step active" id="step1">
+    <span class="step-label">Schritt 1 von 3</span>
+    <h2>Für welches Dokument brauchen Sie das Foto?</h2>
+    <p class="hint">Wählen Sie das Land bzw. den Dokumenttyp — wir stellen automatisch Format und Größe passend ein. Der Hintergrund wird automatisch auf Weiß gesetzt.</p>
+    <select id="formatSelect"></select>
+    <div class="badge-info" id="formatInfo"></div>
+    <p class="hint">
+      Tipps für ein gutes Ausgangsfoto:<br>
+      • Stellen Sie sich gerade vor eine helle, einfarbige Wand<br>
+      • Blicken Sie direkt in die Kamera, neutraler Gesichtsausdruck, Mund geschlossen<br>
+      • Gleichmäßiges Licht, keine Schatten im Gesicht<br>
+      • Kopfbedeckung nur aus religiösen Gründen, keine Sonnenbrille
+    </p>
+    <label class="btn" id="toUpload" for="fileInput">Foto hochladen</label>
+    <input type="file" id="fileInput" accept="image/*" capture="user" style="display:none;">
+    <div id="uploadErr"></div>
+  </div>
+
+  <!-- STEP 2: Verarbeitung / Prüfung -->
+  <div class="step" id="step2">
+    <span class="step-label">Schritt 2 von 3</span>
+    <h2>Prüfung &amp; Vorschau</h2>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="previewCanvas"></canvas>
+      <div class="watermark">VORSCHAU — nicht druckfähig</div>
+    </div>
+
+    <div class="loading" id="loadingMsg" style="display:none;">
+      <div class="spinner"></div><span id="loadingText">Analysiere Ihr Foto…</span>
+    </div>
+
+    <ul class="checklist" id="checklist"></ul>
+
+    <div class="sliderRow">
+      <label>Helligkeit <span id="brightVal">0</span></label>
+      <input type="range" id="brightSlider" min="-60" max="60" value="0">
+    </div>
+    <div class="sliderRow">
+      <label>Kontrast <span id="contrastVal">0</span></label>
+      <input type="range" id="contrastSlider" min="-60" max="60" value="0">
+    </div>
+    <div class="sliderRow">
+      <label>Position vertikal (Kopf höher/tiefer)</label>
+      <input type="range" id="posYSlider" min="-40" max="40" value="0">
+    </div>
+    <div class="sliderRow">
+      <label>Position horizontal</label>
+      <input type="range" id="posXSlider" min="-40" max="40" value="0">
+    </div>
+    <div class="sliderRow">
+      <label>Zoom</label>
+      <input type="range" id="zoomSlider" min="70" max="160" value="100">
+    </div>
+
+    <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:#5b6470;margin-bottom:14px;">
+      <input type="checkbox" id="invertMaskChk"> Gesicht und Hintergrund sind vertauscht (hier korrigieren)
+    </label>
+
+    <button class="btn" id="toBuy" disabled>Weiter zur Bestellung</button>
+    <button class="btn secondary" id="toUploadBack">← Anderes Foto wählen</button>
+  </div>
+
+  <!-- STEP 3: Kauf -->
+  <div class="step" id="step3">
+    <span class="step-label">Schritt 3 von 3</span>
+    <h2>Datei freischalten</h2>
+    <p class="hint">Nach der Zahlung wird Ihre Datei in voller Druckauflösung (300 dpi, ohne Wasserzeichen) zum Download bereitgestellt.</p>
+
+    <div class="price-box">
+      <div>
+        <div style="font-size:.8rem;color:#5b6470;">Digitale Bilddatei, hochauflösend</div>
+        <div style="font-size:.78rem;color:#8a8f97;" id="formatEcho"></div>
+      </div>
+      <div class="amt">9,90&nbsp;€</div>
+    </div>
+
+    <button class="btn" id="payBtn">Jetzt bezahlen &amp; Datei freischalten</button>
+    <p class="legal">Mit Klick auf „Jetzt bezahlen" bestätigen Sie den Kauf. Da es sich um eine individuell angefertigte digitale Datei handelt, ist eine Rückgabe/Widerruf gemäß § 312g Abs. 2 Nr. 1 BGB ausdrücklich ausgeschlossen. Bitte prüfen Sie die Vorschau sorgfältig vor dem Kauf.</p>
+
+    <div id="afterPay" style="display:none;margin-top:18px;">
+      <div class="errbox" style="background:#eaf5ee;border-color:#bfe0cc;color:var(--ok);">✓ Zahlung erfolgreich — Ihre Datei ist bereit.</div>
+      <button class="btn" id="downloadBtn">Bild herunterladen (JPG, 300 dpi)</button>
+
+      <div class="print-card" style="margin-top:16px;">
+        <div class="txt">
+          <b>Lieber einen Abzug in der Hand?</b>
+          Laden Sie die Datei einfach hier herunter und bestellen Sie den Ausdruck direkt bei einem Fotoservice in Ihrer Nähe.
+        </div>
+      </div>
+      <div class="grid2">
+        <a class="btn outline" href="https://www.dm.de/services/fotoservice" target="_blank" rel="noopener">Abzug bei dm bestellen</a>
+        <a class="btn outline" href="https://www.cewe-fotoservice.de" target="_blank" rel="noopener">Abzug bei CEWE bestellen</a>
+      </div>
+    </div>
+
+    <button class="btn secondary" id="toPreviewBack" style="margin-top:14px;">← Zurück zur Vorschau</button>
+  </div>
+
+</div>
+
+<footer>© Ihr Fotostudio · Alle Bilder werden ausschließlich lokal in Ihrem Browser verarbeitet und nicht an unseren Server übertragen, bis Sie den Kauf abschließen.</footer>
+
+<script type="module">
+import { FaceLandmarker, FilesetResolver, ImageSegmenter } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+/* ---------------- Formats ---------------- */
+const FORMATS = [
+  {id:"de-visa", label:"Deutschland — Reisepass / Visum (35×45mm)", w:35,h:45, bg:"white", head:{minPct:70,maxPct:80}},
+  {id:"de-fs", label:"Deutschland — Führerschein (35×45mm)", w:35,h:45, bg:"gray", head:{minPct:70,maxPct:80}},
+  {id:"us-visa", label:"USA — Visum / Green Card (51×51mm / 2×2in)", w:51,h:51, bg:"white", head:{minPct:50,maxPct:69}},
+  {id:"schengen", label:"Schengen-Visum (35×45mm)", w:35,h:45, bg:"white", head:{minPct:70,maxPct:80}},
+  {id:"uk-visa", label:"Großbritannien — Visum / Pass (35×45mm)", w:35,h:45, bg:"white", head:{minPct:70,maxPct:80}},
+  {id:"child", label:"Kinderpass / Kinder-Ausweisfoto (35×45mm)", w:35,h:45, bg:"white", head:{minPct:70,maxPct:80}},
+  {id:"india-visa", label:"Indien — Visum (51×51mm / 2×2in)", w:51,h:51, bg:"white", head:{minPct:50,maxPct:69}},
+];
+const sel = document.getElementById('formatSelect');
+FORMATS.forEach(f=>{
+  const o=document.createElement('option'); o.value=f.id; o.textContent=f.label; sel.appendChild(o);
+});
+let currentFormat = FORMATS[0];
+function updateFormatInfo(){
+  currentFormat = FORMATS.find(f=>f.id===sel.value);
+  document.getElementById('formatInfo').textContent =
+    `Format: ${currentFormat.w}×${currentFormat.h} mm · Hintergrund: Weiß (automatisch).`;
+}
+sel.addEventListener('change', updateFormatInfo);
+updateFormatInfo();
+
+/* ---------------- Step navigation ---------------- */
+function goStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step'+n).classList.add('active');
+  document.querySelectorAll('#stepper .seg').forEach(s=>{
+    s.classList.toggle('done', parseInt(s.dataset.i)<=n);
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.getElementById('toUploadBack').onclick=()=>goStep(1);
+document.getElementById('toPreviewBack').onclick=()=>goStep(2);
+
+/* ---------------- Upload ---------------- */
+const fileInput = document.getElementById('fileInput');
+let sourceImg = new Image();
+let imgLoaded = false;
+
+fileInput.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  document.getElementById('uploadErr').innerHTML='';
+  if(!file) return;
+  if(!file.type.startsWith('image/')){
+    document.getElementById('uploadErr').innerHTML = '<div class="errbox">Bitte wählen Sie eine Bilddatei (JPG oder PNG).</div>';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    sourceImg = new Image();
+    sourceImg.onload = ()=>{
+      imgLoaded = true;
+      goStep(2);
+      runPipeline();
+    };
+    sourceImg.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ---------------- MediaPipe setup ---------------- */
+let faceLandmarker, segmenter, modelsReady=false;
+async function initModels(){
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+  );
+  faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+    baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"},
+    runningMode:"IMAGE",
+    numFaces:1,
+    outputFaceBlendshapes:true
+  });
+  segmenter = await ImageSegmenter.createFromOptions(vision, {
+    baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.tflite"},
+    runningMode:"IMAGE",
+    outputCategoryMask:true
+  });
+  modelsReady = true;
+}
+initModels();
+
+/* ---------------- Pipeline ---------------- */
+const canvas = document.getElementById('previewCanvas');
+const ctx = canvas.getContext('2d');
+const checklistEl = document.getElementById('checklist');
+const loadingMsg = document.getElementById('loadingMsg');
+const loadingText = document.getElementById('loadingText');
+const toBuy = document.getElementById('toBuy');
+
+const OUT_SIZE = 600; // square working canvas, mm-format cropped inside
+
+let lastLandmarks = null;
+let lastMaskData = null;
+let workCanvas = document.createElement('canvas');
+
+async function runPipeline(){
+  if(!modelsReady){
+    loadingMsg.style.display='flex';
+    loadingText.textContent = 'KI-Modelle werden geladen…';
+    await new Promise(r=>{
+      const iv = setInterval(()=>{ if(modelsReady){clearInterval(iv);r();} },200);
+    });
+  }
+  loadingMsg.style.display='flex';
+  loadingText.textContent = 'Analysiere Gesicht & Position…';
+  toBuy.disabled = true;
+
+  // prep a working canvas at native-ish resolution
+  const maxDim = 900;
+  const scale = Math.min(1, maxDim / Math.max(sourceImg.width, sourceImg.height));
+  workCanvas.width = Math.round(sourceImg.width*scale);
+  workCanvas.height = Math.round(sourceImg.height*scale);
+  const wctx = workCanvas.getContext('2d');
+  wctx.drawImage(sourceImg,0,0,workCanvas.width,workCanvas.height);
+
+  // face landmarks
+  let faceResult;
+  try{
+    faceResult = faceLandmarker.detect(workCanvas);
+  }catch(e){ faceResult = {faceLandmarks:[]}; }
+  lastLandmarks = (faceResult.faceLandmarks && faceResult.faceLandmarks[0]) || null;
+  const blendshapes = (faceResult.faceBlendshapes && faceResult.faceBlendshapes[0]) || null;
+
+  // segmentation
+  loadingText.textContent = 'Trenne Person vom Hintergrund…';
+  let segResult;
+  try{
+    segResult = segmenter.segment(workCanvas);
+    lastMaskData = segResult.categoryMask ? segResult.categoryMask.getAsFloat32Array() : null;
+  }catch(e){ lastMaskData = null; }
+
+  loadingMsg.style.display='none';
+  render();
+}
+
+function getBlendshapeScore(list, name){
+  if(!list || !list.categories) return 0;
+  const c = list.categories.find(c=>c.categoryName===name);
+  return c ? c.score : 0;
+}
+
+function render(){
+  const invertMask = document.getElementById('invertMaskChk').checked;
+  const bg = 'white';
+  const bgColor = [255,255,255];
+
+  canvas.width = OUT_SIZE;
+  canvas.height = OUT_SIZE;
+
+  const bright = parseInt(document.getElementById('brightSlider').value);
+  const contrast = parseInt(document.getElementById('contrastSlider').value);
+  const posX = parseInt(document.getElementById('posXSlider').value);
+  const posY = parseInt(document.getElementById('posYSlider').value);
+  const zoom = parseInt(document.getElementById('zoomSlider').value)/100;
+
+  const w = workCanvas.width, h = workCanvas.height;
+  const srcCtx = workCanvas.getContext('2d');
+  const srcData = srcCtx.getImageData(0,0,w,h);
+
+  // build output image data with background replacement + adjustments
+  const out = ctx.createImageData(w,h);
+  const c = (contrast/100)*128;
+  const factor = (259*(c+255))/(255*(259-c));
+  for(let i=0;i<srcData.data.length;i+=4){
+    let maskVal = lastMaskData ? lastMaskData[i/4] : 1; // category index: 0 = background, 1 = person
+    if(invertMask) maskVal = 1 - maskVal;
+    let r=srcData.data[i], g=srcData.data[i+1], b=srcData.data[i+2];
+    if(lastMaskData && maskVal >= 0.5){
+      r=bgColor[0]; g=bgColor[1]; b=bgColor[2];
+    } else {
+      r = factor*(r-128)+128+bright;
+      g = factor*(g-128)+128+bright;
+      b = factor*(b-128)+128+bright;
+    }
+    out.data[i]=Math.max(0,Math.min(255,r));
+    out.data[i+1]=Math.max(0,Math.min(255,g));
+    out.data[i+2]=Math.max(0,Math.min(255,b));
+    out.data[i+3]=255;
+  }
+  const tmp = document.createElement('canvas');
+  tmp.width=w; tmp.height=h;
+  tmp.getContext('2d').putImageData(out,0,0);
+
+  // determine crop box based on face landmarks (chin ~152, forehead ~10, eyes 33/263)
+  ctx.fillStyle = bg==='white' ? '#ffffff' : '#c8c8c8';
+  ctx.fillRect(0,0,OUT_SIZE,OUT_SIZE);
+
+  let cropCX = w/2, cropCY = h/2, cropSize = Math.min(w,h);
+  const checks = [];
+
+  if(lastLandmarks){
+    const chin = lastLandmarks[152];
+    const forehead = lastLandmarks[10];
+    const leftEye = lastLandmarks[33];
+    const rightEye = lastLandmarks[263];
+    const chinPx = {x:chin.x*w, y:chin.y*h};
+    const foreheadPx = {x:forehead.x*w, y:forehead.y*h};
+    const eyeMid = {x:(leftEye.x+rightEye.x)/2*w, y:(leftEye.y+rightEye.y)/2*h};
+
+    const faceHeightPx = Math.abs(chinPx.y-foreheadPx.y) * 1.55; // approx crown-to-chin
+    // target: head should fill headPct of output height
+    const targetHeadFraction = ((currentFormat.head.minPct+currentFormat.head.maxPct)/2)/100;
+    cropSize = faceHeightPx / targetHeadFraction;
+    cropCX = eyeMid.x;
+    // vertical: place so eyes sit around 45% from top of crop
+    cropCY = eyeMid.y - cropSize*0.10;
+
+    cropSize = cropSize / zoom;
+    cropCX -= (posX/100)*cropSize;
+    cropCY -= (posY/100)*cropSize;
+
+    checks.push({ok:true, label:'Gesicht erkannt', detail:''});
+
+    // head size check
+    const actualHeadFraction = faceHeightPx / cropSize;
+    const okSize = actualHeadFraction*100 >= currentFormat.head.minPct-4 && actualHeadFraction*100 <= currentFormat.head.maxPct+4;
+    checks.push({ok:okSize, label:'Kopfgröße im Rahmen', detail: okSize?'':'Bitte Zoom anpassen'});
+
+    // centering check
+    const dx = Math.abs((eyeMid.x-cropCX)/cropSize);
+    const dy = Math.abs((eyeMid.y - (cropCY+cropSize*0.10))/cropSize);
+    const okCenter = dx<0.08 && dy<0.08;
+    checks.push({ok:okCenter, label:'Kopf mittig positioniert', detail: okCenter?'':'Bitte Position (X/Y) korrigieren'});
+
+    // mouth closed via blendshapes
+    // (recomputed below using stored blendshapes if present)
+    checks.push({ok:mouthOk, label:'Mund geschlossen', detail: mouthOk?'':'Bitte Mund schließen und neu hochladen'});
+    checks.push({ok:eyesOk, label:'Augen offen & Blick zur Kamera', detail: eyesOk?'':'Bitte in die Kamera schauen'});
+    checks.push({ok:tiltOk, label:'Kopf gerade (nicht geneigt)', detail: tiltOk?'':'Kopf bitte gerade halten'});
+  } else {
+    checks.push({ok:false, label:'Kein Gesicht erkannt', detail:'Bitte anderes Foto wählen'});
+  }
+
+  if(!lastMaskData){
+    checks.push({ok:false, label:'Hintergrund-Trennung', detail:'Konnte nicht berechnet werden'});
+  } else {
+    checks.push({ok:true, label:'Hintergrund ersetzt', detail:''});
+  }
+
+  // draw cropped/scaled result onto square output
+  const sx = cropCX - cropSize/2, sy = cropCY - cropSize/2;
+  ctx.drawImage(tmp, sx, sy, cropSize, cropSize, 0, 0, OUT_SIZE, OUT_SIZE);
+
+  renderChecklist(checks);
+  const allOk = checks.every(c=>c.ok);
+  toBuy.disabled = !allOk;
+  document.getElementById('formatEcho').textContent = currentFormat.label;
+}
+
+// blendshape-derived flags, computed once per pipeline run
+let mouthOk=true, eyesOk=true, tiltOk=true;
+
+function renderChecklist(checks){
+  checklistEl.innerHTML='';
+  checks.forEach(c=>{
+    const li=document.createElement('li');
+    li.innerHTML = `<span class="dot ${c.ok?'ok':'err'}"></span><span>${c.label}</span><span class="status-text">${c.ok?'✓':(c.detail||'⚠')}</span>`;
+    checklistEl.appendChild(li);
+  });
+}
+
+document.getElementById('invertMaskChk').addEventListener('change', ()=>{ if(imgLoaded) render(); });
+
+['brightSlider','contrastSlider','posXSlider','posYSlider','zoomSlider'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', (e)=>{
+    if(id==='brightSlider') document.getElementById('brightVal').textContent=e.target.value;
+    if(id==='contrastSlider') document.getElementById('contrastVal').textContent=e.target.value;
+    if(imgLoaded) render();
+  });
+});
+
+// recompute mouth/eye/tilt checks whenever a new detect happens
+const origRunPipeline = runPipeline;
+runPipeline = async function(){
+  await origRunPipeline();
+};
+
+/* Patch: compute blendshape-based checks right after detect (inside runPipeline via closures) */
+const _origDetectHook = FaceLandmarker.prototype.detect;
+FaceLandmarker.prototype.detect = function(img){
+  const res = _origDetectHook.call(this, img);
+  const bs = (res.faceBlendshapes && res.faceBlendshapes[0]) || null;
+  const jawOpen = getBlendshapeScore(bs,'jawOpen');
+  const eyeBlinkL = getBlendshapeScore(bs,'eyeBlinkLeft');
+  const eyeBlinkR = getBlendshapeScore(bs,'eyeBlinkRight');
+  const lookL = getBlendshapeScore(bs,'eyeLookOutLeft')+getBlendshapeScore(bs,'eyeLookOutRight');
+  mouthOk = jawOpen < 0.25;
+  eyesOk = eyeBlinkL < 0.5 && eyeBlinkR < 0.5 && lookL < 0.6;
+  if(res.faceLandmarks && res.faceLandmarks[0]){
+    const l = res.faceLandmarks[0];
+    const dy = (l[33].y - l[263].y);
+    const dx = (l[33].x - l[263].x);
+    const angle = Math.abs(Math.atan2(dy,dx)*180/Math.PI);
+    tiltOk = angle < 8 || angle > 172;
+  }
+  return res;
+};
+
+/* ---------------- Purchase flow ---------------- */
+document.getElementById('toBuy').addEventListener('click', ()=>{
+  goStep(3);
+});
+
+document.getElementById('payBtn').addEventListener('click', ()=>{
+  // Placeholder for real payment integration (PayPal/Klarna/Stripe checkout should be wired here server-side).
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  btn.textContent = 'Zahlung wird verarbeitet…';
+  setTimeout(()=>{
+    btn.style.display='none';
+    document.getElementById('afterPay').style.display='block';
+  }, 1200);
+});
+
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  // Re-render at full resolution without watermark for the actual download.
+  const full = document.createElement('canvas');
+  const OUT_HI = 1200;
+  full.width = OUT_HI; full.height = OUT_HI;
+  const fctx = full.getContext('2d');
+  fctx.drawImage(canvas, 0,0, OUT_HI, OUT_HI);
+
+  full.toBlob((blob)=>{
+    if(!blob) return;
+    const filename = 'passfoto-'+currentFormat.id+'.jpg';
+
+    // iOS Safari / older mobile browsers largely ignore the download attribute
+    // on blob/data links, so give those a "open in new tab, then save" fallback.
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+
+    if(isIOS){
+      const dataUrl = full.toDataURL('image/jpeg', 0.95);
+      const win = window.open();
+      if(win){
+        win.document.write(
+          '<title>'+filename+'</title>'+
+          '<body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;color:#fff;text-align:center;">'+
+          '<p style="padding:0 20px;">Bild antippen und gedrückt halten, dann „Bild sichern" wählen.</p>'+
+          '<img src="'+dataUrl+'" style="max-width:100%;border-radius:8px;">'+
+          '</body>'
+        );
+      } else {
+        alert('Bitte Pop-ups für diese Seite erlauben, um das Bild zu speichern.');
+      }
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  }, 'image/jpeg', 0.95);
+});
+</script>
+</body>
+</html>
