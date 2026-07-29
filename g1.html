@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biometrisches Passbild & Visa-Foto online erstellen</title>
+    <style>
+        :root {
+            --primary: #007AFF;
+            --bg-color: #f5f5f7;
+            --text-main: #1d1d1f;
+            --card-bg: #ffffff;
+            --error: #ff3b30;
+            --success: #34c759;
+        }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { margin: 0; padding: 20px; background: var(--bg-color); color: var(--text-main); text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; background: var(--card-bg); padding: 30px 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        
+        h1 { font-size: 24px; margin-bottom: 10px; }
+        p.subtitle { color: #86868b; margin-bottom: 30px; font-size: 15px; }
+
+        .btn { display: inline-block; background: var(--primary); color: white; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px; border: none; cursor: pointer; width: 100%; transition: opacity 0.2s; margin-bottom: 10px; }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { background: #d1d1d6; cursor: not-allowed; }
+        
+        .btn-secondary { background: #e5e5ea; color: var(--text-main); }
+        .btn-pay { background: #ffcc00; color: #000; } /* PayPal Style */
+
+        /* Upload Area */
+        #upload-area { border: 2px dashed #c7c7cc; padding: 40px 20px; border-radius: 16px; margin-bottom: 20px; cursor: pointer; }
+        #upload-area:hover { background: #fbfbfd; }
+        #file-input { display: none; }
+
+        /* Status & Feedback */
+        #status-message { font-weight: bold; margin: 15px 0; min-height: 24px; }
+        .error-text { color: var(--error); }
+        .success-text { color: var(--success); }
+        .info-text { color: var(--primary); }
+        .loader { display: none; margin: 20px auto; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Preview Area */
+        #preview-container { display: none; margin-top: 20px; }
+        canvas { max-width: 100%; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        
+        /* Options */
+        .options-group { text-align: left; background: #f5f5f7; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .options-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .radio-group { display: flex; gap: 15px; }
+        
+        /* Checkout */
+        #checkout-area { display: none; border-top: 1px solid #e5e5ea; padding-top: 20px; margin-top: 20px; text-align: left; }
+        .price-tag { font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 10px; }
+        .legal-text { font-size: 12px; color: #86868b; text-align: center; margin-bottom: 20px; }
+        
+        /* Download / Print */
+        #success-area { display: none; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Dein Passbild online</h1>
+    <p class="subtitle">Mache ein Selfie. Unsere KI zentriert dein Gesicht, tauscht den Hintergrund und prüft die Biometrie.</p>
+
+    <!-- Init Loading -->
+    <div id="init-loader" class="loader" style="display: block;"></div>
+    <p id="init-text" class="info-text">KI-Modelle werden geladen (ca. 10-20 MB)...</p>
+
+    <!-- Main App (hidden until AI is loaded) -->
+    <div id="app-content" style="display: none;">
+        
+        <div id="upload-area" onclick="document.getElementById('file-input').click()">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <h3>Bild auswählen oder Foto machen</h3>
+            <p style="font-size: 14px; color: #86868b;">Achte auf gute Beleuchtung im Gesicht.</p>
+        </div>
+        <input type="file" id="file-input" accept="image/*" />
+
+        <div id="process-loader" class="loader"></div>
+        <div id="status-message"></div>
+
+        <div id="preview-container">
+            <div class="options-group">
+                <label>Hintergrundfarbe:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="bg-color" value="white" checked onchange="reprocessImage()"> Weiß</label>
+                    <label><input type="radio" name="bg-color" value="gray" onchange="reprocessImage()"> Hellgrau</label>
+                </div>
+            </div>
+            
+            <div class="options-group">
+                <label>Format:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="format" value="35x45" checked onchange="reprocessImage()"> Standard (35x45mm)</label>
+                    <label><input type="radio" name="format" value="50x50" onchange="reprocessImage()"> US-Visa (50x50mm)</label>
+                </div>
+            </div>
+
+            <!-- Preview Canvas (Low Res + Watermark) -->
+            <canvas id="preview-canvas" width="350" height="450"></canvas>
+            
+            <div id="checkout-area">
+                <div class="price-tag">9,90 €</div>
+                <div class="legal-text">
+                    <input type="checkbox" id="agb-check"> Ich stimme zu, dass die digitale Datei sofort bereitgestellt wird. Ein Widerrufsrecht und Rückgaben sind ausgeschlossen.
+                </div>
+                <button class="btn btn-pay" onclick="processPayment('paypal')">Mit PayPal kaufen</button>
+                <button class="btn btn-secondary" onclick="processPayment('klarna')">Mit Klarna kaufen</button>
+            </div>
+        </div>
+
+        <div id="success-area">
+            <h2>✅ Vielen Dank!</h2>
+            <p>Dein Bild ist nun freigeschaltet.</p>
+            <button class="btn" onclick="downloadHighRes()">High-Res Datei herunterladen</button>
+            <br><br>
+            <p style="font-size: 14px; color: #86868b;">Möchtest du echte Fotoabzüge?</p>
+            <a href="https://www.dm.de/foto/fotos-abzuege/" target="_blank" class="btn btn-secondary">Abzüge bei dm bestellen</a>
+        </div>
+    </div>
+</div>
+
+<!-- Versteckte Canvas für hochauflösende Verarbeitung -->
+<canvas id="highres-canvas" style="display: none;"></canvas>
+
+<!-- MediaPipe Module Script -->
+<script type="module">
+    import { 
+        FaceLandmarker, 
+        ImageSegmenter, 
+        FilesetResolver 
+    } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js";
+
+    let faceLandmarker;
+    let imageSegmenter;
+    let originalImage = new Image();
+    let isAiReady = false;
+
+    // DOM Elements
+    const fileInput = document.getElementById('file-input');
+    const statusMsg = document.getElementById('status-message');
+    const processLoader = document.getElementById('process-loader');
+    const previewContainer = document.getElementById('preview-container');
+    const previewCanvas = document.getElementById('preview-canvas');
+    const highresCanvas = document.getElementById('highres-canvas');
+    const checkoutArea = document.getElementById('checkout-area');
+    const successArea = document.getElementById('success-area');
+
+    // 1. Initialisiere KI-Modelle
+    async function initializeAI() {
+        try {
+            const vision = await FilesetResolver.forVisionTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+            );
+
+            // Face Landmarker für Biometrie, Zuschnitt und Position
+            faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+                    delegate: "GPU"
+                },
+                outputFaceBlendshapes: true,
+                runningMode: "IMAGE",
+                numFaces: 1
+            });
+
+            // Image Segmenter für Hintergrund-Freistellung
+            imageSegmenter = await ImageSegmenter.createFromOptions(vision, {
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.task",
+                    delegate: "GPU"
+                },
+                runningMode: "IMAGE",
+                outputCategoryMask: true
+            });
+
+            isAiReady = true;
+            document.getElementById('init-loader').style.display = 'none';
+            document.getElementById('init-text').style.display = 'none';
+            document.getElementById('app-content').style.display = 'block';
+        } catch (error) {
+            console.error(error);
+            document.getElementById('init-text').innerHTML = "Fehler beim Laden der KI. Bitte in modernem Browser öffnen.";
+            document.getElementById('init-text').className = "error-text";
+        }
+    }
+
+    initializeAI();
+
+    // 2. Bild hochladen
+    fileInput.addEventListener('change', (e) => {
+        if (!isAiReady) return;
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Reset UI
+        previewContainer.style.display = 'none';
+        checkoutArea.style.display = 'none';
+        successArea.style.display = 'none';
+        document.getElementById('upload-area').style.display = 'none';
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            originalImage.onload = () => {
+                processImage();
+            }
+            originalImage.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Manuelles Neu-Rendern (z.B. wenn Farbe oder Format gewechselt wird)
+    window.reprocessImage = function() {
+        if(originalImage.src) processImage();
+    }
+
+    // 3. Hauptverarbeitung (Zuschnitt, Freistellen, Korrektur)
+    async function processImage() {
+        processLoader.style.display = 'block';
+        statusMsg.className = "info-text";
+        statusMsg.innerText = "Bild wird analysiert und freigestellt...";
+
+        // Schritt A: Biometrie & Gesichtsposition finden
+        const faceResult = faceLandmarker.detect(originalImage);
+        
+        if (faceResult.faceLandmarks.length === 0) {
+            showError("Kein Gesicht erkannt. Bitte anderes Foto wählen.");
+            return;
+        }
+
+        const landmarks = faceResult.faceLandmarks[0];
+        const blendshapes = faceResult.faceBlendshapes[0].categories;
+
+        // KI-Prüfungen
+        let warnings = [];
+        
+        // Augen zu? (Blendshapes prüfen)
+        const eyeBlinkLeft = blendshapes.find(b => b.categoryName === "eyeBlinkLeft")?.score || 0;
+        const eyeBlinkRight = blendshapes.find(b => b.categoryName === "eyeBlinkRight")?.score || 0;
+        if (eyeBlinkLeft > 0.4 || eyeBlinkRight > 0.4) warnings.push("Augen scheinen geschlossen zu sein.");
+
+        // Mund offen? (Blendshapes prüfen)
+        const jawOpen = blendshapes.find(b => b.categoryName === "jawOpen")?.score || 0;
+        if (jawOpen > 0.15) warnings.push("Bitte den Mund geschlossen halten.");
+
+        // Schritt B: Perfekten Zuschnitt (Crop) berechnen
+        const imgW = originalImage.width;
+        const imgH = originalImage.height;
+        
+        // Landmark 10 = Stirn, 152 = Kinn, 1 = Nasenspitze
+        const topY = landmarks[10].y * imgH;
+        const bottomY = landmarks[152].y * imgH;
+        const noseX = landmarks[1].x * imgW;
+        
+        const faceHeight = bottomY - topY;
+        
+        // Gewünschtes Format
+        const formatSelect = document.querySelector('input[name="format"]:checked').value;
+        const targetRatio = formatSelect === "35x45" ? (35 / 45) : (50 / 50);
+        
+        // Biometrische Regel: Gesicht soll ca. 75% der Bildhöhe einnehmen
+        const targetCropHeight = faceHeight / 0.75;
+        const targetCropWidth = targetCropHeight * targetRatio;
+
+        // Rechteck zum Ausschneiden berechnen (Kopf in der oberen Hälfte zentrieren)
+        const cropX = noseX - (targetCropWidth / 2);
+        // Etwas Luft über dem Kopf lassen (ca 10% der Gesamthöhe)
+        const cropY = topY - (targetCropHeight * 0.12);
+
+        // Schritt C: Freistellen / Hintergrund maskieren
+        const segmentationResult = await imageSegmenter.segment(originalImage);
+        const mask = segmentationResult.categoryMask;
+        
+        // Schritt D: In hochauflösendes Canvas zeichnen
+        highresCanvas.width = targetCropWidth;
+        highresCanvas.height = targetCropHeight;
+        const ctxHigh = highresCanvas.getContext('2d');
+
+        // Hintergrundfarbe zeichnen
+        const bgColor = document.querySelector('input[name="bg-color"]:checked').value;
+        ctxHigh.fillStyle = bgColor === 'white' ? '#FFFFFF' : '#E0E0E0';
+        ctxHigh.fillRect(0, 0, highresCanvas.width, highresCanvas.height);
+
+        // Temporäres Canvas für die Maskierung des Originals
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = imgW;
+        tempCanvas.height = imgH;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(originalImage, 0, 0);
+        
+        // Pixel manipulieren für Maske
+        const maskData = mask.getAsFloat32Array();
+        const imgData = tempCtx.getImageData(0, 0, imgW, imgH);
+        
+        let brightnessSum = 0;
+        let foregroundPixelCount = 0;
+
+        for (let i = 0; i < maskData.length; i++) {
+            // maskData[i] == 0 bedeutet meistens Hintergrund bei Selfie Segmenter
+            // Je nach Modell-Version kann es invertiert sein. 255 ist Person.
+            if (maskData[i] === 0) { 
+                imgData.data[i * 4 + 3] = 0; // Alpha auf 0 = Transparent
+            } else {
+                // Berechne Helligkeit der Person für die Auto-Korrektur
+                const r = imgData.data[i * 4];
+                const g = imgData.data[i * 4 + 1];
+                const b = imgData.data[i * 4 + 2];
+                // Formel für wahrgenommene Helligkeit
+                brightnessSum += (0.299 * r + 0.587 * g + 0.114 * b);
+                foregroundPixelCount++;
+            }
+        }
+        tempCtx.putImageData(imgData, 0, 0);
+
+        // Auto-Helligkeit berechnen
+        const avgBrightness = foregroundPixelCount > 0 ? (brightnessSum / foregroundPixelCount) : 128;
+        let filterString = "none";
+        
+        // Wenn das Gesicht zu dunkel ist (< 130), heben wir Helligkeit an
+        if (avgBrightness < 130) {
+            const brightnessBoost = Math.min(1.5, 130 / avgBrightness);
+            filterString = `brightness(${brightnessBoost.toFixed(2)}) contrast(1.05)`;
+        }
+
+        // 4. Das zugeschnittene, freigestellte Bild auf das High-Res Canvas zeichnen
+        ctxHigh.filter = filterString;
+        ctxHigh.drawImage(
+            tempCanvas, 
+            cropX, cropY, targetCropWidth, targetCropHeight, // Source Crop
+            0, 0, targetCropWidth, targetCropHeight          // Destination
+        );
+        ctxHigh.filter = "none";
+
+        // 5. Vorschau Canvas (Low-Res + Wasserzeichen)
+        const ctxPreview = previewCanvas.getContext('2d');
+        // Größe für UI setzen
+        if (formatSelect === "35x45") {
+            previewCanvas.width = 350; previewCanvas.height = 450;
+        } else {
+            previewCanvas.width = 400; previewCanvas.height = 400;
+        }
+        
+        // HighRes Bild herunterskaliert in die Vorschau malen
+        ctxPreview.drawImage(highresCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+        
+        // Wasserzeichen hinzufügen (Schutz vor Gratis-Screenshots)
+        ctxPreview.fillStyle = "rgba(255, 255, 255, 0.4)";
+        ctxPreview.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+        
+        ctxPreview.save();
+        ctxPreview.translate(previewCanvas.width / 2, previewCanvas.height / 2);
+        ctxPreview.rotate(-Math.PI / 4);
+        ctxPreview.font = "bold 24px sans-serif";
+        ctxPreview.fillStyle = "rgba(0, 0, 0, 0.3)";
+        ctxPreview.textAlign = "center";
+        ctxPreview.fillText("EuerStudio.de - Vorschau", 0, 0);
+        ctxPreview.restore();
+
+        // UI Update
+        processLoader.style.display = 'none';
+        previewContainer.style.display = 'block';
+        checkoutArea.style.display = 'block';
+        
+        if (warnings.length > 0) {
+            statusMsg.className = "error-text";
+            statusMsg.innerHTML = "⚠️ " + warnings.join(" ");
+        } else {
+            statusMsg.className = "success-text";
+            statusMsg.innerText = "✅ Bild ist biometrisch optimiert!";
+        }
+    }
+
+    function showError(msg) {
+        processLoader.style.display = 'none';
+        statusMsg.className = "error-text";
+        statusMsg.innerText = "❌ " + msg;
+        document.getElementById('upload-area').style.display = 'block';
+    }
+
+    // 6. Mock-Payment und Freischaltung
+    window.processPayment = function(method) {
+        const agb = document.getElementById('agb-check');
+        if (!agb.checked) {
+            alert("Bitte bestätige, dass Rückgaben ausgeschlossen sind.");
+            return;
+        }
+
+        // Hier würde normalerweise die Weiterleitung zu Stripe/PayPal/Klarna API passieren.
+        // Für diesen Prototyp simulieren wir eine erfolgreiche Zahlung nach 1,5 Sekunden.
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = "Verarbeite Zahlung...";
+        btn.disabled = true;
+
+        setTimeout(() => {
+            // Erfolg!
+            document.getElementById('preview-container').style.display = 'none';
+            document.getElementById('status-message').style.display = 'none';
+            successArea.style.display = 'block';
+        }, 1500);
+    }
+
+    // 7. High-Res Download nach Zahlung
+    window.downloadHighRes = function() {
+        const formatSelect = document.querySelector('input[name="format"]:checked').value;
+        const link = document.createElement('createElement');
+        link.download = `Passbild_${formatSelect}_Studio.jpg`;
+        // Wir holen das Bild aus dem VERSTECKTEN, nicht-verkleinerten Canvas (ohne Wasserzeichen!)
+        link.href = highresCanvas.toDataURL("image/jpeg", 0.95);
+        link.click();
+    }
+</script>
+
+</body>
+</html>
