@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Passbild Studio – High Quality Freisteller</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- High-End Background Removal Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/dist/index.js"></script>
+</head>
+<body class="bg-gray-100 p-6 font-sans">
+
+  <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
+    <h1 class="text-2xl font-bold mb-2">High-Quality Freisteller Test</h1>
+    <p class="text-gray-600 text-sm mb-6">Testet die hochpräzise Haar- & Kanten-Erkennung im Browser.</p>
+
+    <div class="mb-4">
+      <input type="file" id="imageInput" accept="image/*" class="block w-full text-sm">
+    </div>
+
+    <div class="flex space-x-3 mb-6">
+      <button id="btnWhite" class="px-4 py-2 bg-gray-200 rounded font-medium text-sm">Hintergrund Weiß</button>
+      <button id="btnGrey" class="px-4 py-2 bg-gray-200 rounded font-medium text-sm">Hintergrund Hellgrau</button>
+    </div>
+
+    <div id="status" class="hidden p-3 bg-blue-50 text-blue-800 rounded mb-4 text-sm font-medium"></div>
+
+    <div class="text-center">
+      <canvas id="outputCanvas" class="border rounded max-w-full h-auto mx-auto hidden"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const status = document.getElementById('status');
+    const canvas = document.getElementById('outputCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let currentCutoutBlob = null;
+    let selectedBg = '#FFFFFF';
+
+    imageInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      status.innerText = "High-End KI schneidet das Bild präzise frei (dauert ca. 2-3 Sek.)...";
+      status.classList.remove('hidden');
+
+      try {
+        // High-Quality Freistellung direkt im Browser
+        currentCutoutBlob = await imglyRemoveBackground(file, {
+          publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.5.5/dist/"
+        });
+
+        status.innerText = "Fertig freigestellt!";
+        setTimeout(() => status.classList.add('hidden'), 1500);
+        
+        renderFinalImage();
+      } catch (err) {
+        status.innerText = "Fehler beim Freistellen: " + err.message;
+      }
+    });
+
+    document.getElementById('btnWhite').addEventListener('click', () => { selectedBg = '#FFFFFF'; renderFinalImage(); });
+    document.getElementById('btnGrey').addEventListener('click', () => { selectedBg = '#E5E7EB'; renderFinalImage(); });
+
+    async function renderFinalImage() {
+      if (!currentCutoutBlob) return;
+
+      const img = new Image();
+      img.src = URL.createObjectURL(currentCutoutBlob);
+      await img.decode();
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // 1. Wunsch-Hintergrund zeichnen
+      ctx.fillStyle = selectedBg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 2. Freigestellte Person mit feinen Haarkanten darüberlegen
+      ctx.drawImage(img, 0, 0);
+      canvas.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
