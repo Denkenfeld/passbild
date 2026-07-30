@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>PIX KI-Studio — Ihr Biometrisches Foto</title>
+<style>
+:root{
+  --ink:#1f2420;
+  --sub:#6b7268;
+  --paper:#f6f4ef;
+  --line:#e3ddd0;
+  --card:#ffffff;
+  --beige:#e9e0cf;
+  --beige-dark:#d9cbac;
+  --accent:#2fbf71;
+  --accent-glow:#7be8ab;
+  --accent-dark:#1f8a52;
+  --err:#b3402f;
+  --radius:22px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------------- Sticky header ---------------- */
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:rgba(246,244,239,.92);
+  backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line);
+  padding:12px 18px 10px;
+}
+.topbar .brand{
+  font-size:1.15rem;
+  font-weight:800;
+  letter-spacing:.2px;
+  line-height:1.15;
+}
+.topbar .tagline{
+  font-size:.86rem;
+  color:var(--sub);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.wrap{
+  max-width:460px;
+  margin:0 auto;
+  padding:22px 16px 60px;
+}
+
+/* ---------------- Upload button ---------------- */
+.upload-cta{
+  position:relative;
+  display:block;
+  width:100%;
+  aspect-ratio:907/548;
+  border-radius:22px;
+  overflow:hidden;
+  background-color:var(--ink);
+  background-image:url('pixbio1.jpg');
+  background-size:cover;
+  background-position:center;
+  border:none;
+  cursor:pointer;
+  box-shadow:0 14px 30px -12px rgba(31,36,32,.5);
+  transition:transform .15s ease;
+}
+.upload-cta:hover{ transform:translateY(-2px); }
+.upload-cta:active{ transform:translateY(0); }
+.upload-cta::before{
+  content:"";
+  position:absolute; inset:0;
+  background:linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.32) 38%, rgba(0,0,0,0) 65%);
+}
+.upload-cta .cta-label{
+  position:absolute;
+  left:0; right:0; bottom:0;
+  padding:20px 20px 22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  color:#fff;
+  font-size:1.35rem;
+  font-weight:800;
+  letter-spacing:.2px;
+  text-shadow:0 2px 10px rgba(0,0,0,.35);
+}
+.upload-cta .ic-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.upload-cta .ic-wrap::before,
+.upload-cta .ic-wrap::after{
+  content:"";
+  position:absolute;
+  left:50%; top:50%;
+  width:1.6rem; height:1.6rem;
+  border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.75);
+  transform:translate(-50%,-50%) scale(1);
+  opacity:0;
+  animation:ctaPulse 2.6s ease-out infinite;
+  pointer-events:none;
+}
+.upload-cta .ic-wrap::after{ animation-delay:1.3s; }
+@keyframes ctaPulse{
+  0%{ transform:translate(-50%,-50%) scale(1); opacity:.55; }
+  100%{ transform:translate(-50%,-50%) scale(2.6); opacity:0; }
+}
+.upload-cta .ic{ font-size:1.6rem; position:relative; z-index:1; }
+#fileInput{ display:none; }
+
+.upload-hint{
+  text-align:center;
+  font-size:.78rem;
+  color:var(--sub);
+  margin-top:10px;
+}
+
+/* ---------------- Preview ---------------- */
+.preview-section{ margin-top:26px; }
+.canvas-wrap{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  border-radius:var(--radius);
+  overflow:hidden;
+  padding:14px;
+  background:
+    repeating-linear-gradient(135deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 6px),
+    linear-gradient(155deg, var(--beige) 0%, var(--beige-dark) 100%);
+  border:1px solid #d5c9ac;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.6), inset 0 -6px 14px rgba(150,130,90,.12);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.photo-frame{
+  position:relative;
+  aspect-ratio:35/45;
+  height:78%;
+  width:auto;
+  max-width:78%;
+  max-height:78%;
+  border:1px solid #b9b9b9;
+  box-shadow:0 2px 12px rgba(0,0,0,.14);
+  background:#fff;
+  border-radius:10px;
+  overflow:hidden;
+}
+.photo-frame canvas{ width:100%; height:100%; display:block; }
+.ruler-label{
+  position:absolute; font-size:12px; color:#8a8f97; letter-spacing:.2px;
+  pointer-events:none; white-space:nowrap;
+}
+.ruler-w{ left:50%; bottom:-20px; transform:translateX(-50%); }
+.ruler-h{ top:50%; left:-9px; transform:translate(-100%,-50%) rotate(-90deg); transform-origin:right center; }
+
+/* ---- scan effect overlay (reused from effekt-11-scan-mesh) ---- */
+.scanline{
+  position:absolute; left:0; right:0; height:34px;
+  top:-40px;
+  background:linear-gradient(to bottom, transparent, rgba(47,191,113,.55) 45%, rgba(123,232,171,.95) 50%, rgba(47,191,113,.55) 55%, transparent);
+  filter:blur(0.3px);
+  box-shadow:0 0 22px 6px rgba(47,191,113,.55);
+  opacity:0;
+  pointer-events:none;
+}
+.photo-frame.scanning .scanline{ opacity:1; animation:scanY 2.2s cubic-bezier(.65,0,.35,1) infinite; }
+@keyframes scanY{ 0%{top:-10%;} 50%{top:100%;} 100%{top:-10%;} }
+
+.mesh-subtle{
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(47,191,113,.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(47,191,113,.16) 1px, transparent 1px);
+  background-size:14.28% 14.28%;
+  opacity:0;
+  pointer-events:none;
+}
+.photo-frame.scanning .mesh-subtle{ animation:meshFadeSubtle 4.2s ease-in-out infinite; }
+@keyframes meshFadeSubtle{ 0%,100%{opacity:.08;} 50%{opacity:.3;} }
+
+.step-overlay{
+  position:absolute; left:0; right:0; bottom:0;
+  padding:10px 14px 12px;
+  background:linear-gradient(to top, rgba(255,255,255,.94) 45%, rgba(255,255,255,0));
+  display:flex; flex-direction:column; gap:7px;
+  opacity:0; transition:opacity .3s ease;
+  z-index:5;
+}
+.photo-frame.scanning .step-overlay{ opacity:1; }
+.step-text{ font-size:12px; font-weight:700; color:var(--ink); min-height:15px; }
+.bar-track{ height:4px; border-radius:3px; background:#e3ddd0; overflow:hidden; }
+.bar-fill{ height:100%; width:0%; background:var(--accent); border-radius:3px; }
+
+.errbox{
+  margin-top:12px; padding:11px 13px; border-radius:10px;
+  background:#fdecec; color:var(--err); font-size:.85rem; border:1px solid #f3c7c2;
+}
+
+/* ---------------- Buy section ---------------- */
+.buy-section{
+  margin-top:24px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px 18px 22px;
+  opacity:0;
+  transform:translateY(10px);
+  transition:opacity .4s ease, transform .4s ease;
+}
+.buy-section.show{ opacity:1; transform:translateY(0); }
+.buy-section h2{ margin:0 0 8px; font-size:1.05rem; }
+.buy-section .muted{ margin:0 0 16px; font-size:.85rem; color:var(--sub); line-height:1.5; }
+
+.product-row{
+  display:flex; justify-content:space-between; align-items:flex-start;
+  padding:12px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+}
+.product-title{ font-weight:700; font-size:.92rem; }
+.product-sub{ font-size:.8rem; color:var(--sub); margin-top:2px; }
+
+.link-btn{
+  display:block; margin:12px 0 4px; background:none; border:none;
+  color:var(--sub); font-size:.78rem; text-decoration:underline;
+  cursor:pointer; padding:0;
+}
+
+.feature-list{
+  list-style:none; margin:0 0 10px; padding:0;
+  display:flex; flex-direction:column; gap:8px;
+}
+.feature-list li{
+  font-size:.88rem; color:var(--ink); display:flex; align-items:flex-start; gap:8px; line-height:1.4;
+}
+.feature-list .check{
+  flex:none; width:18px; height:18px; border-radius:50%;
+  background:var(--accent); color:#fff; font-size:.72rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center; margin-top:1px;
+}
+
+.price-badge-center{ margin-top:20px; text-align:center; }
+.price-row-center{
+  margin-top:10px; display:flex; align-items:baseline; justify-content:center; gap:10px; flex-wrap:wrap;
+}
+.price-old{ font-size:1.3rem; color:#a3a89e; text-decoration:line-through; }
+.price-new{ font-size:1.9rem; font-weight:800; color:var(--accent-dark); }
+.price-badge{
+  font-size:.72rem; font-weight:700; color:#fff; background:var(--err);
+  padding:4px 9px; border-radius:20px; white-space:nowrap;
+}
+
+.agb-check{
+  display:flex; align-items:flex-start; gap:8px; margin-top:14px;
+  font-size:.78rem; color:var(--sub); line-height:1.4; cursor:pointer;
+}
+.agb-check input{ flex:none; margin-top:2px; width:16px; height:16px; accent-color:var(--accent-dark); cursor:pointer; }
+.agb-check a{ color:var(--sub); text-decoration:underline; }
+
+.pay-btn{
+  width:100%; margin-top:16px; padding:16px; border:none; border-radius:14px;
+  background:var(--accent-dark); color:#fff; font-size:1.02rem; font-weight:800;
+  cursor:pointer; box-shadow:0 10px 22px -10px rgba(31,138,82,.55);
+  transition:transform .15s ease, background .15s ease;
+}
+.pay-btn:hover{ background:#186b3f; transform:translateY(-1px); }
+.pay-btn:active{ transform:translateY(0); }
+
+.legal{ margin:12px 0 0; font-size:.7rem; color:#9aa09a; line-height:1.5; }
+.pay-note{ margin-top:10px; font-size:.78rem; color:var(--sub); text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">PIX KI-Studio</div>
+  <div class="tagline">Ihr Biometrisches Foto — selber machen.</div>
+</div>
+
+<div class="wrap">
+
+  <label class="upload-cta" id="uploadCta">
+    <span class="cta-label"><span class="ic-wrap"><span class="ic">📷</span></span><span>Jetzt Foto machen</span></span>
+    <input type="file" id="fileInput" accept="image/*">
+  </label>
+
+  <div class="preview-section" id="previewSection" style="display:none;">
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="photo-frame" id="photoFrame">
+        <canvas id="previewCanvas"></canvas>
+        <span class="ruler-label ruler-w" id="rulerW"></span>
+        <span class="ruler-label ruler-h" id="rulerH"></span>
+        <div class="scanline"></div>
+        <div class="mesh-subtle"></div>
+        <div class="step-overlay">
+          <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+          <div class="step-text" id="stepText"></div>
+        </div>
+      </div>
+    </div>
+    <div class="errbox" id="errorMsg" style="display:none;"></div>
+  </div>
+
+  <div class="buy-section" id="buySection">
+    <h2>Ihr Biometrisches Foto Set wurde erfolgreich erstellt:</h2>
+
+    <ul class="feature-list">
+      <li><span class="check">✓</span> 35×45&nbsp;mm für Führerschein / Krankenkasse</li>
+      <li><span class="check">✓</span> 10×15&nbsp;cm Vorlage mit 4&nbsp;Fotos 35×45&nbsp;mm</li>
+      <li><span class="check">✓</span> 50×50&nbsp;mm für Visa USA / Global</li>
+      <li><span class="check">✓</span> 10×15&nbsp;cm Vorlage mit 4&nbsp;Fotos 50×50&nbsp;mm</li>
+    </ul>
+    <p class="muted">Alle Dateien in hoher Auflösung für Druck &amp; digitalen Gebrauch.</p>
+
+    <div class="price-badge-center">
+      <span class="price-badge">Aktion noch <span id="countdown">7h 42min 33s</span></span>
+    </div>
+
+    <div class="price-row-center">
+      <span class="price-old">9,90&nbsp;€</span>
+      <span class="price-new">3,90&nbsp;€</span>
+    </div>
+
+    <button class="pay-btn" id="payBtn" type="button">Jetzt bezahlen &amp; Download freischalten</button>
+    <div class="pay-note" id="payNote" style="display:none;">Zahlungsanbindung wird vorbereitet …</div>
+
+    <label class="agb-check">
+      <input type="checkbox" id="agbCheckbox">
+      <span>Ich habe die <a href="#" target="_blank" rel="noopener">AGB</a> und <a href="#" target="_blank" rel="noopener">Widerrufsbelehrung</a> gelesen und akzeptiere diese.</span>
+    </label>
+
+    <p class="legal">Mit Klick auf „Jetzt bezahlen" bestätigen Sie den Kauf. Da es sich um eine individuell angefertigte digitale Datei handelt, ist eine Rückgabe/Widerruf gemäß § 312g Abs. 2 Nr. 1 BGB ausdrücklich ausgeschlossen. Bitte prüfen Sie die Vorschau sorgfältig vor dem Kauf.</p>
+  </div>
+
+</div>
+
+<script type="module">
+import { FaceLandmarker, FilesetResolver, ImageSegmenter } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+import { removeBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm";
+
+/* ---------------- Fixed format ----------------
+   One-click product: no manual format switching. Default is the German
+   driver's-license/health-insurance-card photo (35×45mm, official head
+   height 32-36mm). The "Für Visa USA / Global" link is a placeholder for now. */
+const FORMAT = {
+  label:"Deutschland — Führerschein / Krankenkasse (35×45mm)",
+  w:35, h:45, bg:"white",
+  headMm:{min:32,max:36}
+};
+FORMAT.head = { minPct: FORMAT.headMm.min/FORMAT.h*100, maxPct: FORMAT.headMm.max/FORMAT.h*100 };
+
+/* ---------------- MediaPipe + imgly setup (lazy) ---------------- */
+let faceLandmarker, selfieSegmenter, modelsReady=false;
+let modelsPromise = null;
+function initModels(){
+  if(modelsPromise) return modelsPromise; // already loading/loaded — share the same promise
+  modelsPromise = (async ()=>{
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"},
+      runningMode:"IMAGE", numFaces:1, outputFaceBlendshapes:true
+    });
+    selfieSegmenter = await ImageSegmenter.createFromOptions(vision, {
+      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.tflite"},
+      runningMode:"IMAGE", outputCategoryMask:true
+    });
+    modelsReady = true;
+  })();
+  return modelsPromise;
+}
+
+function loadImageEl(url){
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    img.onload = ()=>resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function blurMask(raw, w, h, passes=2, radius=2){
+  let src = raw;
+  for(let p=0; p<passes; p++){
+    const dst = new Float32Array(w*h);
+    for(let y=0;y<h;y++){
+      for(let x=0;x<w;x++){
+        let sum=0, count=0;
+        for(let dy=-radius; dy<=radius; dy++){
+          const yy=y+dy; if(yy<0||yy>=h) continue;
+          for(let dx=-radius; dx<=radius; dx++){
+            const xx=x+dx; if(xx<0||xx>=w) continue;
+            sum += src[yy*w+xx]; count++;
+          }
+        }
+        dst[y*w+x] = sum/count;
+      }
+    }
+    src = dst;
+  }
+  return src;
+}
+
+function trimMaskEdge(mask, w, h, radius){
+  if(radius<=0) return mask;
+  const tmp = new Float32Array(w*h);
+  for(let y=0;y<h;y++){
+    const row = y*w;
+    for(let x=0;x<w;x++){
+      let m = 0;
+      const x0=Math.max(0,x-radius), x1=Math.min(w-1,x+radius);
+      for(let xx=x0;xx<=x1;xx++){ const v=mask[row+xx]; if(v>m) m=v; }
+      tmp[row+x]=m;
+    }
+  }
+  const out = new Float32Array(w*h);
+  for(let x=0;x<w;x++){
+    for(let y=0;y<h;y++){
+      let m = 0;
+      const y0=Math.max(0,y-radius), y1=Math.min(h-1,y+radius);
+      for(let yy=y0;yy<=y1;yy++){ const v=tmp[yy*w+x]; if(v>m) m=v; }
+      out[y*w+x]=m;
+    }
+  }
+  return out;
+}
+
+function applyBodyRegionGuard(mask, w, h, landmarks){
+  const chin = landmarks[152];
+  const leftEye = landmarks[33], rightEye = landmarks[263];
+  const eyeMid = {x:(leftEye.x+rightEye.x)/2*w, y:(leftEye.y+rightEye.y)/2*h};
+  const chinPx = {x:chin.x*w, y:chin.y*h};
+  const faceH = Math.abs(chinPx.y - eyeMid.y) / 0.46;
+  const cx = eyeMid.x;
+  const cy = eyeMid.y + faceH*0.75;
+  const rx = faceH*1.35;
+  const ry = faceH*2.3;
+  const out = new Float32Array(w*h);
+  for(let y=0;y<h;y++){
+    const dy = (y-cy)/ry;
+    for(let x=0;x<w;x++){
+      const idx = y*w+x;
+      const dx = (x-cx)/rx;
+      const d = dx*dx + dy*dy;
+      const guard = d<=1 ? 0 : 1/(1+Math.exp(-(d-1.02)*14));
+      out[idx] = Math.max(mask[idx], guard);
+    }
+  }
+  return out;
+}
+
+function computeTiltAngleDeg(landmarks, w, h){
+  const p1 = {x:landmarks[33].x*w, y:landmarks[33].y*h};
+  const p2 = {x:landmarks[263].x*w, y:landmarks[263].y*h};
+  let angle = Math.atan2(p2.y-p1.y, p2.x-p1.x) * 180/Math.PI;
+  if(angle > 90) angle -= 180;
+  if(angle < -90) angle += 180;
+  return angle;
+}
+
+function rotateCanvasToUpright(srcCanvas, angleDeg){
+  const rad = -angleDeg * Math.PI/180;
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+  const newW = Math.round(w*cos + h*sin);
+  const newH = Math.round(w*sin + h*cos);
+  const out = document.createElement('canvas');
+  out.width = newW; out.height = newH;
+  const octx = out.getContext('2d');
+  octx.fillStyle = '#ffffff';
+  octx.fillRect(0,0,newW,newH);
+  octx.translate(newW/2, newH/2);
+  octx.rotate(rad);
+  octx.drawImage(srcCanvas, -w/2, -h/2);
+  return out;
+}
+
+function getBlendshapeScore(list, name){
+  if(!list || !list.categories) return 0;
+  const c = list.categories.find(c=>c.categoryName===name);
+  return c ? c.score : 0;
+}
+
+let mouthOk=true, eyesOk=true, tiltOk=true;
+const _origDetect = FaceLandmarker.prototype.detect;
+FaceLandmarker.prototype.detect = function(img){
+  const res = _origDetect.call(this, img);
+  const bs = (res.faceBlendshapes && res.faceBlendshapes[0]) || null;
+  const jawOpen = getBlendshapeScore(bs,'jawOpen');
+  const eyeBlinkL = getBlendshapeScore(bs,'eyeBlinkLeft');
+  const eyeBlinkR = getBlendshapeScore(bs,'eyeBlinkRight');
+  const lookL = getBlendshapeScore(bs,'eyeLookOutLeft')+getBlendshapeScore(bs,'eyeLookOutRight');
+  mouthOk = jawOpen < 0.25;
+  eyesOk = eyeBlinkL < 0.5 && eyeBlinkR < 0.5 && lookL < 0.6;
+  if(res.faceLandmarks && res.faceLandmarks[0]){
+    const l = res.faceLandmarks[0];
+    const dy=(l[33].y-l[263].y), dx=(l[33].x-l[263].x);
+    const angle = Math.abs(Math.atan2(dy,dx)*180/Math.PI);
+    tiltOk = angle < 8 || angle > 172;
+  }
+  return res;
+};
+
+/* ---------------- Pipeline ---------------- */
+const canvas = document.getElementById('previewCanvas');
+const ctx = canvas.getContext('2d');
+const photoFrame = document.getElementById('photoFrame');
+const previewSection = document.getElementById('previewSection');
+const errorMsg = document.getElementById('errorMsg');
+const buySection = document.getElementById('buySection');
+const stepText = document.getElementById('stepText');
+const barFill = document.getElementById('barFill');
+
+const OUT_H_BASE = 640;
+const EDGE_TRIM = 3; // fixed (no manual slider anymore)
+
+let sourceImg = null;
+let workCanvas = document.createElement('canvas');
+let lastLandmarks = null;
+let lastMaskData = null;
+const trimCache = {src:null, radius:null, result:null};
+
+/* ---- Scan-effect step loop (from effekt-11-scan-mesh.html), driven while
+   the real pipeline is running; stops once the result is ready. ---- */
+const STEPS = [
+  "Bild wird eingelesen",
+  "Gesicht wird erkannt",
+  "Foto wird automatisch ausgerichtet",
+  "Hintergrund wird entfernt (KI)",
+  "Kopf wird zentriert",
+  "Maße werden geprüft",
+  "Foto wird fertiggestellt"
+];
+let stepToken = null;
+function startStepLoop(){
+  if(stepToken) stepToken.stopped = true;
+  const token = {stopped:false};
+  stepToken = token;
+  let i = 0;
+  function next(){
+    if(token.stopped) return;
+    stepText.style.opacity = 0;
+    setTimeout(()=>{
+      if(token.stopped) return;
+      stepText.textContent = STEPS[i % STEPS.length];
+      stepText.style.transition = 'opacity .25s ease';
+      stepText.style.opacity = 1;
+      barFill.style.transition = 'none';
+      barFill.style.width = '0%';
+      void barFill.offsetWidth;
+      barFill.style.transition = 'width 1000ms linear';
+      barFill.style.width = '100%';
+      setTimeout(()=>{
+        if(token.stopped) return;
+        i++;
+        setTimeout(next, 160);
+      }, 1000);
+    }, 130);
+  }
+  next();
+}
+function stopStepLoop(){
+  if(stepToken) stepToken.stopped = true;
+  photoFrame.classList.remove('scanning');
+}
+
+async function runPipeline(){
+  errorMsg.style.display='none';
+  photoFrame.classList.add('scanning');
+  startStepLoop();
+
+  await initModels();
+
+  const maxDim = 1000;
+  const scale = Math.min(1, maxDim / Math.max(sourceImg.width, sourceImg.height));
+  let base = document.createElement('canvas');
+  base.width = Math.round(sourceImg.width*scale);
+  base.height = Math.round(sourceImg.height*scale);
+  base.getContext('2d').drawImage(sourceImg,0,0,base.width,base.height);
+
+  let pre;
+  try{ pre = faceLandmarker.detect(base); }catch(e){ pre = {faceLandmarks:[]}; }
+  const preLm = (pre.faceLandmarks && pre.faceLandmarks[0]) || null;
+  if(preLm){
+    const tiltAngle = computeTiltAngleDeg(preLm, base.width, base.height);
+    if(Math.abs(tiltAngle) > 1.5 && Math.abs(tiltAngle) < 30){
+      base = rotateCanvasToUpright(base, tiltAngle);
+    }
+  }
+  workCanvas = base;
+
+  let faceResult;
+  try{ faceResult = faceLandmarker.detect(workCanvas); }catch(e){ faceResult = {faceLandmarks:[]}; }
+  lastLandmarks = (faceResult.faceLandmarks && faceResult.faceLandmarks[0]) || null;
+
+  lastMaskData = null;
+  try{
+    const inputBlob = await new Promise((resolve,reject)=>{
+      workCanvas.toBlob(b=> b?resolve(b):reject(new Error('toBlob fehlgeschlagen')), 'image/png');
+    });
+    let blob;
+    try{
+      blob = await removeBackground(inputBlob, {
+        output:{ format:'image/png' },
+        model:'small',
+        publicPath:'https://staticimgly.com/@imgly/background-removal-data/1.5.5/dist/'
+      });
+    }catch(e1){
+      blob = await removeBackground(inputBlob, { output:{ format:'image/png' }, model:'small' });
+    }
+    const url = URL.createObjectURL(blob);
+    const cutoutImg = await loadImageEl(url);
+    URL.revokeObjectURL(url);
+    const cutoutCanvas = document.createElement('canvas');
+    cutoutCanvas.width = workCanvas.width;
+    cutoutCanvas.height = workCanvas.height;
+    cutoutCanvas.getContext('2d').drawImage(cutoutImg,0,0,cutoutCanvas.width,cutoutCanvas.height);
+    const alphaData = cutoutCanvas.getContext('2d').getImageData(0,0,cutoutCanvas.width,cutoutCanvas.height).data;
+    const w = cutoutCanvas.width, h = cutoutCanvas.height;
+    const imglyMask = new Float32Array(w*h);
+    for(let i=0,p=0;i<alphaData.length;i+=4,p++){ imglyMask[p] = 1-(alphaData[i+3]/255); }
+
+    let combined = imglyMask;
+    try{
+      const segResult = selfieSegmenter.segment(workCanvas);
+      const rawSelfie = segResult.categoryMask ? segResult.categoryMask.getAsFloat32Array() : null;
+      if(rawSelfie){
+        const selfieMask = blurMask(rawSelfie, w, h);
+        combined = new Float32Array(w*h);
+        for(let i=0;i<w*h;i++) combined[i] = Math.max(imglyMask[i], selfieMask[i]);
+      }
+    }catch(e2){ /* fall back to imgly-only mask */ }
+
+    lastMaskData = lastLandmarks ? applyBodyRegionGuard(combined, w, h, lastLandmarks) : combined;
+  }catch(e){
+    console.error('Hintergrundentfernung fehlgeschlagen:', e);
+    lastMaskData = null;
+  }
+
+  stopStepLoop();
+
+  if(!lastLandmarks){
+    errorMsg.textContent = 'Es konnte kein Gesicht erkannt werden. Bitte ein anderes Foto (frontal, gut beleuchtet, aufrecht) verwenden.';
+    errorMsg.style.display = 'block';
+    return;
+  }
+
+  render();
+  buySection.classList.add('show');
+}
+
+// Shows the original, unprocessed photo right away (cover-cropped to the
+// target aspect ratio) so the scan animation plays over the real picture
+// instead of a blank canvas, while the actual AI pipeline runs underneath.
+function drawOriginalPreview(){
+  const aspect = FORMAT.w / FORMAT.h;
+  const OUT_H = OUT_H_BASE;
+  const OUT_W = Math.round(OUT_H * aspect);
+  canvas.width = OUT_W; canvas.height = OUT_H;
+
+  const iw = sourceImg.width, ih = sourceImg.height;
+  const srcAspect = iw/ih, dstAspect = OUT_W/OUT_H;
+  let sx,sy,sw,sh;
+  if(srcAspect > dstAspect){
+    sh = ih; sw = ih*dstAspect; sx = (iw-sw)/2; sy = 0;
+  } else {
+    sw = iw; sh = iw/dstAspect; sx = 0; sy = (ih-sh)/2;
+  }
+  ctx.drawImage(sourceImg, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
+  document.getElementById('rulerW').textContent = FORMAT.w + ' mm';
+  document.getElementById('rulerH').textContent = FORMAT.h + ' mm';
+}
+
+function render(){
+  const bgColor = FORMAT.bg==='gray' ? [200,200,200] : [255,255,255];
+  const aspect = FORMAT.w / FORMAT.h;
+  const OUT_H = OUT_H_BASE;
+  const OUT_W = Math.round(OUT_H * aspect);
+  canvas.width = OUT_W; canvas.height = OUT_H;
+
+  const w = workCanvas.width, h = workCanvas.height;
+  const srcCtx = workCanvas.getContext('2d');
+  const srcData = srcCtx.getImageData(0,0,w,h);
+
+  let activeMask = lastMaskData;
+  if(lastMaskData){
+    if(trimCache.src !== lastMaskData){
+      trimCache.src = lastMaskData;
+      trimCache.result = blurMask(trimMaskEdge(lastMaskData, w, h, EDGE_TRIM), w, h, 2, 2);
+    }
+    activeMask = trimCache.result;
+  }
+
+  const out = ctx.createImageData(w,h);
+  for(let i=0;i<srcData.data.length;i+=4){
+    const maskVal = activeMask ? activeMask[i/4] : 0;
+    let r=srcData.data[i], g=srcData.data[i+1], b=srcData.data[i+2];
+    r = r + (bgColor[0]-r)*maskVal;
+    g = g + (bgColor[1]-g)*maskVal;
+    b = b + (bgColor[2]-b)*maskVal;
+    out.data[i]=r; out.data[i+1]=g; out.data[i+2]=b; out.data[i+3]=255;
+  }
+  const tmp = document.createElement('canvas');
+  tmp.width=w; tmp.height=h;
+  tmp.getContext('2d').putImageData(out,0,0);
+
+  ctx.fillStyle = FORMAT.bg==='gray' ? '#c8c8c8' : '#ffffff';
+  ctx.fillRect(0,0,OUT_W,OUT_H);
+
+  let cropCX=w/2, cropCY=h/2, cropH=Math.min(w,h), cropW=cropH*aspect;
+
+  if(lastLandmarks){
+    const chin = lastLandmarks[152];
+    const leftEye = lastLandmarks[33], rightEye = lastLandmarks[263];
+    const chinPx = {x:chin.x*w, y:chin.y*h};
+    const eyeMid = {x:(leftEye.x+rightEye.x)/2*w, y:(leftEye.y+rightEye.y)/2*h};
+
+    const eyeToChinPx = Math.abs(chinPx.y-eyeMid.y);
+    const faceHeightPx = eyeToChinPx / 0.46;
+    const targetHeadFraction = ((FORMAT.head.minPct+FORMAT.head.maxPct)/2)/100;
+    cropH = faceHeightPx / targetHeadFraction;
+    cropW = cropH * aspect;
+    cropCX = eyeMid.x;
+
+    const crownY = eyeMid.y - faceHeightPx*0.54;
+    const extraSpace = cropH - faceHeightPx;
+    const topMargin = extraSpace * 0.42;
+    cropCY = (crownY - topMargin) + cropH/2;
+  }
+
+  const sx = cropCX-cropW/2, sy = cropCY-cropH/2;
+  ctx.drawImage(tmp, sx, sy, cropW, cropH, 0, 0, OUT_W, OUT_H);
+
+  const lastCrop = {sx, sy, cropW, cropH};
+  if(lastLandmarks){
+    drawBiometricGuides(ctx, lastLandmarks, lastCrop, OUT_W, OUT_H, FORMAT);
+  }
+
+  document.getElementById('rulerW').textContent = FORMAT.w + ' mm';
+  document.getElementById('rulerH').textContent = FORMAT.h + ' mm';
+}
+
+// Draws translucent tolerance bands (head-height, eye-height, centering) plus
+// the fixed chin line, all derived from the official mm spec. The
+// "Abstand Kinn bis Kopfhöhe" dimension bracket sits on the RIGHT edge.
+function drawBiometricGuides(ctx, landmarks, crop, outW, outH, fmt){
+  const {sx, sy, cropW, cropH} = crop;
+  const toOut = (x,y)=>({ x:(x-sx)/cropW*outW, y:(y-sy)/cropH*outH });
+  const w = workCanvas.width, h = workCanvas.height;
+  const px = (i)=>({x:landmarks[i].x*w, y:landmarks[i].y*h});
+
+  const leftEye = px(33), rightEye = px(263);
+  const eyeMid = {x:(leftEye.x+rightEye.x)/2, y:(leftEye.y+rightEye.y)/2};
+  const chin = px(152);
+  const mouthTop = px(13), mouthBottom = px(14);
+  const mouthMid = {x:(mouthTop.x+mouthBottom.x)/2, y:(mouthTop.y+mouthBottom.y)/2};
+  const faceHeightPx = Math.abs(chin.y-eyeMid.y)/0.46;
+  const crownY = eyeMid.y - faceHeightPx*0.54;
+
+  const chinO = toOut(chin.x, chin.y);
+  const crownO = toOut(eyeMid.x, crownY);
+  const mouthO = toOut(mouthMid.x, mouthMid.y);
+  const centerXO = toOut(eyeMid.x, 0).x;
+
+  const outPxPerMm = outH / fmt.h;
+  const mmFromBottom = (yOut)=> ((outH-yOut)/outPxPerMm).toFixed(1);
+  const yForHeadHeightMm = (mm)=> chinO.y - mm*outPxPerMm;
+
+  ctx.save();
+
+  // Nasenbereich (centering tolerance)
+  const centerTolFrac = 0.08;
+  ctx.fillStyle = 'rgba(70,70,70,0.14)';
+  ctx.fillRect(centerXO-outW*centerTolFrac, 0, outW*centerTolFrac*2, outH);
+  ctx.save();
+  ctx.translate(centerXO, outH*0.5);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillStyle = 'rgba(50,50,50,0.55)';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Nasenbereich', 0, 0);
+  ctx.restore();
+  ctx.textAlign = 'left';
+
+  // Kopfhöhe-Bänder
+  const yMax = yForHeadHeightMm(fmt.headMm.max);
+  const yMid = yForHeadHeightMm((fmt.headMm.min+fmt.headMm.max)/2);
+  const yMin = yForHeadHeightMm(fmt.headMm.min);
+  ctx.fillStyle = 'rgba(90,90,90,0.30)';
+  ctx.fillRect(0, Math.max(0,yMax), outW, Math.max(0,yMid-Math.max(0,yMax)));
+  ctx.fillStyle = 'rgba(90,90,90,0.18)';
+  ctx.fillRect(0, yMid, outW, yMin-yMid);
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = 'rgba(40,40,40,0.75)';
+  ctx.fillText(`Kopfhöhe ideal — ${mmFromBottom(yMax)}–${mmFromBottom(yMid)}mm ab Unterkante`, 6, Math.max(12,yMax+13));
+  ctx.fillText(`Kopfhöhe min. — ${mmFromBottom(yMid)}–${mmFromBottom(yMin)}mm ab Unterkante`, 6, yMin-4);
+
+  // Augenbereich
+  const eyeMidOut = toOut(eyeMid.x, eyeMid.y).y;
+  const eyeBandTopY = eyeMidOut - 3*outPxPerMm;
+  const eyeBandBottomY = eyeMidOut + 3*outPxPerMm;
+  ctx.fillStyle = 'rgba(70,110,220,0.20)';
+  ctx.fillRect(0, eyeBandTopY, outW, eyeBandBottomY-eyeBandTopY);
+  ctx.fillStyle = 'rgba(30,60,150,0.85)';
+  ctx.fillText(`Augenbereich (Richtwert) — ${mmFromBottom(eyeBandBottomY)}–${mmFromBottom(eyeBandTopY)}mm ab Unterkante`, 6, eyeBandTopY-4);
+
+  // Mund
+  ctx.strokeStyle = 'rgba(60,140,255,0.5)';
+  ctx.setLineDash([6,5]);
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(0,mouthO.y); ctx.lineTo(outW,mouthO.y); ctx.stroke();
+  ctx.fillStyle = 'rgba(30,60,150,0.75)';
+  ctx.fillText('Mund', 6, mouthO.y-4);
+
+  // Kinnlinie (fixed reference)
+  ctx.setLineDash([]);
+  ctx.strokeStyle = 'rgba(20,20,20,0.75)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0,chinO.y); ctx.lineTo(outW,chinO.y); ctx.stroke();
+  ctx.fillStyle = 'rgba(20,20,20,0.85)';
+  ctx.font = '12px sans-serif';
+  ctx.fillText(`Kinnlinie — ${mmFromBottom(chinO.y)}mm ab Unterkante`, 6, chinO.y-4);
+
+  // Abstand Kinn bis Kopfhöhe — dimension bracket, now on the RIGHT edge
+  const bx = outW - 12;
+  ctx.strokeStyle = 'rgba(20,20,20,0.6)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(bx, crownO.y); ctx.lineTo(bx, chinO.y);
+  ctx.moveTo(bx-5, crownO.y); ctx.lineTo(bx+5, crownO.y);
+  ctx.moveTo(bx-5, chinO.y); ctx.lineTo(bx+5, chinO.y);
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(bx-13, (crownO.y+chinO.y)/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(20,20,20,0.7)';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('Abstand Kinn bis Kopfhöhe', 0, 0);
+  ctx.restore();
+
+  ctx.fillStyle = 'rgba(30,60,150,0.9)';
+  [leftEye, rightEye].forEach(p=>{
+    const o = toOut(p.x,p.y);
+    ctx.beginPath(); ctx.arc(o.x,o.y,3,0,Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+}
+
+/* ---------------- Upload ---------------- */
+const fileInput = document.getElementById('fileInput');
+fileInput.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file){ fileInput.value=''; return; }
+  if(!file.type.startsWith('image/')){
+    fileInput.value=''; return;
+  }
+  initModels(); // kick off (lazy) model loading in parallel with reading the file
+
+  previewSection.style.display = 'block';
+  errorMsg.style.display = 'none';
+  buySection.classList.remove('show');
+  requestAnimationFrame(()=> previewSection.scrollIntoView({behavior:'smooth', block:'start'}));
+
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    sourceImg = new Image();
+    sourceImg.onload = ()=>{
+      drawOriginalPreview();
+      runPipeline().catch(err=>{
+        console.error('Pipeline-Fehler:', err);
+        stopStepLoop();
+        errorMsg.textContent = 'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.';
+        errorMsg.style.display = 'block';
+      });
+    };
+    sourceImg.onerror = ()=>{
+      errorMsg.textContent = 'Foto konnte nicht geladen werden. Bitte versuchen Sie es erneut.';
+      errorMsg.style.display = 'block';
+    };
+    sourceImg.src = ev.target.result;
+  };
+  reader.onerror = ()=>{
+    errorMsg.textContent = 'Datei konnte nicht gelesen werden. Bitte versuchen Sie es erneut.';
+    errorMsg.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+  fileInput.value = '';
+});
+
+/* ---------------- Countdown (repeats once it hits zero) ---------------- */
+const COUNTDOWN_START = 7*3600 + 42*60 + 33;
+let countdownLeft = COUNTDOWN_START;
+function renderCountdown(){
+  const h = Math.floor(countdownLeft/3600);
+  const m = Math.floor((countdownLeft%3600)/60);
+  const s = countdownLeft%60;
+  document.getElementById('countdown').textContent = `${h}h ${m}min ${s}s`;
+}
+renderCountdown();
+setInterval(()=>{
+  countdownLeft--;
+  if(countdownLeft < 0) countdownLeft = COUNTDOWN_START;
+  renderCountdown();
+}, 1000);
+
+/* ---------------- Payment (placeholder — no backend yet) ---------------- */
+document.getElementById('payBtn').addEventListener('click', ()=>{
+  const agb = document.getElementById('agbCheckbox');
+  if(!agb.checked){
+    agb.focus();
+    return;
+  }
+  const note = document.getElementById('payNote');
+  note.style.display = 'block';
+});
+</script>
+</body>
+</html>
