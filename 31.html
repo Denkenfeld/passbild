@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>PIX KI-Studio — Ihr Biometrisches Foto</title>
+<style>
+:root{
+  --ink:#1f2420;
+  --sub:#6b7268;
+  --paper:#f6f4ef;
+  --line:#e3ddd0;
+  --card:#ffffff;
+  --beige:#e9e0cf;
+  --beige-dark:#d9cbac;
+  --accent:#2fbf71;
+  --accent-glow:#7be8ab;
+  --accent-dark:#1f8a52;
+  --err:#b3402f;
+  --radius:22px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------------- Sticky header ---------------- */
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:rgba(246,244,239,.92);
+  backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line);
+  padding:12px 18px 10px;
+}
+.topbar .brand{
+  font-size:1.15rem;
+  font-weight:800;
+  letter-spacing:.2px;
+  line-height:1.15;
+}
+.topbar .tagline{
+  font-size:.86rem;
+  color:var(--sub);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* ---------------- Animated logo (topbar) ---------------- */
+.logo-container{
+  text-align:center;
+  width:100%;
+  cursor:pointer;
+}
+.logo-wrapper{
+  margin-bottom:0;
+}
+.logo-svg{
+  width:100%;
+  max-width:340px;
+  height:auto;
+  vertical-align:middle;
+  overflow:visible;
+  display:inline-block;
+}
+.brand-text{
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size:32px;
+  font-weight:300;
+  fill:var(--ink);
+  letter-spacing:1.2px;
+}
+.brand-bold{
+  font-weight:900;
+  fill:#d97855;
+}
+.animated-line{
+  stroke-dasharray:460;
+  stroke-dashoffset:460;
+  animation:drawLine 1.2s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes drawLine{
+  0%{ stroke-dashoffset:460; }
+  100%{ stroke-dashoffset:0; }
+}
+.slogan-container{
+  overflow:visible;
+  margin-top:-4px;
+  display:inline-block;
+  width:100%;
+  max-width:340px;
+}
+.slogan{
+  font-size:.72rem;
+  font-weight:400;
+  color:var(--sub);
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  white-space:nowrap;
+  display:inline-block;
+  opacity:0;
+  transform:translateY(-25px);
+  animation:slideDownFromCenter 1.0s cubic-bezier(0.16,1,0.3,1) 1.0s forwards;
+}
+@keyframes slideDownFromCenter{
+  0%{ transform:translateY(-25px); opacity:0; }
+  100%{ transform:translateY(0); opacity:1; }
+}
+.countdown-slot{
+  display:inline-block;
+  position:relative;
+  width:1.1em;
+  height:1.2em;
+  vertical-align:-0.02em;
+  text-align:center;
+  overflow:hidden;
+}
+.number{
+  position:absolute;
+  top:2px;
+  left:0;
+  right:0;
+  opacity:0;
+  font-weight:700;
+  color:var(--ink);
+  line-height:1.2em;
+}
+.num-9{
+  opacity:1;
+  transform:translateY(0);
+  animation:stayThenFall 1.2s cubic-bezier(0.2,0.8,0.2,1) 1.9s forwards;
+}
+.num-8{
+  animation:fallAndOut 1.2s cubic-bezier(0.2,0.8,0.2,1) 2.3s forwards;
+}
+.num-7{
+  animation:fallAndOut 1.2s cubic-bezier(0.2,0.8,0.2,1) 3.1s forwards;
+}
+.num-6{
+  animation:fallAndOut 1.2s cubic-bezier(0.2,0.8,0.2,1) 3.9s forwards;
+}
+.num-5{
+  animation:fallAndPulse 2.0s cubic-bezier(0.2,0.8,0.2,1) 4.7s forwards;
+}
+@keyframes stayThenFall{
+  0%{ transform:translateY(0); opacity:1; }
+  100%{ transform:translateY(20px); opacity:0; }
+}
+@keyframes fallAndOut{
+  0%{ transform:translateY(-20px); opacity:0; }
+  20%{ opacity:1; }
+  70%{ transform:translateY(0); opacity:1; }
+  100%{ transform:translateY(20px); opacity:0; }
+}
+@keyframes fallAndPulse{
+  0%{ transform:translateY(-20px); opacity:0; }
+  20%{ transform:translateY(0) scale(1); opacity:1; }
+  40%{ transform:translateY(0) scale(1.2); color:#d97855; }
+  60%{ transform:translateY(0) scale(1); color:var(--ink); }
+  80%{ transform:translateY(0) scale(1.2); color:#d97855; }
+  100%{ transform:translateY(0) scale(1.12); color:#d97855; opacity:1; }
+}
+
+.wrap{
+  max-width:460px;
+  margin:0 auto;
+  padding:22px 16px 60px;
+}
+
+/* ---------------- Upload button ---------------- */
+.upload-cta{
+  position:relative;
+  display:block;
+  width:100%;
+  aspect-ratio:907/548;
+  border-radius:22px;
+  overflow:hidden;
+  background-color:var(--ink);
+  background-image:url('pixbio1.jpg');
+  background-size:cover;
+  background-position:center;
+  border:none;
+  cursor:pointer;
+  box-shadow:0 14px 30px -12px rgba(31,36,32,.5);
+  transition:transform .15s ease;
+}
+.upload-cta:hover{ transform:translateY(-2px); }
+.upload-cta:active{ transform:translateY(0); }
+.upload-cta::before{
+  content:"";
+  position:absolute; inset:0;
+  background:linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.32) 38%, rgba(0,0,0,0) 65%);
+}
+.upload-cta .cta-label{
+  position:absolute;
+  left:0; right:0; bottom:0;
+  padding:20px 20px 22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  color:#fff;
+  font-size:1.35rem;
+  font-weight:800;
+  letter-spacing:.2px;
+  text-shadow:0 2px 10px rgba(0,0,0,.35);
+}
+.upload-cta .ic-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.upload-cta .ic-wrap::before,
+.upload-cta .ic-wrap::after{
+  content:"";
+  position:absolute;
+  left:50%; top:50%;
+  width:2.4rem; height:2.4rem;
+  border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.75);
+  transform:translate(-50%,-50%) scale(1);
+  opacity:0;
+  animation:ctaPulse 2.6s ease-out infinite;
+  pointer-events:none;
+}
+.upload-cta .ic-wrap::after{ animation-delay:1.3s; }
+@keyframes ctaPulse{
+  0%{ transform:translate(-50%,-50%) scale(1); opacity:.55; }
+  100%{ transform:translate(-50%,-50%) scale(2.6); opacity:0; }
+}
+.upload-cta .ic{ font-size:2.4rem; position:relative; top:3px; z-index:1; }
+#fileInput{ display:none; }
+
+.upload-hint{
+  text-align:center;
+  font-size:.78rem;
+  color:var(--sub);
+  margin-top:10px;
+}
+
+/* ---------------- Foto-Set Vorschau (nur vor dem Fotografieren sichtbar) ---------------- */
+.fsg-section{
+  width:100%;
+  margin-top:22px;
+}
+.fsg-section h1{
+  font-size:1.05rem;
+  font-weight:700;
+  color:#A84E32;
+  letter-spacing:-.2px;
+  text-align:center;
+  margin-bottom:12px;
+}
+.fsg-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  width:100%;
+}
+.fsg-card{
+  background-color:#fff;
+  border:1px solid #E8DECC;
+  border-radius:14px;
+  padding:12px 8px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  box-shadow:0 3px 10px rgba(168,78,50,.04);
+}
+.fsg-icon-container{
+  width:64px;
+  height:64px;
+  background-color:var(--paper);
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:8px;
+  border:1px solid #E8DECC;
+}
+.fsg-icon-container svg{ width:38px; height:38px; }
+.fsg-card h2{
+  font-size:.78rem;
+  font-weight:600;
+  color:#5C2B1B;
+  text-align:center;
+  line-height:1.2;
+}
+
+.fsg-action{
+  width:100%;
+  margin-top:12px;
+}
+.fsg-btn-master{
+  width:100%;
+  background-color:#fff;
+  color:#5C2B1B;
+  border:1px solid #E8DECC;
+  border-radius:16px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  box-shadow:0 4px 14px rgba(168,78,50,.06);
+}
+.fsg-master-title{
+  font-size:.95rem;
+  font-weight:700;
+  color:#5C2B1B;
+  text-align:center;
+  margin-bottom:14px;
+}
+.fsg-preview-icons-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin-bottom:16px;
+  width:100%;
+}
+.fsg-preview-label{
+  font-size:.78rem;
+  font-weight:700;
+  color:#A84E32;
+  white-space:nowrap;
+}
+.fsg-preview-icon-box{
+  background-color:var(--paper);
+  border:1px solid #E8DECC;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:60px;
+  width:60px;
+  flex:none;
+}
+.fsg-preview-icon-box svg{ width:36px; height:36px; }
+.fsg-preview-icon-box.fsg-portrait{
+  width:44px;
+  overflow:hidden;
+  position:relative;
+}
+.fsg-preview-icon-box.fsg-portrait svg{
+  transform:scale(1.3);
+}
+.fsg-master-divider{
+  width:100%;
+  height:1px;
+  background-color:#E8DECC;
+  margin-bottom:14px;
+}
+.fsg-specs-row{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  width:100%;
+}
+.fsg-spec-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:8px;
+}
+.fsg-spec-icon{
+  width:48px;
+  height:48px;
+  background-color:var(--paper);
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #E8DECC;
+}
+.fsg-spec-icon svg{ width:28px; height:28px; }
+.fsg-spec-text{
+  font-size:.78rem;
+  font-weight:600;
+  line-height:1.25;
+  color:#5C2B1B;
+}
+
+.fsg-tips{ margin-top:18px; }
+.fsg-tips h3{
+  font-size:.82rem; font-weight:700; color:#A84E32;
+  text-align:center; margin-bottom:10px;
+}
+.fsg-tips-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+}
+.fsg-tip{
+  display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center;
+}
+.fsg-tip-icon{
+  width:44px; height:44px; background:#fff; border:1px solid #E8DECC;
+  border-radius:12px; display:flex; align-items:center; justify-content:center;
+}
+.fsg-tip-icon svg{ width:26px; height:26px; }
+.fsg-tip span{ font-size:.66rem; font-weight:600; color:#5C2B1B; line-height:1.2; }
+
+.fsg-cta-btn{
+  position:relative;
+  margin-top:16px;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  background:linear-gradient(155deg, var(--beige) 0%, var(--beige-dark) 100%);
+  border:1px solid #cdbd97;
+  border-radius:16px;
+  padding:15px;
+  color:#5C2B1B;
+  font-size:.98rem;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow:0 8px 18px -10px rgba(90,70,30,.35);
+  transition:transform .15s ease;
+}
+.fsg-cta-btn:hover{ transform:translateY(-2px); }
+.fsg-cta-btn:active{ transform:translateY(0); }
+.fsg-cta-ic-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.fsg-cta-ic-wrap::before,
+.fsg-cta-ic-wrap::after{
+  content:"";
+  position:absolute;
+  left:50%; top:50%;
+  width:2.1rem; height:2.1rem;
+  border-radius:50%;
+  border:1.5px solid rgba(92,43,27,.5);
+  transform:translate(-50%,-50%) scale(1);
+  opacity:0;
+  animation:ctaPulse 2.6s ease-out infinite;
+  pointer-events:none;
+}
+.fsg-cta-ic-wrap::after{ animation-delay:1.3s; }
+.fsg-cta-btn input{ display:none; }
+
+/* ---------------- Footer ---------------- */
+.site-footer{
+  max-width:460px; margin:18px auto 0; padding:14px 16px 26px;
+  display:flex; justify-content:center; flex-wrap:wrap; gap:6px 10px;
+  font-size:.7rem; color:#a7ab9f;
+}
+.site-footer a{ color:#a7ab9f; text-decoration:underline; }
+
+/* ---------------- Preview ---------------- */
+.preview-section{ margin-top:26px; }
+.canvas-wrap{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  border-radius:var(--radius);
+  overflow:hidden;
+  padding:14px;
+  background:
+    repeating-linear-gradient(135deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 6px),
+    linear-gradient(155deg, var(--beige) 0%, var(--beige-dark) 100%);
+  border:1px solid #d5c9ac;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.6), inset 0 -6px 14px rgba(150,130,90,.12);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.photo-frame{
+  position:relative;
+  aspect-ratio:35/45;
+  height:78%;
+  width:auto;
+  max-width:78%;
+  max-height:78%;
+  border:1px solid #b9b9b9;
+  box-shadow:0 2px 12px rgba(0,0,0,.14);
+  background:#fff;
+  border-radius:10px;
+  overflow:hidden;
+}
+.photo-frame canvas, .photo-frame img{ width:100%; height:100%; display:block; object-fit:cover; }
+
+/* ---- Biometrie-Hilfslinien: liegen HINTER dem Foto, im Canvas-Bereich (nur links vom Foto sichtbar), das Foto selbst bleibt unberührt ---- */
+.guide-overlay{
+  position:absolute;
+  inset:14px;
+  display:none;
+  pointer-events:none;
+}
+.guide-overlay.show{ display:block; }
+.guide-band, .guide-line{
+  position:absolute; left:0; width:52%;
+  transform:translateY(-50%);
+}
+.guide-band{
+  height:20px;
+  background:rgba(250,247,237,.88);
+  border-top:1px solid rgba(255,255,255,.9);
+  border-bottom:1px solid rgba(255,255,255,.9);
+}
+.guide-line{
+  height:2px;
+  background:rgba(250,247,237,.92);
+}
+.guide-label{
+  position:absolute; top:-17px; left:4px;
+  font-size:11px; font-weight:700;
+  color:#fffdf6;
+  text-shadow:0 1px 2px rgba(90,70,40,.55);
+  white-space:nowrap;
+}
+
+/* ---- Carousel ---- */
+.carousel{ position:relative; width:100%; height:100%; }
+.carousel-viewport{ width:100%; height:100%; overflow:hidden; border-radius:inherit; }
+.carousel-track{
+  display:flex; width:100%; height:100%;
+  transition:transform .35s cubic-bezier(.4,0,.2,1);
+}
+.car-slide{
+  flex:0 0 100%; width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+}
+.car-nav{
+  position:absolute; top:50%; transform:translateY(-50%);
+  z-index:30; width:32px; height:32px; border-radius:50%;
+  background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.08);
+  box-shadow:0 4px 10px rgba(0,0,0,.18);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.15rem; line-height:1; color:var(--ink); cursor:pointer;
+  transition:transform .15s ease, background .15s ease;
+}
+.car-nav:hover{ transform:translateY(-50%) scale(1.07); background:#fff; }
+.car-nav:active{ transform:translateY(-50%) scale(.96); }
+.car-prev{ left:8px; }
+.car-next{ right:8px; }
+.carousel-dots{
+  display:flex; justify-content:center; gap:6px; margin-top:12px;
+}
+.car-dot{
+  width:6px; height:6px; border-radius:50%; background:#c9bd9c;
+  cursor:pointer; transition:background .2s ease, transform .2s ease;
+}
+.car-dot.active{ background:var(--accent-dark); transform:scale(1.35); }
+.thumb-strip{
+  display:flex; gap:8px; margin-top:12px; padding:2px 1px 6px;
+  width:100%;
+}
+.thumb-item{
+  flex:1 1 0; width:auto; height:64px; border-radius:10px;
+  border:2px solid transparent; padding:2px; background:#fff;
+  cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.10);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  transition:border-color .15s ease, transform .15s ease;
+}
+.thumb-item img{ width:100%; height:100%; object-fit:cover; border-radius:6px; display:block; }
+.thumb-item.active{ border-color:var(--accent-dark); transform:translateY(-2px); }
+.car-caption{
+  text-align:center; font-size:.78rem; color:var(--sub); margin-top:8px;
+}
+.ruler-label{
+  display:none;
+  position:absolute; font-size:12px; color:#8a8f97; letter-spacing:.2px;
+  pointer-events:none; white-space:nowrap;
+}
+.ruler-w{ left:50%; bottom:-20px; transform:translateX(-50%); }
+.ruler-h{ top:50%; left:-9px; transform:translate(-100%,-50%) rotate(-90deg); transform-origin:right center; }
+
+/* ---- scan effect overlay (reused from effekt-11-scan-mesh) ---- */
+.scanline{
+  position:absolute; left:0; right:0; height:34px;
+  top:-40px;
+  background:linear-gradient(to bottom, transparent, rgba(217,120,85,.55) 45%, rgba(232,168,136,.95) 50%, rgba(217,120,85,.55) 55%, transparent);
+  filter:blur(0.3px);
+  box-shadow:0 0 22px 6px rgba(217,120,85,.55);
+  opacity:0;
+  pointer-events:none;
+}
+.photo-frame.scanning .scanline{ opacity:1; animation:scanY 2.2s cubic-bezier(.65,0,.35,1) infinite; }
+@keyframes scanY{ 0%{top:-10%;} 50%{top:100%;} 100%{top:-10%;} }
+
+.mesh-subtle{
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(217,120,85,.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(217,120,85,.16) 1px, transparent 1px);
+  background-size:14.28% 14.28%;
+  opacity:0;
+  pointer-events:none;
+}
+.photo-frame.scanning .mesh-subtle{ animation:meshFadeSubtle 4.2s ease-in-out infinite; }
+@keyframes meshFadeSubtle{ 0%,100%{opacity:.08;} 50%{opacity:.3;} }
+
+.step-overlay{
+  position:absolute; left:0; right:0; bottom:0;
+  padding:10px 14px 12px;
+  background:linear-gradient(to top, rgba(255,255,255,.94) 45%, rgba(255,255,255,0));
+  display:flex; flex-direction:column; gap:7px;
+  opacity:0; transition:opacity .3s ease;
+  z-index:5;
+}
+.photo-frame.scanning .step-overlay{ opacity:1; }
+.step-text{ font-size:12px; font-weight:700; color:var(--ink); min-height:15px; }
+.bar-track{ height:4px; border-radius:3px; background:#e3ddd0; overflow:hidden; }
+.bar-fill{ height:100%; width:0%; background:#d97855; border-radius:3px; }
+
+.errbox{
+  margin-top:12px; padding:11px 13px; border-radius:10px;
+  background:#fdecec; color:var(--err); font-size:.85rem; border:1px solid #f3c7c2;
+}
+
+/* ---------------- Buy section ---------------- */
+.buy-section{
+  margin-top:24px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px 18px 22px;
+  opacity:0;
+  transform:translateY(10px);
+  transition:opacity .4s ease, transform .4s ease;
+}
+.buy-section.show{ opacity:1; transform:translateY(0); }
+.buy-section h2{ margin:0 0 8px; font-size:1.05rem; }
+.buy-section .muted{ margin:0 0 16px; font-size:.85rem; color:var(--sub); line-height:1.5; }
+
+.product-row{
+  display:flex; justify-content:space-between; align-items:flex-start;
+  padding:12px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+}
+.product-title{ font-weight:700; font-size:.92rem; }
+.product-sub{ font-size:.8rem; color:var(--sub); margin-top:2px; }
+
+.link-btn{
+  display:block; margin:12px 0 4px; background:none; border:none;
+  color:var(--sub); font-size:.78rem; text-decoration:underline;
+  cursor:pointer; padding:0;
+}
+
+.feature-list{
+  list-style:none; margin:0 0 10px; padding:0;
+  display:flex; flex-direction:column; gap:8px;
+}
+.feature-list li{
+  font-size:.88rem; color:var(--ink); display:flex; align-items:flex-start; gap:8px; line-height:1.4;
+}
+.feature-list .check{
+  flex:none; width:18px; height:18px; border-radius:50%;
+  background:var(--accent); color:#fff; font-size:.72rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center; margin-top:1px;
+}
+
+.price-badge-center{ margin-top:20px; text-align:center; }
+.price-row-center{
+  margin-top:10px; display:flex; align-items:baseline; justify-content:center; gap:10px; flex-wrap:wrap;
+}
+.price-old{ font-size:1.3rem; color:#a3a89e; text-decoration:line-through; }
+.price-new{ font-size:1.9rem; font-weight:800; color:var(--accent-dark); }
+.price-badge{
+  font-size:.72rem; font-weight:700; color:#fff; background:#d97855;
+  padding:4px 9px; border-radius:20px; white-space:nowrap;
+}
+
+.agb-check{
+  display:flex; align-items:flex-start; gap:8px; margin-top:14px;
+  font-size:.78rem; color:var(--sub); line-height:1.4; cursor:pointer;
+}
+.agb-check input{ flex:none; margin-top:2px; width:16px; height:16px; accent-color:var(--accent-dark); cursor:pointer; }
+.agb-check a{ color:var(--sub); text-decoration:underline; }
+
+.pay-btn{
+  width:100%; margin-top:16px; padding:16px; border:none; border-radius:14px;
+  background:var(--accent-dark); color:#fff; font-size:1.02rem; font-weight:800;
+  cursor:pointer; box-shadow:0 10px 22px -10px rgba(31,138,82,.55);
+  transition:transform .15s ease, background .15s ease;
+}
+.pay-btn:hover{ background:#186b3f; transform:translateY(-1px); }
+.pay-btn:active{ transform:translateY(0); }
+
+.legal{ margin:12px 0 0; font-size:.7rem; color:#9aa09a; line-height:1.5; }
+.pay-note{ margin-top:10px; font-size:.78rem; color:var(--sub); text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-container" id="logoArea">
+    <div class="logo-wrapper">
+      <svg viewBox="0 0 520 60" class="logo-svg">
+        <text x="50%" y="32" text-anchor="middle" class="brand-text">
+          FOTO<tspan class="brand-bold">SELBER</tspan>MACHEN<tspan fill="#d97855" font-weight="900">.</tspan>DE
+        </text>
+        <line class="animated-line" x1="30" y1="46" x2="490" y2="46" stroke="#d97855" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <div class="slogan-container">
+      <div class="slogan">
+        Biometrisches Foto mit KI &amp; Handy in
+        <span class="countdown-slot">
+          <span class="number num-9">9</span>
+          <span class="number num-8">8</span>
+          <span class="number num-7">7</span>
+          <span class="number num-6">6</span>
+          <span class="number num-5">5</span>
+        </span>
+        Sekunden
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <label class="upload-cta" id="uploadCta">
+    <span class="cta-label"><span class="ic-wrap"><span class="ic">
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em">
+        <rect x="28" y="16" width="44" height="68" rx="10" stroke="currentColor" stroke-width="3.5"/>
+        <circle cx="50" cy="50" r="14" stroke="currentColor" stroke-width="3.5"/>
+        <circle cx="50" cy="50" r="5" stroke="currentColor" stroke-width="2.5"/>
+        <line x1="42" y1="24" x2="58" y2="24" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="62" cy="24" r="2" fill="currentColor"/>
+      </svg>
+    </span></span><span id="ctaText">Jetzt Foto machen</span></span>
+    <input type="file" id="fileInput" accept="image/*">
+  </label>
+
+  <div class="fsg-section" id="fsgSection">
+    <h1>Dein Foto-Set für Alles:</h1>
+    <div class="fsg-grid">
+      <!-- 1. Führerschein -->
+      <div class="fsg-card">
+        <div class="fsg-icon-container">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="15" y="25" width="70" height="50" rx="6" stroke="#A84E32" stroke-width="3.5"/>
+            <rect x="25" y="38" width="18" height="24" rx="3" stroke="#A84E32" stroke-width="2.5"/>
+            <circle cx="34" cy="46" r="4" stroke="#A84E32" stroke-width="2"/>
+            <path d="M28 58C28 55.5 30.5 54 34 54C37.5 54 40 55.5 40 58" stroke="#A84E32" stroke-width="2" stroke-linecap="round"/>
+            <line x1="48" y1="40" x2="75" y2="40" stroke="#A84E32" stroke-width="3" stroke-linecap="round"/>
+            <line x1="48" y1="50" x2="70" y2="50" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="48" y1="59" x2="62" y2="59" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Führerschein</h2>
+      </div>
+
+      <!-- 2. Visa Global -->
+      <div class="fsg-card">
+        <div class="fsg-icon-container">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="30" stroke="#A84E32" stroke-width="3.5"/>
+            <ellipse cx="50" cy="50" rx="13" ry="30" stroke="#A84E32" stroke-width="2.5"/>
+            <line x1="20" y1="50" x2="80" y2="50" stroke="#A84E32" stroke-width="2.5"/>
+            <line x1="26" y1="35" x2="74" y2="35" stroke="#A84E32" stroke-width="2"/>
+            <line x1="26" y1="65" x2="74" y2="65" stroke="#A84E32" stroke-width="2"/>
+          </svg>
+        </div>
+        <h2>Visa Global</h2>
+      </div>
+
+      <!-- 3. Greencard -->
+      <div class="fsg-card">
+        <div class="fsg-icon-container">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="15" y="28" width="70" height="44" rx="6" stroke="#A84E32" stroke-width="3.5"/>
+            <rect x="25" y="38" width="16" height="22" rx="2" stroke="#A84E32" stroke-width="2.5"/>
+            <line x1="48" y1="41" x2="73" y2="41" stroke="#A84E32" stroke-width="3" stroke-linecap="round"/>
+            <line x1="48" y1="50" x2="65" y2="50" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M72 58L73.5 61H77L74.2 63L75.3 66L72 64.2L68.7 66L69.8 63L67 61H70.5L72 58Z" fill="#A84E32"/>
+          </svg>
+        </div>
+        <h2>Greencard</h2>
+      </div>
+
+      <!-- 4. Gesundheitskarte -->
+      <div class="fsg-card">
+        <div class="fsg-icon-container">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="15" y="28" width="70" height="44" rx="6" stroke="#A84E32" stroke-width="3.5"/>
+            <rect x="23" y="38" width="12" height="10" rx="2" stroke="#A84E32" stroke-width="2"/>
+            <circle cx="68" cy="50" r="12" stroke="#A84E32" stroke-width="2.5"/>
+            <line x1="68" y1="43" x2="68" y2="57" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="61" y1="50" x2="75" y2="50" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Gesundheitskarte</h2>
+      </div>
+
+      <!-- 5. Schülerausweis -->
+      <div class="fsg-card">
+        <div class="fsg-icon-container">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="15" y="25" width="70" height="50" rx="6" stroke="#A84E32" stroke-width="3.5"/>
+            <path d="M50 35L70 42L50 49L30 42L50 35Z" stroke="#A84E32" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M38 46V54C38 56.5 43 58 50 58C57 58 62 56.5 62 54V46" stroke="#A84E32" stroke-width="2" stroke-linecap="round"/>
+            <line x1="28" y1="63" x2="72" y2="63" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Schülerausweis</h2>
+      </div>
+
+      <!-- 6. Offizielle Dokumente -->
+      <div class="fsg-card">
+        <div class="fsg-icon-container">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M28 18H58L72 32V82H28V18Z" stroke="#A84E32" stroke-width="3.5" stroke-linejoin="round"/>
+            <path d="M58 18V32H72" stroke="#A84E32" stroke-width="3.5" stroke-linejoin="round"/>
+            <line x1="36" y1="42" x2="60" y2="42" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="36" y1="52" x2="64" y2="52" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="36" y1="62" x2="52" y2="62" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Offizielle Dokumente</h2>
+      </div>
+    </div>
+
+    <div class="fsg-action">
+      <div class="fsg-btn-master">
+        <div class="fsg-master-title">Dein Download enthält ALLE Dateien</div>
+
+        <div class="fsg-preview-icons-row">
+          <span class="fsg-preview-label">50mmx50mm</span>
+          <div class="fsg-preview-icon-box">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="40" r="16" stroke="#A84E32" stroke-width="3.5"/>
+              <path d="M24 78C24 65.8 35 56 50 56C65 56 76 65.8 76 78" stroke="#A84E32" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="fsg-preview-icon-box fsg-portrait">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="40" r="16" stroke="#A84E32" stroke-width="3.5"/>
+              <path d="M24 78C24 65.8 35 56 50 56C65 56 76 65.8 76 78" stroke="#A84E32" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="fsg-preview-label">35mmx45mm</span>
+        </div>
+
+        <div class="fsg-master-divider"></div>
+
+        <div class="fsg-specs-row">
+          <div class="fsg-spec-item">
+            <div class="fsg-spec-icon">
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="35" cy="35" r="10" stroke="#A84E32" stroke-width="2.5"/>
+                <path d="M21 51C21 44.4 27.4 39 35 39C42.6 39 49 44.4 49 51" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="65" cy="35" r="10" stroke="#A84E32" stroke-width="2.5"/>
+                <path d="M51 51C51 44.4 57.4 39 65 39C72.6 39 79 44.4 79 51" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="35" cy="70" r="10" stroke="#A84E32" stroke-width="2.5"/>
+                <path d="M21 86C21 79.4 27.4 74 35 74C42.6 74 49 79.4 49 86" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="65" cy="70" r="10" stroke="#A84E32" stroke-width="2.5"/>
+                <path d="M51 86C51 79.4 57.4 74 65 74C72.6 74 79 79.4 79 86" stroke="#A84E32" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="fsg-spec-text">Auch für Fotodruck<br>10cm x 15cm</span>
+          </div>
+
+          <div class="fsg-spec-item">
+            <div class="fsg-spec-icon">
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="20" y="15" width="60" height="70" rx="4" stroke="#A84E32" stroke-width="3"/>
+                <circle cx="36" cy="35" r="6" stroke="#A84E32" stroke-width="2"/>
+                <circle cx="64" cy="35" r="6" stroke="#A84E32" stroke-width="2"/>
+                <circle cx="50" cy="58" r="6" stroke="#A84E32" stroke-width="2"/>
+              </svg>
+            </div>
+            <span class="fsg-spec-text">Auch für selber<br>Drucken DIN A4</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <label class="fsg-cta-btn" id="fsgCtaBtn">
+      <span class="fsg-cta-ic-wrap">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="1.6em" height="1.6em">
+          <rect x="28" y="16" width="44" height="68" rx="10" stroke="currentColor" stroke-width="4.5"/>
+          <circle cx="50" cy="50" r="14" stroke="currentColor" stroke-width="4.5"/>
+          <circle cx="50" cy="50" r="5" stroke="currentColor" stroke-width="3"/>
+          <line x1="42" y1="24" x2="58" y2="24" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span>Jetzt Foto machen</span>
+      <input type="file" id="fileInput2" accept="image/*">
+    </label>
+
+    <div class="fsg-tips">
+      <h3>So gelingt dein Foto mit dem Handy</h3>
+      <div class="fsg-tips-grid">
+        <div class="fsg-tip">
+          <div class="fsg-tip-icon">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="34" y="10" width="32" height="80" rx="7" stroke="#A84E32" stroke-width="4"/>
+              <line x1="34" y1="72" x2="66" y2="72" stroke="#A84E32" stroke-width="3"/>
+              <line x1="50" y1="6" x2="50" y2="94" stroke="#A84E32" stroke-width="2" stroke-dasharray="4 4"/>
+            </svg>
+          </div>
+          <span>Handy&nbsp;gerade halten</span>
+        </div>
+        <div class="fsg-tip">
+          <div class="fsg-tip-icon">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="16" stroke="#A84E32" stroke-width="4"/>
+              <line x1="50" y1="10" x2="50" y2="22" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+              <line x1="50" y1="78" x2="50" y2="90" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+              <line x1="10" y1="50" x2="22" y2="50" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+              <line x1="78" y1="50" x2="90" y2="50" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+              <line x1="21" y1="21" x2="29" y2="29" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+              <line x1="71" y1="71" x2="79" y2="79" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+              <line x1="79" y1="21" x2="71" y2="29" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+              <line x1="29" y1="71" x2="21" y2="79" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>Gutes,&nbsp;helles Licht</span>
+        </div>
+        <div class="fsg-tip">
+          <div class="fsg-tip-icon">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="12" y="12" width="76" height="76" rx="8" stroke="#A84E32" stroke-width="4"/>
+              <circle cx="50" cy="40" r="14" stroke="#A84E32" stroke-width="4"/>
+              <path d="M26 80C26 65.6 36.5 56 50 56C63.5 56 74 65.6 74 80" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>Einfarbiger&nbsp;Hintergrund</span>
+        </div>
+        <div class="fsg-tip">
+          <div class="fsg-tip-icon">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="38" r="18" stroke="#A84E32" stroke-width="4"/>
+              <circle cx="43" cy="36" r="2.4" fill="#A84E32"/>
+              <circle cx="57" cy="36" r="2.4" fill="#A84E32"/>
+              <path d="M42 46C44.5 48.5 55.5 48.5 58 46" stroke="#A84E32" stroke-width="3" stroke-linecap="round"/>
+              <path d="M24 84C24 70 35.5 60 50 60C64.5 60 76 70 76 84" stroke="#A84E32" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>Neutral&nbsp;geradeaus schauen</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="preview-section" id="previewSection" style="display:none;">
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="guide-overlay" id="guideOverlay">
+        <div class="guide-band" id="guideKopf"><span class="guide-label">Kopf</span></div>
+        <div class="guide-band" id="guideAugen"><span class="guide-label">Augen</span></div>
+        <div class="guide-line" id="guideKinn"><span class="guide-label">Kinn</span></div>
+      </div>
+      <div class="carousel" id="carousel">
+        <button class="car-nav car-prev" id="carPrev" type="button" aria-label="Zurück" style="display:none;">‹</button>
+        <div class="carousel-viewport" id="carViewport">
+          <div class="carousel-track" id="carTrack">
+            <div class="car-slide">
+              <div class="photo-frame" id="photoFrame">
+                <canvas id="previewCanvas"></canvas>
+                <span class="ruler-label ruler-w" id="rulerW"></span>
+                <span class="ruler-label ruler-h" id="rulerH"></span>
+                <div class="scanline"></div>
+                <div class="mesh-subtle"></div>
+                <div class="step-overlay">
+                  <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+                  <div class="step-text" id="stepText"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="car-nav car-next" id="carNext" type="button" aria-label="Weiter" style="display:none;">›</button>
+      </div>
+    </div>
+    <div class="carousel-dots" id="carDots" style="display:none;"></div>
+    <div class="car-caption" id="carCaption">35×45 mm — Führerschein / Krankenkasse</div>
+    <div class="thumb-strip" id="thumbStrip" style="display:none;"></div>
+    <div class="errbox" id="errorMsg" style="display:none;"></div>
+  </div>
+
+  <div class="buy-section" id="buySection">
+    <h2>Ihr Biometrisches Foto Set wurde erfolgreich erstellt:</h2>
+
+    <ul class="feature-list">
+      <li><span class="check">✓</span> 35×45&nbsp;mm für Führerschein / Krankenkasse</li>
+      <li><span class="check">✓</span> 10×15&nbsp;cm Vorlage mit 4&nbsp;Fotos 35×45&nbsp;mm</li>
+      <li><span class="check">✓</span> 50×50&nbsp;mm für Visa USA / Global</li>
+      <li><span class="check">✓</span> 10×15&nbsp;cm Vorlage mit 2&nbsp;Fotos 50×50&nbsp;mm</li>
+      <li><span class="check">✓</span> DIN&nbsp;A4 Vorlage mit 4&nbsp;Fotos 35×45&nbsp;mm &amp; 4&nbsp;Fotos 50×50&nbsp;mm</li>
+    </ul>
+    <p class="muted">Alle Dateien in hoher Auflösung für Druck &amp; digitalen Gebrauch.</p>
+
+    <div class="price-badge-center">
+      <span class="price-badge">Aktion noch <span id="countdown">7h 42min 33s</span></span>
+    </div>
+
+    <div class="price-row-center">
+      <span class="price-old">9,90&nbsp;€</span>
+      <span class="price-new">3,90&nbsp;€</span>
+    </div>
+
+    <button class="pay-btn" id="payBtn" type="button">Sicher bezahlen &amp; Download freischalten</button>
+    <div class="pay-note" id="payNote" style="display:none;">Zahlungsanbindung wird vorbereitet …</div>
+
+    <label class="agb-check">
+      <input type="checkbox" id="agbCheckbox">
+      <span>Ich habe die <a href="#" target="_blank" rel="noopener">AGB</a> und <a href="#" target="_blank" rel="noopener">Widerrufsbelehrung</a> gelesen und akzeptiere diese.</span>
+    </label>
+
+    <p class="legal">Mit Klick auf „Sicher bezahlen" bestätigen Sie den Kauf. Da es sich um eine individuell angefertigte digitale Datei handelt, ist eine Rückgabe/Widerruf gemäß § 312g Abs. 2 Nr. 1 BGB ausdrücklich ausgeschlossen. Bitte prüfen Sie die Vorschau sorgfältig vor dem Kauf.</p>
+  </div>
+
+</div>
+
+<div class="site-footer">
+  <a href="#footer-agb" id="footer-agb">AGB</a>
+  <a href="#footer-impressum" id="footer-impressum">Impressum</a>
+  <a href="#footer-datenschutz" id="footer-datenschutz">Datenschutz</a>
+  <a href="#footer-cookies" id="footer-cookies">Cookies</a>
+</div>
+
+<script type="module">
+import { FaceLandmarker, FilesetResolver, ImageSegmenter } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+import { removeBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm";
+
+/* ---------------- Fixed format ----------------
+   One-click product: no manual format switching. Default is the German
+   driver's-license/health-insurance-card photo (35×45mm, official head
+   height 32-36mm). The "Für Visa USA / Global" link is a placeholder for now. */
+const FORMAT = {
+  label:"Deutschland — Führerschein / Krankenkasse (35×45mm)",
+  w:35, h:45, bg:"white",
+  headMm:{min:32,max:36}
+};
+FORMAT.head = { minPct: FORMAT.headMm.min/FORMAT.h*100, maxPct: FORMAT.headMm.max/FORMAT.h*100 };
+
+const FORMAT_VISA = {
+  label:"Visa USA / Global (50×50mm)",
+  w:50, h:50, bg:"white",
+  headMm:{min:28,max:33}
+};
+FORMAT_VISA.head = { minPct: FORMAT_VISA.headMm.min/FORMAT_VISA.h*100, maxPct: FORMAT_VISA.headMm.max/FORMAT_VISA.h*100 };
+
+/* ---------------- MediaPipe + imgly setup (lazy) ---------------- */
+let faceLandmarker, selfieSegmenter, modelsReady=false;
+let modelsPromise = null;
+function initModels(){
+  if(modelsPromise) return modelsPromise; // already loading/loaded — share the same promise
+  modelsPromise = (async ()=>{
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"},
+      runningMode:"IMAGE", numFaces:1, outputFaceBlendshapes:true
+    });
+    selfieSegmenter = await ImageSegmenter.createFromOptions(vision, {
+      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.tflite"},
+      runningMode:"IMAGE", outputCategoryMask:true
+    });
+    modelsReady = true;
+  })();
+  return modelsPromise;
+}
+
+function loadImageEl(url){
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    img.onload = ()=>resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function blurMask(raw, w, h, passes=2, radius=2){
+  let src = raw;
+  for(let p=0; p<passes; p++){
+    const dst = new Float32Array(w*h);
+    for(let y=0;y<h;y++){
+      for(let x=0;x<w;x++){
+        let sum=0, count=0;
+        for(let dy=-radius; dy<=radius; dy++){
+          const yy=y+dy; if(yy<0||yy>=h) continue;
+          for(let dx=-radius; dx<=radius; dx++){
+            const xx=x+dx; if(xx<0||xx>=w) continue;
+            sum += src[yy*w+xx]; count++;
+          }
+        }
+        dst[y*w+x] = sum/count;
+      }
+    }
+    src = dst;
+  }
+  return src;
+}
+
+function trimMaskEdge(mask, w, h, radius){
+  if(radius<=0) return mask;
+  const tmp = new Float32Array(w*h);
+  for(let y=0;y<h;y++){
+    const row = y*w;
+    for(let x=0;x<w;x++){
+      let m = 0;
+      const x0=Math.max(0,x-radius), x1=Math.min(w-1,x+radius);
+      for(let xx=x0;xx<=x1;xx++){ const v=mask[row+xx]; if(v>m) m=v; }
+      tmp[row+x]=m;
+    }
+  }
+  const out = new Float32Array(w*h);
+  for(let x=0;x<w;x++){
+    for(let y=0;y<h;y++){
+      let m = 0;
+      const y0=Math.max(0,y-radius), y1=Math.min(h-1,y+radius);
+      for(let yy=y0;yy<=y1;yy++){ const v=tmp[yy*w+x]; if(v>m) m=v; }
+      out[y*w+x]=m;
+    }
+  }
+  return out;
+}
+
+function applyBodyRegionGuard(mask, w, h, landmarks){
+  const chin = landmarks[152];
+  const leftEye = landmarks[33], rightEye = landmarks[263];
+  const eyeMid = {x:(leftEye.x+rightEye.x)/2*w, y:(leftEye.y+rightEye.y)/2*h};
+  const chinPx = {x:chin.x*w, y:chin.y*h};
+  const faceH = Math.abs(chinPx.y - eyeMid.y) / 0.46;
+  const cx = eyeMid.x;
+  const cy = eyeMid.y + faceH*0.75;
+  const rx = faceH*1.35;
+  const ry = faceH*2.3;
+  const out = new Float32Array(w*h);
+  for(let y=0;y<h;y++){
+    const dy = (y-cy)/ry;
+    for(let x=0;x<w;x++){
+      const idx = y*w+x;
+      const dx = (x-cx)/rx;
+      const d = dx*dx + dy*dy;
+      const guard = d<=1 ? 0 : 1/(1+Math.exp(-(d-1.02)*14));
+      out[idx] = Math.max(mask[idx], guard);
+    }
+  }
+  return out;
+}
+
+function computeTiltAngleDeg(landmarks, w, h){
+  const p1 = {x:landmarks[33].x*w, y:landmarks[33].y*h};
+  const p2 = {x:landmarks[263].x*w, y:landmarks[263].y*h};
+  let angle = Math.atan2(p2.y-p1.y, p2.x-p1.x) * 180/Math.PI;
+  if(angle > 90) angle -= 180;
+  if(angle < -90) angle += 180;
+  return angle;
+}
+
+function rotateCanvasToUpright(srcCanvas, angleDeg){
+  const rad = -angleDeg * Math.PI/180;
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+  const newW = Math.round(w*cos + h*sin);
+  const newH = Math.round(w*sin + h*cos);
+  const out = document.createElement('canvas');
+  out.width = newW; out.height = newH;
+  const octx = out.getContext('2d');
+  octx.fillStyle = '#ffffff';
+  octx.fillRect(0,0,newW,newH);
+  octx.translate(newW/2, newH/2);
+  octx.rotate(rad);
+  octx.drawImage(srcCanvas, -w/2, -h/2);
+  return out;
+}
+
+function getBlendshapeScore(list, name){
+  if(!list || !list.categories) return 0;
+  const c = list.categories.find(c=>c.categoryName===name);
+  return c ? c.score : 0;
+}
+
+let mouthOk=true, eyesOk=true, tiltOk=true;
+const _origDetect = FaceLandmarker.prototype.detect;
+FaceLandmarker.prototype.detect = function(img){
+  const res = _origDetect.call(this, img);
+  const bs = (res.faceBlendshapes && res.faceBlendshapes[0]) || null;
+  const jawOpen = getBlendshapeScore(bs,'jawOpen');
+  const eyeBlinkL = getBlendshapeScore(bs,'eyeBlinkLeft');
+  const eyeBlinkR = getBlendshapeScore(bs,'eyeBlinkRight');
+  const lookL = getBlendshapeScore(bs,'eyeLookOutLeft')+getBlendshapeScore(bs,'eyeLookOutRight');
+  mouthOk = jawOpen < 0.25;
+  eyesOk = eyeBlinkL < 0.5 && eyeBlinkR < 0.5 && lookL < 0.6;
+  if(res.faceLandmarks && res.faceLandmarks[0]){
+    const l = res.faceLandmarks[0];
+    const dy=(l[33].y-l[263].y), dx=(l[33].x-l[263].x);
+    const angle = Math.abs(Math.atan2(dy,dx)*180/Math.PI);
+    tiltOk = angle < 8 || angle > 172;
+  }
+  return res;
+};
+
+/* ---------------- Pipeline ---------------- */
+const canvas = document.getElementById('previewCanvas');
+const ctx = canvas.getContext('2d');
+const photoFrame = document.getElementById('photoFrame');
+const previewSection = document.getElementById('previewSection');
+const errorMsg = document.getElementById('errorMsg');
+const buySection = document.getElementById('buySection');
+const stepText = document.getElementById('stepText');
+const barFill = document.getElementById('barFill');
+
+const OUT_H_BASE = 640;
+const EDGE_TRIM = 3; // fixed (no manual slider anymore)
+
+let sourceImg = null;
+let workCanvas = document.createElement('canvas');
+let lastLandmarks = null;
+let lastMaskData = null;
+const trimCache = {src:null, radius:null, result:null};
+
+/* ---- Scan-effect step loop (from effekt-11-scan-mesh.html), driven while
+   the real pipeline is running; stops once the result is ready. ---- */
+const STEPS = [
+  "Bild wird eingelesen",
+  "Gesicht wird erkannt",
+  "Foto wird automatisch ausgerichtet",
+  "Hintergrund wird entfernt (KI)",
+  "Kopf wird zentriert",
+  "Maße werden geprüft",
+  "Foto wird fertiggestellt"
+];
+let stepToken = null;
+function startStepLoop(){
+  if(stepToken) stepToken.stopped = true;
+  const token = {stopped:false};
+  stepToken = token;
+  let i = 0;
+  function next(){
+    if(token.stopped) return;
+    stepText.style.opacity = 0;
+    setTimeout(()=>{
+      if(token.stopped) return;
+      stepText.textContent = STEPS[i % STEPS.length];
+      stepText.style.transition = 'opacity .25s ease';
+      stepText.style.opacity = 1;
+      barFill.style.transition = 'none';
+      barFill.style.width = '0%';
+      void barFill.offsetWidth;
+      barFill.style.transition = 'width 1000ms linear';
+      barFill.style.width = '100%';
+      setTimeout(()=>{
+        if(token.stopped) return;
+        i++;
+        setTimeout(next, 160);
+      }, 1000);
+    }, 130);
+  }
+  next();
+}
+function stopStepLoop(){
+  if(stepToken) stepToken.stopped = true;
+  photoFrame.classList.remove('scanning');
+  carCaption.style.visibility = 'visible';
+}
+
+async function runPipeline(){
+  errorMsg.style.display='none';
+  photoFrame.classList.add('scanning');
+  carCaption.style.visibility = 'hidden';
+  startStepLoop();
+
+  await initModels();
+
+  const maxDim = 1000;
+  const scale = Math.min(1, maxDim / Math.max(sourceImg.width, sourceImg.height));
+  let base = document.createElement('canvas');
+  base.width = Math.round(sourceImg.width*scale);
+  base.height = Math.round(sourceImg.height*scale);
+  base.getContext('2d').drawImage(sourceImg,0,0,base.width,base.height);
+
+  let pre;
+  try{ pre = faceLandmarker.detect(base); }catch(e){ pre = {faceLandmarks:[]}; }
+  const preLm = (pre.faceLandmarks && pre.faceLandmarks[0]) || null;
+  if(preLm){
+    const tiltAngle = computeTiltAngleDeg(preLm, base.width, base.height);
+    if(Math.abs(tiltAngle) > 1.5 && Math.abs(tiltAngle) < 30){
+      base = rotateCanvasToUpright(base, tiltAngle);
+    }
+  }
+  workCanvas = base;
+
+  let faceResult;
+  try{ faceResult = faceLandmarker.detect(workCanvas); }catch(e){ faceResult = {faceLandmarks:[]}; }
+  lastLandmarks = (faceResult.faceLandmarks && faceResult.faceLandmarks[0]) || null;
+
+  lastMaskData = null;
+  try{
+    const inputBlob = await new Promise((resolve,reject)=>{
+      workCanvas.toBlob(b=> b?resolve(b):reject(new Error('toBlob fehlgeschlagen')), 'image/png');
+    });
+    let blob;
+    try{
+      blob = await removeBackground(inputBlob, {
+        output:{ format:'image/png' },
+        model:'small',
+        publicPath:'https://staticimgly.com/@imgly/background-removal-data/1.5.5/dist/'
+      });
+    }catch(e1){
+      blob = await removeBackground(inputBlob, { output:{ format:'image/png' }, model:'small' });
+    }
+    const url = URL.createObjectURL(blob);
+    const cutoutImg = await loadImageEl(url);
+    URL.revokeObjectURL(url);
+    const cutoutCanvas = document.createElement('canvas');
+    cutoutCanvas.width = workCanvas.width;
+    cutoutCanvas.height = workCanvas.height;
+    cutoutCanvas.getContext('2d').drawImage(cutoutImg,0,0,cutoutCanvas.width,cutoutCanvas.height);
+    const alphaData = cutoutCanvas.getContext('2d').getImageData(0,0,cutoutCanvas.width,cutoutCanvas.height).data;
+    const w = cutoutCanvas.width, h = cutoutCanvas.height;
+    const imglyMask = new Float32Array(w*h);
+    for(let i=0,p=0;i<alphaData.length;i+=4,p++){ imglyMask[p] = 1-(alphaData[i+3]/255); }
+
+    let combined = imglyMask;
+    try{
+      const segResult = selfieSegmenter.segment(workCanvas);
+      const rawSelfie = segResult.categoryMask ? segResult.categoryMask.getAsFloat32Array() : null;
+      if(rawSelfie){
+        const selfieMask = blurMask(rawSelfie, w, h);
+        combined = new Float32Array(w*h);
+        for(let i=0;i<w*h;i++) combined[i] = Math.max(imglyMask[i], selfieMask[i]);
+      }
+    }catch(e2){ /* fall back to imgly-only mask */ }
+
+    lastMaskData = lastLandmarks ? applyBodyRegionGuard(combined, w, h, lastLandmarks) : combined;
+  }catch(e){
+    console.error('Hintergrundentfernung fehlgeschlagen:', e);
+    lastMaskData = null;
+  }
+
+  stopStepLoop();
+
+  if(!lastLandmarks){
+    errorMsg.textContent = 'Es konnte kein Gesicht erkannt werden. Bitte ein anderes Foto (frontal, gut beleuchtet, aufrecht) verwenden.';
+    errorMsg.style.display = 'block';
+    return;
+  }
+
+  render();
+  slideThumbs[0] = canvas.toDataURL('image/jpeg', 0.85);
+  generateAllOutputs();
+  buySection.classList.add('show');
+}
+
+// Shows the original, unprocessed photo right away (cover-cropped to the
+// target aspect ratio) so the scan animation plays over the real picture
+// instead of a blank canvas, while the actual AI pipeline runs underneath.
+function drawOriginalPreview(){
+  const aspect = FORMAT.w / FORMAT.h;
+  const OUT_H = OUT_H_BASE;
+  const OUT_W = Math.round(OUT_H * aspect);
+  canvas.width = OUT_W; canvas.height = OUT_H;
+
+  const iw = sourceImg.width, ih = sourceImg.height;
+  const srcAspect = iw/ih, dstAspect = OUT_W/OUT_H;
+  let sx,sy,sw,sh;
+  if(srcAspect > dstAspect){
+    sh = ih; sw = ih*dstAspect; sx = (iw-sw)/2; sy = 0;
+  } else {
+    sw = iw; sh = iw/dstAspect; sx = 0; sy = (ih-sh)/2;
+  }
+  ctx.drawImage(sourceImg, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
+  document.getElementById('rulerW').textContent = FORMAT.w + ' mm';
+  document.getElementById('rulerH').textContent = FORMAT.h + ' mm';
+}
+
+// Composes the masked/cropped photo for a given format into the given
+// (offscreen or onscreen) canvas. Returns context + output size + crop rect
+// so callers can optionally draw guides on top (only done for the main slide).
+function composeImage(targetCanvas, fmt){
+  const tctx = targetCanvas.getContext('2d');
+  const bgColor = fmt.bg==='gray' ? [200,200,200] : [255,255,255];
+  const aspect = fmt.w / fmt.h;
+  const OUT_H = OUT_H_BASE;
+  const OUT_W = Math.round(OUT_H * aspect);
+  targetCanvas.width = OUT_W; targetCanvas.height = OUT_H;
+
+  const w = workCanvas.width, h = workCanvas.height;
+  const srcCtx = workCanvas.getContext('2d');
+  const srcData = srcCtx.getImageData(0,0,w,h);
+
+  let activeMask = lastMaskData;
+  if(lastMaskData){
+    if(trimCache.src !== lastMaskData){
+      trimCache.src = lastMaskData;
+      trimCache.result = blurMask(trimMaskEdge(lastMaskData, w, h, EDGE_TRIM), w, h, 2, 2);
+    }
+    activeMask = trimCache.result;
+  }
+
+  const out = tctx.createImageData(w,h);
+  for(let i=0;i<srcData.data.length;i+=4){
+    const maskVal = activeMask ? activeMask[i/4] : 0;
+    let r=srcData.data[i], g=srcData.data[i+1], b=srcData.data[i+2];
+    r = r + (bgColor[0]-r)*maskVal;
+    g = g + (bgColor[1]-g)*maskVal;
+    b = b + (bgColor[2]-b)*maskVal;
+    out.data[i]=r; out.data[i+1]=g; out.data[i+2]=b; out.data[i+3]=255;
+  }
+  const tmp = document.createElement('canvas');
+  tmp.width=w; tmp.height=h;
+  tmp.getContext('2d').putImageData(out,0,0);
+
+  tctx.fillStyle = fmt.bg==='gray' ? '#c8c8c8' : '#ffffff';
+  tctx.fillRect(0,0,OUT_W,OUT_H);
+
+  let cropCX=w/2, cropCY=h/2, cropH=Math.min(w,h), cropW=cropH*aspect;
+
+  if(lastLandmarks){
+    const chin = lastLandmarks[152];
+    const leftEye = lastLandmarks[33], rightEye = lastLandmarks[263];
+    const chinPx = {x:chin.x*w, y:chin.y*h};
+    const eyeMid = {x:(leftEye.x+rightEye.x)/2*w, y:(leftEye.y+rightEye.y)/2*h};
+
+    const eyeToChinPx = Math.abs(chinPx.y-eyeMid.y);
+    const faceHeightPx = eyeToChinPx / 0.50;
+    const targetHeadFraction = ((fmt.head.minPct+fmt.head.maxPct)/2)/100;
+    cropH = faceHeightPx / targetHeadFraction;
+    cropW = cropH * aspect;
+    cropCX = eyeMid.x;
+
+    const crownY = eyeMid.y - faceHeightPx*0.54;
+    // Fixed, small headroom above the crown (in mm, expressed as a fraction
+    // of the frame height) instead of a large proportional margin — keeps
+    // the head positioned close to the top edge as required by biometric
+    // photo specs, rather than leaving too much empty space above it.
+    const topMarginFrac = 0.075;
+    const topMargin = cropH * topMarginFrac;
+    cropCY = (crownY - topMargin) + cropH/2;
+  }
+
+  const sx = cropCX-cropW/2, sy = cropCY-cropH/2;
+  tctx.drawImage(tmp, sx, sy, cropW, cropH, 0, 0, OUT_W, OUT_H);
+
+  return {ctx:tctx, OUT_W, OUT_H, crop:{sx,sy,cropW,cropH}};
+}
+
+function render(){
+  const {crop} = composeImage(canvas, FORMAT);
+  guideData35 = lastLandmarks ? computeGuideFractions(lastLandmarks, crop) : null;
+  updateGuideOverlay(currentSlide);
+
+  document.getElementById('rulerW').textContent = FORMAT.w + ' mm';
+  document.getElementById('rulerH').textContent = FORMAT.h + ' mm';
+}
+
+// Builds a 10x15cm (100x150mm) print sheet with copies of the given
+// single-photo canvas, scaled to keep margins/gutter for cutting.
+// count=4 -> 2x2 grid (default). count=2 -> 1 column, 2 rows (übereinander).
+function buildSheet(singleCanvas, fmt, count=4){
+  const ppmm = singleCanvas.height / fmt.h;
+  const sheetWmm = 100, sheetHmm = 150, marginMm = 5, gutterMm = 3;
+  const availWmm = sheetWmm - 2*marginMm, availHmm = sheetHmm - 2*marginMm;
+  const cols = count===2 ? 1 : 2, rows = 2;
+  const cellWmm = (availWmm - gutterMm*(cols-1))/cols, cellHmm = (availHmm - gutterMm)/rows;
+  const scale = Math.min(cellWmm/fmt.w, cellHmm/fmt.h);
+  const photoWmm = fmt.w*scale, photoHmm = fmt.h*scale;
+
+  const photoWpx = photoWmm*ppmm, photoHpx = photoHmm*ppmm;
+  const gutterPx = gutterMm*ppmm;
+  const sheetWpx = Math.round(sheetWmm*ppmm), sheetHpx = Math.round(sheetHmm*ppmm);
+  const totalWpx = photoWpx*cols + gutterPx*(cols-1), totalHpx = photoHpx*rows + gutterPx*(rows-1);
+  const offX = (sheetWpx-totalWpx)/2, offY = (sheetHpx-totalHpx)/2;
+
+  const sheet = document.createElement('canvas');
+  sheet.width = sheetWpx; sheet.height = sheetHpx;
+  const sctx = sheet.getContext('2d');
+  sctx.fillStyle = '#ffffff';
+  sctx.fillRect(0,0,sheetWpx,sheetHpx);
+
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const x = offX + c*(photoWpx+gutterPx);
+      const y = offY + r*(photoHpx+gutterPx);
+      sctx.drawImage(singleCanvas, x, y, photoWpx, photoHpx);
+      sctx.save();
+      sctx.strokeStyle = 'rgba(0,0,0,.25)';
+      sctx.setLineDash([4,3]);
+      sctx.lineWidth = 1;
+      sctx.strokeRect(x, y, photoWpx, photoHpx);
+      sctx.restore();
+    }
+  }
+  return sheet;
+}
+
+// Builds a DIN A4 (210x297mm) print sheet containing 4 copies of the 35x45mm
+// photo and 4 copies of the 50x50mm photo (8 photos total, at true size),
+// arranged as two 2x2 blocks with cut guides — for print shops / self-printing.
+function buildA4Sheet(canvas35, canvas50, fmt35, fmt50){
+  const sheetWmm = 210, sheetHmm = 297;
+  const gutterMm = 5, sectionGapMm = 14, marginMm = 10;
+  const ppmm = 300/25.4; // ~300dpi print resolution
+
+  const block1W = fmt35.w*2 + gutterMm, block1H = fmt35.h*2 + gutterMm;
+  const block2W = fmt50.w*2 + gutterMm, block2H = fmt50.h*2 + gutterMm;
+
+  const totalContentH = block1H + sectionGapMm + block2H;
+  const offYmm = Math.max(marginMm, (sheetHmm - totalContentH)/2);
+  const offX1mm = (sheetWmm - block1W)/2;
+  const offX2mm = (sheetWmm - block2W)/2;
+
+  const sheetWpx = Math.round(sheetWmm*ppmm), sheetHpx = Math.round(sheetHmm*ppmm);
+  const sheet = document.createElement('canvas');
+  sheet.width = sheetWpx; sheet.height = sheetHpx;
+  const sctx = sheet.getContext('2d');
+  sctx.fillStyle = '#ffffff';
+  sctx.fillRect(0,0,sheetWpx,sheetHpx);
+
+  function drawBlock(sourceCanvas, fmt, offXmm, offYmm){
+    const wPx = fmt.w*ppmm, hPx = fmt.h*ppmm, gPx = gutterMm*ppmm;
+    for(let r=0;r<2;r++){
+      for(let c=0;c<2;c++){
+        const x = (offXmm*ppmm) + c*(wPx+gPx);
+        const y = (offYmm*ppmm) + r*(hPx+gPx);
+        sctx.drawImage(sourceCanvas, x, y, wPx, hPx);
+        sctx.save();
+        sctx.strokeStyle = 'rgba(0,0,0,.25)';
+        sctx.setLineDash([4,3]);
+        sctx.lineWidth = 1;
+        sctx.strokeRect(x, y, wPx, hPx);
+        sctx.restore();
+      }
+    }
+  }
+
+  drawBlock(canvas35, fmt35, offX1mm, offYmm);
+  drawBlock(canvas50, fmt50, offX2mm, offYmm + block1H + sectionGapMm);
+
+  sctx.fillStyle = 'rgba(30,30,30,.65)';
+  sctx.font = `${Math.round(3.2*ppmm)}px sans-serif`;
+  sctx.textAlign = 'center';
+  sctx.fillText('35×45 mm', sheetWpx/2, (offYmm-4)*ppmm);
+  sctx.fillText('50×50 mm', sheetWpx/2, (offYmm+block1H+sectionGapMm-4)*ppmm);
+
+  return sheet;
+}
+
+// Berechnet nur die Positionen (Kopf/Augen/Kinn als Bruchteil der Bildhöhe),
+// aus dem offiziellen mm-Maß abgeleitet. Es wird NICHTS mehr auf das Foto
+// selbst gezeichnet — die Hilfslinien liegen als DOM-Overlay HINTER dem Foto
+// im Canvas-Bereich (siehe positionGuides / .guide-overlay).
+function computeGuideFractions(landmarks, crop){
+  const {sy, cropH} = crop;
+  const w = workCanvas.width, h = workCanvas.height;
+  const px = (i)=>({x:landmarks[i].x*w, y:landmarks[i].y*h});
+
+  const leftEye = px(33), rightEye = px(263);
+  const eyeMid = {x:(leftEye.x+rightEye.x)/2, y:(leftEye.y+rightEye.y)/2};
+  const chin = px(152);
+  const faceHeightPx = Math.abs(chin.y-eyeMid.y)/0.50;
+  const crownY = eyeMid.y - faceHeightPx*0.54;
+
+  const toFrac = (y)=> (y-sy)/cropH;
+  return {
+    kopfFrac: toFrac(crownY),
+    augenFrac: toFrac(eyeMid.y),
+    kinnFrac: toFrac(chin.y)
+  };
+}
+
+/* ---------------- Hilfslinien-Overlay (nur bei den Einzelbildern 35×45 & 50×50) ---------------- */
+const guideOverlay = document.getElementById('guideOverlay');
+const guideKopf = document.getElementById('guideKopf');
+const guideAugen = document.getElementById('guideAugen');
+const guideKinn = document.getElementById('guideKinn');
+let guideData35 = null, guideData50 = null;
+
+function positionGuides(data){
+  if(!data){ guideOverlay.classList.remove('show'); return; }
+  // Das photo-frame ist 78% hoch und vertikal zentriert -> Rand oben = 11%
+  const frameTopPct = 11, frameHeightPct = 78;
+  const toPct = (frac)=> frameTopPct + frac*frameHeightPct;
+  guideKopf.style.top = toPct(data.kopfFrac) + '%';
+  guideAugen.style.top = toPct(data.augenFrac) + '%';
+  guideKinn.style.top = toPct(data.kinnFrac) + '%';
+  guideOverlay.classList.add('show');
+}
+
+function updateGuideOverlay(slideIndex){
+  if(slideIndex === 0) positionGuides(guideData35);
+  else if(slideIndex === 2) positionGuides(guideData50);
+  else positionGuides(null);
+}
+
+/* ---------------- Carousel (Foto-Set: 4 Dateien) ---------------- */
+const carTrack = document.getElementById('carTrack');
+const carPrev = document.getElementById('carPrev');
+const carNext = document.getElementById('carNext');
+const carDots = document.getElementById('carDots');
+const carCaption = document.getElementById('carCaption');
+const thumbStrip = document.getElementById('thumbStrip');
+const DEFAULT_CAPTION = '35×45 mm — Führerschein / Krankenkasse';
+let slideCaptions = [DEFAULT_CAPTION];
+let slideThumbs = [null]; // thumbnail dataURL per slide, index 0 filled once the main photo is rendered
+let currentSlide = 0;
+
+function addSlide(sourceCanvas, caption, aspectW, aspectH){
+  const slide = document.createElement('div');
+  slide.className = 'car-slide';
+  const frame = document.createElement('div');
+  frame.className = 'photo-frame';
+  frame.style.aspectRatio = aspectW + '/' + aspectH;
+  const img = document.createElement('img');
+  const src = sourceCanvas.toDataURL('image/jpeg', 0.92);
+  img.src = src;
+  img.alt = caption;
+  frame.appendChild(img);
+  slide.appendChild(frame);
+  carTrack.appendChild(slide);
+  slideCaptions.push(caption);
+  slideThumbs.push(src);
+  buildDots();
+  buildThumbs();
+}
+
+function buildDots(){
+  carDots.innerHTML = '';
+  slideCaptions.forEach((_,i)=>{
+    const dot = document.createElement('span');
+    dot.className = 'car-dot' + (i===currentSlide ? ' active' : '');
+    dot.addEventListener('click', ()=>{ currentSlide=i; updateCarousel(); });
+    carDots.appendChild(dot);
+  });
+}
+
+// Miniature previews of all 5 files below the main image — always in the
+// same fixed order, each clickable, with an active frame around whichever
+// one is currently selected (moves one step right/left as you navigate).
+function buildThumbs(){
+  thumbStrip.innerHTML = '';
+  slideThumbs.forEach((src,i)=>{
+    if(!src) return;
+    const item = document.createElement('div');
+    item.className = 'thumb-item' + (i===currentSlide ? ' active' : '');
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = slideCaptions[i] || '';
+    item.appendChild(img);
+    item.addEventListener('click', ()=>{ currentSlide=i; updateCarousel(); });
+    thumbStrip.appendChild(item);
+  });
+}
+
+function updateCarousel(){
+  carTrack.style.transform = `translateX(-${currentSlide*100}%)`;
+  carCaption.textContent = slideCaptions[currentSlide] || '';
+  Array.from(carDots.children).forEach((d,i)=> d.classList.toggle('active', i===currentSlide));
+  Array.from(thumbStrip.children).forEach((t,i)=> t.classList.toggle('active', i===currentSlide));
+  const multi = slideCaptions.length > 1;
+  carPrev.style.display = multi ? 'flex' : 'none';
+  carNext.style.display = multi ? 'flex' : 'none';
+  carDots.style.display = 'none'; // replaced by the thumbnail strip
+  thumbStrip.style.display = (slideThumbs[0] && multi) ? 'flex' : 'none';
+  carPrev.style.visibility = currentSlide===0 ? 'hidden' : 'visible';
+  carNext.style.visibility = currentSlide===slideCaptions.length-1 ? 'hidden' : 'visible';
+  updateGuideOverlay(currentSlide);
+}
+
+carPrev.addEventListener('click', ()=>{ if(currentSlide>0){ currentSlide--; updateCarousel(); } });
+carNext.addEventListener('click', ()=>{ if(currentSlide<slideCaptions.length-1){ currentSlide++; updateCarousel(); } });
+
+let touchStartX = null;
+const carViewport = document.getElementById('carViewport');
+carViewport.addEventListener('touchstart', e=>{ touchStartX = e.touches[0].clientX; }, {passive:true});
+carViewport.addEventListener('touchend', e=>{
+  if(touchStartX===null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if(Math.abs(dx) > 40){
+    if(dx<0 && currentSlide<slideCaptions.length-1) currentSlide++;
+    else if(dx>0 && currentSlide>0) currentSlide--;
+    updateCarousel();
+  }
+  touchStartX = null;
+}, {passive:true});
+
+function resetCarousel(){
+  while(carTrack.children.length > 1){ carTrack.removeChild(carTrack.lastChild); }
+  slideCaptions = [DEFAULT_CAPTION];
+  slideThumbs = [null];
+  currentSlide = 0;
+  guideData35 = null; guideData50 = null;
+  carTrack.style.transition = 'none';
+  carTrack.style.transform = 'translateX(0%)';
+  void carTrack.offsetWidth;
+  carTrack.style.transition = '';
+  carCaption.textContent = DEFAULT_CAPTION;
+  carPrev.style.display = 'none';
+  carNext.style.display = 'none';
+  carDots.style.display = 'none';
+  thumbStrip.style.display = 'none';
+  buildDots();
+  buildThumbs();
+}
+
+// Generates the remaining 3 files (ID-Vorlage 10x15, Visa-Einzelfoto,
+// Visa-Vorlage 10x15) once the main 35x45mm photo has been rendered.
+function generateAllOutputs(){
+  const visaCanvas = document.createElement('canvas');
+  const {crop:visaCrop} = composeImage(visaCanvas, FORMAT_VISA);
+  guideData50 = lastLandmarks ? computeGuideFractions(lastLandmarks, visaCrop) : null;
+
+  const idSheet = buildSheet(canvas, FORMAT, 4);
+  const visaSheet = buildSheet(visaCanvas, FORMAT_VISA, 2);
+  const a4Sheet = buildA4Sheet(canvas, visaCanvas, FORMAT, FORMAT_VISA);
+
+  addSlide(idSheet, '10×15 cm — 4× 35×45 mm', 100, 150);
+  addSlide(visaCanvas, '50×50 mm — Visa USA / Global', FORMAT_VISA.w, FORMAT_VISA.h);
+  addSlide(visaSheet, '10×15 cm — 2× 50×50 mm', 100, 150);
+  addSlide(a4Sheet, 'DIN A4 — 4× 35×45 mm & 4× 50×50 mm', 210, 297);
+
+  updateCarousel();
+}
+
+/* ---------------- Upload ---------------- */
+const fileInput = document.getElementById('fileInput');
+const fileInput2 = document.getElementById('fileInput2');
+
+function handleFileSelected(file, inputEl){
+  if(!file){ inputEl.value=''; return; }
+  if(!file.type.startsWith('image/')){
+    inputEl.value=''; return;
+  }
+  document.getElementById('ctaText').textContent = 'Neues Foto machen';
+  resetCarousel();
+  initModels(); // kick off (lazy) model loading in parallel with reading the file
+
+  const fsgSection = document.getElementById('fsgSection');
+  if(fsgSection) fsgSection.style.display = 'none';
+
+  previewSection.style.display = 'block';
+  errorMsg.style.display = 'none';
+  buySection.classList.remove('show');
+  requestAnimationFrame(()=> {
+    previewSection.scrollIntoView({behavior:'smooth', block:'start'});
+    setTimeout(()=> window.scrollBy({top:-100, behavior:'smooth'}), 350);
+  });
+
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    sourceImg = new Image();
+    sourceImg.onload = ()=>{
+      drawOriginalPreview();
+      runPipeline().catch(err=>{
+        console.error('Pipeline-Fehler:', err);
+        stopStepLoop();
+        errorMsg.textContent = 'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.';
+        errorMsg.style.display = 'block';
+      });
+    };
+    sourceImg.onerror = ()=>{
+      errorMsg.textContent = 'Foto konnte nicht geladen werden. Bitte versuchen Sie es erneut.';
+      errorMsg.style.display = 'block';
+    };
+    sourceImg.src = ev.target.result;
+  };
+  reader.onerror = ()=>{
+    errorMsg.textContent = 'Datei konnte nicht gelesen werden. Bitte versuchen Sie es erneut.';
+    errorMsg.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+  inputEl.value = '';
+}
+
+fileInput.addEventListener('change', (e)=> handleFileSelected(e.target.files[0], fileInput));
+if(fileInput2){
+  fileInput2.addEventListener('change', (e)=> handleFileSelected(e.target.files[0], fileInput2));
+}
+
+
+/* ---------------- Countdown (repeats once it hits zero) ---------------- */
+const COUNTDOWN_START = 7*3600 + 42*60 + 33;
+let countdownLeft = COUNTDOWN_START;
+function renderCountdown(){
+  const h = Math.floor(countdownLeft/3600);
+  const m = Math.floor((countdownLeft%3600)/60);
+  const s = countdownLeft%60;
+  document.getElementById('countdown').textContent = `${h}h ${m}min ${s}s`;
+}
+renderCountdown();
+setInterval(()=>{
+  countdownLeft--;
+  if(countdownLeft < 0) countdownLeft = COUNTDOWN_START;
+  renderCountdown();
+}, 1000);
+
+/* ---------------- Logo: Klick scrollt nach oben ---------------- */
+document.getElementById('logoArea').addEventListener('click', ()=>{
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+/* ---------------- Payment (placeholder — no backend yet) ---------------- */
+document.getElementById('payBtn').addEventListener('click', ()=>{
+  const agb = document.getElementById('agbCheckbox');
+  if(!agb.checked){
+    agb.focus();
+    return;
+  }
+  const note = document.getElementById('payNote');
+  note.style.display = 'block';
+});
+</script>
+</body>
+</html>
