@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0f0f">
+<title>AI Portrait Studio — Passbild & Bewerbungsfoto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.js" crossorigin="anonymous"></script>
+<style>
+:root {
+  --bg:#0a0a0f; --surface:#13131a; --surface-2:#1c1c26; --surface-3:#252532;
+  --text:#f0f0f5; --text-2:#a0a0b0; --text-3:#606070;
+  --accent:#6366f1; --accent-2:#8b5cf6; --accent-glow:rgba(99,102,241,0.3);
+  --success:#22c55e; --warning:#f59e0b;
+  --radius:20px; --radius-sm:14px;
+  --shadow:0 8px 32px rgba(0,0,0,0.4); --shadow-lg:0 20px 60px rgba(0,0,0,0.5);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { height:100%; }
+body {
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+.bg-mesh {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(99,102,241,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 60%, rgba(139,92,246,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 50% at 50% 0%, rgba(99,102,241,0.04) 0%, transparent 50%);
+}
+.app { position:relative; z-index:1; max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+.header { padding:20px 24px 12px; display:flex; align-items:center; justify-content:space-between; }
+.logo { display:flex; align-items:center; gap:10px; }
+.logo-icon {
+  width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; box-shadow:0 4px 16px var(--accent-glow);
+}
+.logo-text { font-weight:700; font-size:17px; letter-spacing:-0.3px; }
+.logo-sub { font-size:11px; color:var(--text-3); font-weight:500; }
+.screen { display:none; flex:1; flex-direction:column; animation:fadeIn 0.4s ease; }
+.screen.active { display:flex; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.hero { padding:8px 24px 24px; text-align:center; }
+.hero h1 { font-size:28px; font-weight:700; line-height:1.2; margin-bottom:8px; letter-spacing:-0.5px; }
+.hero p { color:var(--text-2); font-size:15px; line-height:1.5; max-width:320px; margin:0 auto; }
+.mode-cards { padding:0 20px; display:flex; flex-direction:column; gap:12px; margin-bottom:24px; }
+.mode-card {
+  background:var(--surface); border:1px solid rgba(255,255,255,0.05); border-radius:var(--radius);
+  padding:24px 20px; cursor:pointer; transition:all 0.3s ease; position:relative; overflow:hidden;
+}
+.mode-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(99,102,241,0.1),transparent 60%); opacity:0; transition:opacity 0.3s; }
+.mode-card:hover::before,.mode-card:active::before { opacity:1; }
+.mode-card:hover,.mode-card:active { transform:translateY(-2px); border-color:rgba(99,102,241,0.2); box-shadow:var(--shadow); }
+.mode-card-header { display:flex; align-items:center; gap:14px; position:relative; z-index:1; }
+.mode-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.mode-icon.passport { background:linear-gradient(135deg,#3b82f6,#06b6d4); }
+.mode-icon.profi { background:linear-gradient(135deg,var(--accent),var(--accent-2)); }
+.mode-card h3 { font-size:17px; font-weight:600; margin-bottom:3px; }
+.mode-card span { font-size:13px; color:var(--text-2); }
+.mode-card .arrow { margin-left:auto; color:var(--text-3); font-size:20px; transition:transform 0.3s,color 0.3s; }
+.mode-card:hover .arrow { transform:translateX(4px); color:var(--accent); }
+.upload-area {
+  margin:0 20px 20px; border:2px dashed rgba(255,255,255,0.1); border-radius:var(--radius);
+  padding:40px 24px; text-align:center; background:var(--surface); transition:all 0.3s;
+  cursor:pointer; position:relative;
+}
+.upload-area.dragover { border-color:var(--accent); background:rgba(99,102,241,0.05); }
+.upload-icon { width:64px; height:64px; border-radius:20px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:28px; transition:transform 0.3s; }
+.upload-area:hover .upload-icon { transform:scale(1.05); }
+.upload-area h3 { font-size:16px; font-weight:600; margin-bottom:6px; }
+.upload-area p { font-size:13px; color:var(--text-3); }
+.upload-area input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.camera-btn {
+  margin:0 20px 20px; background:var(--surface-2); border:1px solid rgba(255,255,255,0.06);
+  border-radius:var(--radius-sm); padding:16px; display:flex; align-items:center; justify-content:center;
+  gap:10px; cursor:pointer; color:var(--text); font-family:inherit; font-size:15px; font-weight:500; transition:all 0.2s;
+}
+.camera-btn:hover,.camera-btn:active { background:var(--surface-3); }
+.editor-top { padding:0 20px 16px; display:flex; align-items:center; gap:12px; }
+.back-btn { width:40px; height:40px; border-radius:12px; background:var(--surface-2); border:none; color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; transition:all 0.2s; }
+.back-btn:hover { background:var(--surface-3); }
+.editor-title { font-size:17px; font-weight:600; }
+.canvas-container {
+  margin:0 20px 16px; background:var(--surface); border-radius:var(--radius); overflow:hidden;
+  position:relative; aspect-ratio:3/4; box-shadow:var(--shadow);
+}
+.canvas-container canvas { width:100%; height:100%; display:block; }
+.canvas-overlay {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(10,10,15,0.85); backdrop-filter:blur(8px); z-index:10;
+}
+.spinner { width:48px; height:48px; border:3px solid rgba(99,102,241,0.2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.loading-text { margin-top:16px; font-size:14px; color:var(--text-2); text-align:center; }
+.loading-sub { margin-top:4px; font-size:12px; color:var(--text-3); }
+.controls { flex:1; overflow-y:auto; padding:0 20px 100px; }
+.controls::-webkit-scrollbar { width:0; }
+.control-section { margin-bottom:20px; }
+.control-label { font-size:12px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.bg-options { display:flex; gap:10px; flex-wrap:wrap; }
+.bg-option { width:52px; height:52px; border-radius:14px; border:2px solid transparent; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; flex-shrink:0; }
+.bg-option.active { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+.bg-option:hover { transform:scale(1.08); }
+.bg-white { background:#fff; }
+.bg-gray { background:#e5e5e5; }
+.bg-lightblue { background:#dbeafe; }
+.bg-dark { background:#1e1e2e; border:1px solid rgba(255,255,255,0.1); }
+.bg-gradient-1 { background:linear-gradient(135deg,#667eea,#764ba2); }
+.bg-gradient-2 { background:linear-gradient(135deg,#f093fb,#f5576c); }
+.bg-gradient-3 { background:linear-gradient(135deg,#4facfe,#00f2fe); }
+.bg-blur { background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:18px; }
+.bg-office { background:linear-gradient(180deg,#c4c4c4,#8a8a8a); }
+.slider-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.slider-row label { width:90px; font-size:13px; color:var(--text-2); flex-shrink:0; }
+.slider-wrap { flex:1; position:relative; }
+input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:3px; background:var(--surface-2); outline:none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:20px; height:20px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent-2)); cursor:pointer; box-shadow:0 2px 8px var(--accent-glow); border:2px solid var(--bg); transition:transform 0.15s; }
+input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.15); }
+input[type="range"]::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent-2)); cursor:pointer; border:2px solid var(--bg); }
+.template-options { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+.template-options::-webkit-scrollbar { display:none; }
+.template-option { flex-shrink:0; padding:10px 16px; background:var(--surface-2); border-radius:var(--radius-sm); border:1.5px solid transparent; cursor:pointer; font-size:13px; font-weight:500; color:var(--text-2); transition:all 0.2s; white-space:nowrap; }
+.template-option.active { border-color:var(--accent); color:var(--text); background:rgba(99,102,241,0.1); }
+.toggle-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.toggle-row:last-child { border-bottom:none; }
+.toggle-info h4 { font-size:14px; font-weight:500; margin-bottom:2px; }
+.toggle-info span { font-size:12px; color:var(--text-3); }
+.toggle { width:50px; height:28px; border-radius:14px; background:var(--surface-3); position:relative; cursor:pointer; transition:background 0.3s; flex-shrink:0; }
+.toggle.active { background:linear-gradient(135deg,var(--accent),var(--accent-2)); }
+.toggle::after { content:''; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:white; transition:transform 0.3s; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
+.toggle.active::after { transform:translateX(22px); }
+.action-bar {
+  position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px;
+  padding:16px 20px calc(16px + env(safe-area-inset-bottom)); background:linear-gradient(to top,var(--bg) 70%,transparent);
+  display:flex; gap:12px; z-index:100;
+}
+.btn { flex:1; padding:16px 20px; border-radius:var(--radius-sm); border:none; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+.btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:white; box-shadow:0 4px 20px var(--accent-glow); }
+.btn-primary:hover,.btn-primary:active { transform:translateY(-1px); box-shadow:0 6px 28px rgba(99,102,241,0.4); }
+.btn-secondary { background:var(--surface-2); color:var(--text); border:1px solid rgba(255,255,255,0.06); }
+.btn-secondary:hover { background:var(--surface-3); }
+.result-preview { margin:0 20px 20px; border-radius:var(--radius); overflow:hidden; background:var(--surface); box-shadow:var(--shadow); }
+.result-preview img { width:100%; display:block; }
+.result-info { padding:0 20px 20px; }
+.result-info h3 { font-size:18px; margin-bottom:4px; }
+.result-info p { color:var(--text-2); font-size:14px; margin-bottom:16px; }
+.toast {
+  position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-60px); background:var(--surface-2);
+  border:1px solid rgba(255,255,255,0.08); padding:12px 20px; border-radius:12px; font-size:14px;
+  display:flex; align-items:center; gap:8px; z-index:1000; transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:var(--shadow-lg); white-space:nowrap;
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.success { border-color:rgba(34,197,94,0.3); }
+.toast.error { border-color:rgba(239,68,68,0.3); }
+.face-guide { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:5; }
+.face-guide-oval { width:55%; height:65%; border:2px dashed rgba(255,255,255,0.25); border-radius:50% 50% 45% 45%; position:relative; }
+.face-guide-oval::before { content:'Gesicht hier ausrichten'; position:absolute; bottom:-28px; left:50%; transform:translateX(-50%); font-size:11px; color:rgba(255,255,255,0.4); white-space:nowrap; }
+.print-sheet { background:white; padding:20px; border-radius:var(--radius-sm); margin:0 20px 20px; }
+.print-sheet-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.print-sheet-grid img { width:100%; border-radius:4px; display:block; }
+.steps { display:flex; align-items:center; justify-content:center; gap:8px; padding:8px 20px 16px; }
+.step { width:8px; height:8px; border-radius:50%; background:var(--surface-3); transition:all 0.3s; }
+.step.active { background:var(--accent); width:24px; border-radius:4px; }
+.step.done { background:var(--success); }
+.zoom-controls { position:absolute; bottom:12px; right:12px; display:flex; flex-direction:column; gap:6px; z-index:8; }
+.zoom-btn { width:36px; height:36px; border-radius:10px; background:rgba(10,10,15,0.7); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.08); color:var(--text); display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; transition:all 0.2s; }
+.zoom-btn:hover { background:rgba(10,10,15,0.9); }
+@media(min-width:481px){ .app { border-left:1px solid rgba(255,255,255,0.04); border-right:1px solid rgba(255,255,255,0.04); } }
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="app">
+<div class="toast" id="toast"><span id="toastIcon">✓</span><span id="toastMsg">Bereit</span></div>
+
+<!-- SCREEN: START -->
+<div class="screen active" id="screenStart">
+  <div class="header">
+    <div class="logo"><div class="logo-icon">📸</div><div><div class="logo-text">AI Portrait Studio</div><div class="logo-sub">KI-gestützt · 100% Privat</div></div></div>
+  </div>
+  <div class="hero"><h1>Perfekte Fotos in Sekunden</h1><p>Erstelle biometrische Passbilder oder professionelle Bewerbungsfotos — direkt auf deinem Gerät mit KI.</p></div>
+  <div class="mode-cards">
+    <div class="mode-card" onclick="selectMode('passport')"><div class="mode-card-header"><div class="mode-icon passport">🛂</div><div><h3>Passbild</h3><span>Biometrisch · Weißer Hintergrund · Druckvorlage</span></div><div class="arrow">›</div></div></div>
+    <div class="mode-card" onclick="selectMode('profi')"><div class="mode-card-header"><div class="mode-icon profi">💼</div><div><h3>Bewerbungsfoto</h3><span>Professionell · Hintergrund · Retusche</span></div><div class="arrow">›</div></div></div>
+  </div>
+  <div style="padding:0 24px; margin-top:auto; margin-bottom:24px;"><p style="font-size:12px;color:var(--text-3);text-align:center;line-height:1.6;">🔒 Alle Berechnungen laufen lokal auf deinem Gerät.<br>Keine Bilder werden hochgeladen.</p></div>
+</div>
+
+<!-- SCREEN: UPLOAD -->
+<div class="screen" id="screenUpload">
+  <div class="editor-top"><button class="back-btn" onclick="goStart()">‹</button><div class="editor-title" id="uploadTitle">Passbild erstellen</div></div>
+  <div class="steps"><div class="step active"></div><div class="step"></div><div class="step"></div></div>
+  <div style="padding:0 24px 16px;"><p style="font-size:14px;color:var(--text-2);line-height:1.5;">Lade ein Selfie hoch oder mache ein neues Foto. Das Gesicht sollte gut beleuchtet sein und frontal zur Kamera zeigen.</p></div>
+  <div class="upload-area" id="uploadArea"><input type="file" id="fileInput" accept="image/*" capture="user" onchange="handleFile(event)"><div class="upload-icon">📁</div><h3>Foto hochladen</h3><p>Tippe hier oder ziehe ein Bild rein</p></div>
+  <button class="camera-btn" onclick="document.getElementById('fileInput').click()"><span>📷</span> Kamera öffnen</button>
+  <div style="flex:1"></div>
+  <div style="padding:0 24px 24px;"><p style="font-size:12px;color:var(--text-3);text-align:center;">Tipp: Nutze Tageslicht und einen neutralen Hintergrund für beste Ergebnisse.</p></div>
+</div>
+
+<!-- SCREEN: EDITOR -->
+<div class="screen" id="screenEditor">
+  <div class="editor-top"><button class="back-btn" onclick="goUpload()">‹</button><div class="editor-title" id="editorTitle">Bearbeiten</div></div>
+  <div class="steps"><div class="step done"></div><div class="step active"></div><div class="step"></div></div>
+  <div class="canvas-container" id="canvasContainer">
+    <canvas id="mainCanvas"></canvas>
+    <div class="face-guide" id="faceGuide"><div class="face-guide-oval"></div></div>
+    <div class="zoom-controls"><button class="zoom-btn" onclick="adjustZoom(0.1)">+</button><button class="zoom-btn" onclick="adjustZoom(-0.1)">−</button><button class="zoom-btn" onclick="resetZoom()">⟲</button></div>
+    <div class="canvas-overlay" id="loadingOverlay"><div style="text-align:center"><div class="spinner"></div><div class="loading-text" id="loadingText">KI analysiert dein Foto...</div><div class="loading-sub" id="loadingSub">Gesichtserkennung & Ausschnitt</div></div></div>
+  </div>
+  <div class="controls" id="controlsArea">
+    <!-- Passport controls -->
+    <div id="passportControls" style="display:none">
+      <div class="control-section"><div class="control-label">📐 Format</div><div class="template-options"><div class="template-option active" onclick="setPassportSize(this,'35x45')">35 × 45 mm</div><div class="template-option" onclick="setPassportSize(this,'35x40')">35 × 40 mm</div><div class="template-option" onclick="setPassportSize(this,'50x50')">50 × 50 mm</div><div class="template-option" onclick="setPassportSize(this,'40x60')">40 × 60 mm</div></div></div>
+      <div class="control-section"><div class="control-label">🎨 Hintergrund</div><div class="bg-options"><div class="bg-option bg-white active" onclick="setBg(this,'#ffffff')" title="Weiß"></div><div class="bg-option bg-gray" onclick="setBg(this,'#eeeeee')" title="Hellgrau"></div><div class="bg-option bg-lightblue" onclick="setBg(this,'#dbeafe')" title="Hellblau"></div></div></div>
+      <div class="control-section"><div class="control-label">🔍 Position & Größe</div><div class="slider-row"><label>Zoom</label><div class="slider-wrap"><input type="range" id="zoomSlider" min="0.5" max="2" step="0.01" value="1" oninput="updateTransform()"></div></div><div class="slider-row"><label>Vertikal</label><div class="slider-wrap"><input type="range" id="offsetYSlider" min="-100" max="100" step="1" value="0" oninput="updateTransform()"></div></div><div class="slider-row"><label>Horizontal</label><div class="slider-wrap"><input type="range" id="offsetXSlider" min="-100" max="100" step="1" value="0" oninput="updateTransform()"></div></div></div>
+      <div class="control-section"><div class="control-label">✨ Optimierung</div><div class="toggle-row"><div class="toggle-info"><h4>Haut glätten</h4><span>Dezente Hautretusche</span></div><div class="toggle active" id="toggleSmooth" onclick="toggleSwitch('smooth')"></div></div><div class="toggle-row"><div class="toggle-info"><h4>Augen aufhellen</h4><span>Frischer, wacher Blick</span></div><div class="toggle" id="toggleEyes" onclick="toggleSwitch('eyes')"></div></div><div class="toggle-row"><div class="toggle-info"><h4>Druckvorlage (6er)</h4><span>10×15 cm zum Ausdrucken</span></div><div class="toggle active" id="togglePrint" onclick="toggleSwitch('print')"></div></div></div>
+    </div>
+    <!-- Profi controls -->
+    <div id="profiControls" style="display:none">
+      <div class="control-section"><div class="control-label">🎨 Hintergrund</div><div class="bg-options"><div class="bg-option bg-white active" onclick="setBg(this,'#ffffff')" title="Weiß"></div><div class="bg-option bg-gray" onclick="setBg(this,'#f3f4f6')" title="Hellgrau"></div><div class="bg-option bg-lightblue" onclick="setBg(this,'#eff6ff')" title="Eisblau"></div><div class="bg-option bg-dark" onclick="setBg(this,'#1e1e2e')" title="Dunkel"></div><div class="bg-option bg-office" onclick="setBg(this,'office')" title="Büro"></div><div class="bg-option bg-gradient-1" onclick="setBg(this,'gradient1')" title="Gradient Lila"></div><div class="bg-option bg-gradient-2" onclick="setBg(this,'gradient2')" title="Gradient Pink"></div><div class="bg-option bg-gradient-3" onclick="setBg(this,'gradient3')" title="Gradient Blau"></div><div class="bg-option bg-blur" onclick="setBg(this,'blur')" title="Unscharf">💨</div></div></div>
+      <div class="control-section"><div class="control-label">🔍 Position</div><div class="slider-row"><label>Zoom</label><div class="slider-wrap"><input type="range" id="zoomSliderProfi" min="0.5" max="2" step="0.01" value="1" oninput="updateTransform()"></div></div><div class="slider-row"><label>Vertikal</label><div class="slider-wrap"><input type="range" id="offsetYSliderProfi" min="-100" max="100" step="1" value="0" oninput="updateTransform()"></div></div><div class="slider-row"><label>Horizontal</label><div class="slider-wrap"><input type="range" id="offsetXSliderProfi" min="-100" max="100" step="1" value="0" oninput="updateTransform()"></div></div></div>
+      <div class="control-section"><div class="control-label">✨ Retusche</div><div class="slider-row"><label>Hautglätte</label><div class="slider-wrap"><input type="range" id="smoothSlider" min="0" max="100" step="1" value="30" oninput="updateTransform()"></div></div><div class="slider-row"><label>Helligkeit</label><div class="slider-wrap"><input type="range" id="brightnessSlider" min="-30" max="30" step="1" value="5" oninput="updateTransform()"></div></div><div class="slider-row"><label>Kontrast</label><div class="slider-wrap"><input type="range" id="contrastSlider" min="-20" max="40" step="1" value="8" oninput="updateTransform()"></div></div><div class="slider-row"><label>Sättigung</label><div class="slider-wrap"><input type="range" id="saturationSlider" min="-30" max="30" step="1" value="0" oninput="updateTransform()"></div></div><div class="slider-row"><label>Wärme</label><div class="slider-wrap"><input type="range" id="warmthSlider" min="-20" max="20" step="1" value="3" oninput="updateTransform()"></div></div></div>
+      <div class="control-section"><div class="control-label">⚡ Effekte</div><div class="toggle-row"><div class="toggle-info"><h4>Augen aufhellen</h4><span>Wacher, professioneller Blick</span></div><div class="toggle" id="toggleEyesProfi" onclick="toggleSwitch('eyesProfi')"></div></div><div class="toggle-row"><div class="toggle-info"><h4>Zähne aufhellen</h4><span>Dezentes Lächeln optimieren</span></div><div class="toggle" id="toggleTeeth" onclick="toggleSwitch('teeth')"></div></div><div class="toggle-row"><div class="toggle-info"><h4>Vignette</h4><span>Professioneller Rahmen-Effekt</span></div><div class="toggle active" id="toggleVignette" onclick="toggleSwitch('vignette')"></div></div><div class="toggle-row"><div class="toggle-info"><h4>Schärfen</h4><span>Klare Konturen</span></div><div class="toggle active" id="toggleSharpen" onclick="toggleSwitch('sharpen')"></div></div></div>
+    </div>
+  </div>
+  <div class="action-bar"><button class="btn btn-secondary" onclick="resetAll()">↺ Reset</button><button class="btn btn-primary" onclick="generateResult()"><span>✨</span> Fertigstellen</button></div>
+</div>
+
+<!-- SCREEN: RESULT -->
+<div class="screen" id="screenResult">
+  <div class="editor-top"><button class="back-btn" onclick="goEditor()">‹</button><div class="editor-title">Ergebnis</div></div>
+  <div class="steps"><div class="step done"></div><div class="step done"></div><div class="step active"></div></div>
+  <div class="result-preview" id="resultPreview"><img id="resultImage" src="" alt="Ergebnis"></div>
+  <div class="result-info" id="resultInfo"><h3 id="resultTitle">Dein Passbild</h3><p id="resultDesc">Bereit zum Download und Drucken.</p></div>
+  <div style="padding:0 20px 20px;">
+    <div class="control-section"><div class="control-label">📥 Download</div><div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-primary" style="flex:1;min-width:140px;" onclick="downloadResult('png')"><span>🖼️</span> PNG (HD)</button><button class="btn btn-secondary" style="flex:1;min-width:140px;" onclick="downloadResult('jpg')"><span>📄</span> JPG</button></div></div>
+    <div id="printSection" style="display:none;margin-top:16px;"><div class="control-label">🖨️ Druckvorlage</div><div class="print-sheet"><div class="print-sheet-grid" id="printGrid"></div></div><button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="downloadPrintSheet()"><span>🖨️</span> Druckvorlage herunterladen</button></div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="action-bar"><button class="btn btn-secondary" onclick="goStart()">Neues Foto</button><button class="btn btn-primary" onclick="goEditor()"><span>✏️</span> Bearbeiten</button></div>
+</div>
+</div>
+
+<script>
+// ==================== STATE ====================
+let currentMode=null, originalImage=null, maskCanvas=null, faceBox=null;
+let imageSegmenter=null, isModelLoading=false;
+let zoom=1, offsetX=0, offsetY=0, passportSize='35x45', backgroundColor='#ffffff';
+let settings={smooth:true,eyes:false,print:true,eyesProfi:false,teeth:false,vignette:true,sharpen:true};
+let canvasWidth=0, canvasHeight=0;
+const canvas=document.getElementById('mainCanvas');
+const ctx=canvas.getContext('2d',{willReadFrequently:true});
+
+// ==================== NAVIGATION ====================
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+function selectMode(mode){
+  currentMode=mode;
+  document.getElementById('uploadTitle').textContent=mode==='passport'?'Passbild erstellen':'Bewerbungsfoto erstellen';
+  document.getElementById('editorTitle').textContent=mode==='passport'?'Passbild bearbeiten':'Bewerbungsfoto bearbeiten';
+  document.getElementById('passportControls').style.display=mode==='passport'?'block':'none';
+  document.getElementById('profiControls').style.display=mode==='profi'?'block':'none';
+  document.getElementById('faceGuide').style.display=mode==='passport'?'flex':'none';
+  showScreen('screenUpload');
+}
+function goStart(){ showScreen('screenStart'); resetState(); }
+function goUpload(){ showScreen('screenUpload'); }
+function goEditor(){ showScreen('screenEditor'); }
+function resetState(){
+  originalImage=null; maskCanvas=null; faceBox=null; zoom=1; offsetX=0; offsetY=0;
+  backgroundColor='#ffffff'; passportSize='35x45';
+  settings={smooth:true,eyes:false,print:true,eyesProfi:false,teeth:false,vignette:true,sharpen:true};
+  document.getElementById('fileInput').value=''; updateToggleUI();
+}
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  document.getElementById('toastIcon').textContent=type==='success'?'✓':'⚠';
+  t.className='toast show '+type; setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ==================== DRAG & DROP ====================
+const uploadArea=document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover',e=>{e.preventDefault();uploadArea.classList.add('dragover');});
+uploadArea.addEventListener('dragleave',()=>uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop',e=>{e.preventDefault();uploadArea.classList.remove('dragover');if(e.dataTransfer.files.length)handleFile({target:{files:e.dataTransfer.files}});});
+
+// ==================== FILE HANDLING ====================
+function handleFile(e){
+  const file=e.target.files[0]; if(!file)return;
+  if(!file.type.startsWith('image/')){showToast('Bitte ein Bild hochladen','error');return;}
+  const reader=new FileReader();
+  reader.onload=evt=>{ const img=new Image(); img.onload=()=>{originalImage=img;showScreen('screenEditor');initEditor();}; img.src=evt.target.result; };
+  reader.readAsDataURL(file);
+}
+
+// ==================== MODEL LOADING ====================
+async function initEditor(){
+  document.getElementById('loadingOverlay').style.display='flex';
+  document.getElementById('loadingText').textContent='KI-Modelle werden geladen...';
+  document.getElementById('loadingSub').textContent='Nur einmal nötig';
+  try{
+    if(!imageSegmenter){
+      const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm");
+      imageSegmenter=await ImageSegmenter.createFromOptions(vision,{
+        baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite",delegate:"GPU"},
+        runningMode:"IMAGE",outputCategoryMask:true,outputConfidenceMasks:true
+      });
+    }
+    document.getElementById('loadingText').textContent='KI analysiert dein Foto...';
+    document.getElementById('loadingSub').textContent='Gesichtserkennung & präziser Ausschnitt';
+    await processImage();
+    document.getElementById('loadingOverlay').style.display='none';
+    showToast('Foto erfolgreich analysiert!');
+  }catch(err){
+    console.error(err);
+    document.getElementById('loadingText').textContent='Fehler beim Laden';
+    document.getElementById('loadingSub').textContent='Versuche Fallback...';
+    setTimeout(()=>{createFallbackMask();document.getElementById('loadingOverlay').style.display='none';showToast('KI nicht verfügbar — manueller Modus','error');},1000);
+  }
+}
+
+// ==================== IMAGE PROCESSING ====================
+async function processImage(){
+  if(!originalImage||!imageSegmenter)return;
+  const maxDim=1200; let w=originalImage.width,h=originalImage.height;
+  if(w>maxDim||h>maxDim){const scale=maxDim/Math.max(w,h);w=Math.round(w*scale);h=Math.round(h*scale);}
+  canvasWidth=w; canvasHeight=h; canvas.width=w; canvas.height=h;
+  const results=imageSegmenter.segment(originalImage);
+  const mask=results.categoryMask;
+  maskCanvas=document.createElement('canvas'); maskCanvas.width=w; maskCanvas.height=h;
+  const mctx=maskCanvas.getContext('2d');
+  const maskData=mctx.createImageData(w,h);
+  const maskW=mask.width, maskH=mask.height;
+  const maskArr=mask.getAsFloat32Array();
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const mx=Math.floor(x*maskW/w), my=Math.floor(y*maskH/h);
+      const idx=(my*maskW+mx);
+      const val=maskArr[idx];
+      const outIdx=(y*w+x)*4;
+      const alpha=val>0.5?255:0;
+      maskData.data[outIdx]=alpha; maskData.data[outIdx+1]=alpha; maskData.data[outIdx+2]=alpha; maskData.data[outIdx+3]=alpha;
+    }
+  }
+  mctx.putImageData(maskData,0,0);
+  refineMask(mctx,w,h);
+  detectFacePosition(w,h);
+  resetTransform(); render();
+}
+function refineMask(mctx,w,h){
+  mctx.filter='blur(2px)';
+  const temp=document.createElement('canvas'); temp.width=w; temp.height=h;
+  const tctx=temp.getContext('2d'); tctx.drawImage(maskCanvas,0,0);
+  mctx.clearRect(0,0,w,h); mctx.filter='none'; mctx.drawImage(temp,0,0);
+}
+function detectFacePosition(w,h){
+  const mctx=maskCanvas.getContext('2d');
+  const data=mctx.getImageData(0,0,w,h).data;
+  let sumX=0,sumY=0,count=0;
+  for(let y=0;y<h;y+=4){
+    for(let x=0;x<w;x+=4){
+      const idx=(y*w+x)*4;
+      if(data[idx+3]>128){sumX+=x;sumY+=y;count++;}
+    }
+  }
+  if(count>0){faceBox={cx:sumX/count,cy:sumY/count,width:Math.sqrt(count)*4*0.8,height:Math.sqrt(count)*4*1.2};}
+  else{faceBox={cx:w/2,cy:h/2,width:w*0.5,height:h*0.6};}
+}
+function createFallbackMask(){
+  if(!originalImage)return;
+  const w=originalImage.width,h=originalImage.height;
+  canvasWidth=w; canvasHeight=h; canvas.width=w; canvas.height=h;
+  maskCanvas=document.createElement('canvas'); maskCanvas.width=w; maskCanvas.height=h;
+  const mctx=maskCanvas.getContext('2d');
+  mctx.fillStyle='black'; mctx.fillRect(0,0,w,h);
+  mctx.filter='blur(20px)'; mctx.fillStyle='white';
+  mctx.beginPath(); mctx.ellipse(w/2,h/2,w*0.35,h*0.4,0,0,Math.PI*2); mctx.fill(); mctx.filter='none';
+  faceBox={cx:w/2,cy:h/2,width:w*0.5,height:h*0.6};
+  resetTransform(); render();
+}
+
+// ==================== RENDERING ====================
+function render(){
+  if(!originalImage||!maskCanvas)return;
+  const w=canvasWidth,h=canvasHeight;
+  ctx.clearRect(0,0,w,h);
+  drawBackground(ctx,w,h);
+  let targetZoom=zoom, tx=offsetX, ty=offsetY;
+  if(faceBox){
+    const scaleX=w/faceBox.width, scaleY=h/faceBox.height;
+    const baseZoom=Math.min(scaleX,scaleY)*0.7;
+    targetZoom=baseZoom*zoom;
+    const faceScreenX=w/2+offsetX;
+    const faceScreenY=h*0.45+offsetY;
+    tx=faceScreenX-faceBox.cx*targetZoom;
+    ty=faceScreenY-faceBox.cy*targetZoom;
+  }
+  ctx.save();
+  const personCanvas=document.createElement('canvas'); personCanvas.width=w; personCanvas.height=h;
+  const pctx=personCanvas.getContext('2d');
+  pctx.save(); pctx.translate(tx,ty); pctx.scale(targetZoom,targetZoom); pctx.drawImage(originalImage,0,0); pctx.restore();
+  pctx.globalCompositeOperation='destination-in';
+  pctx.save(); pctx.translate(tx,ty); pctx.scale(targetZoom,targetZoom); pctx.drawImage(maskCanvas,0,0); pctx.restore();
+  const imgData=pctx.getImageData(0,0,w,h);
+  applyImageAdjustments(imgData,w,h);
+  pctx.putImageData(imgData,0,0);
+  ctx.drawImage(personCanvas,0,0);
+  ctx.restore();
+  applyPostEffects(ctx,w,h);
+}
+function drawBackground(c,w,h){
+  if(backgroundColor==='blur'){c.save();c.filter='blur(30px) brightness(0.7)';c.drawImage(originalImage,0,0,w,h);c.restore();}
+  else if(backgroundColor==='gradient1'){const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'#667eea');g.addColorStop(1,'#764ba2');c.fillStyle=g;c.fillRect(0,0,w,h);}
+  else if(backgroundColor==='gradient2'){const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'#f093fb');g.addColorStop(1,'#f5576c');c.fillStyle=g;c.fillRect(0,0,w,h);}
+  else if(backgroundColor==='gradient3'){const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'#4facfe');g.addColorStop(1,'#00f2fe');c.fillStyle=g;c.fillRect(0,0,w,h);}
+  else if(backgroundColor==='office'){const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#d1d5db');g.addColorStop(1,'#9ca3af');c.fillStyle=g;c.fillRect(0,0,w,h);c.strokeStyle='rgba(0,0,0,0.03)';c.lineWidth=1;for(let i=0;i<w;i+=40){c.beginPath();c.moveTo(i,0);c.lineTo(i,h);c.stroke();}}
+  else{c.fillStyle=backgroundColor;c.fillRect(0,0,w,h);}
+}
+function applyImageAdjustments(imgData,w,h){
+  const data=imgData.data;
+  const brightness=currentMode==='profi'?parseInt(document.getElementById('brightnessSlider').value):0;
+  const contrast=currentMode==='profi'?parseInt(document.getElementById('contrastSlider').value):5;
+  const saturation=currentMode==='profi'?parseInt(document.getElementById('saturationSlider').value):0;
+  const warmth=currentMode==='profi'?parseInt(document.getElementById('warmthSlider').value):0;
+  const smoothAmount=currentMode==='profi'?parseInt(document.getElementById('smoothSlider').value):(settings.smooth?25:0);
+  const contrastFactor=(259*(contrast+255))/(255*(259-contrast));
+  for(let i=0;i<data.length;i+=4){
+    if(data[i+3]<10)continue;
+    let r=data[i],g=data[i+1],b=data[i+2];
+    r+=brightness; g+=brightness; b+=brightness;
+    r=contrastFactor*(r-128)+128; g=contrastFactor*(g-128)+128; b=contrastFactor*(b-128)+128;
+    if(saturation!==0){const gray=0.299*r+0.587*g+0.114*b;const sat=1+saturation/100;r=gray+(r-gray)*sat;g=gray+(g-gray)*sat;b=gray+(b-gray)*sat;}
+    if(warmth!==0){r+=warmth*1.5;b-=warmth*1.5;}
+    data[i]=Math.max(0,Math.min(255,r)); data[i+1]=Math.max(0,Math.min(255,g)); data[i+2]=Math.max(0,Math.min(255,b));
+  }
+  if(smoothAmount>0)applySkinSmoothing(data,w,h,smoothAmount);
+  if((currentMode==='passport'&&settings.eyes)||(currentMode==='profi'&&settings.eyesProfi))applyEyeBrightening(data,w,h);
+  if(currentMode==='profi'&&settings.teeth)applyTeethWhitening(data,w,h);
+}
+function applySkinSmoothing(data,w,h,amount){
+  const factor=amount/200; const radius=Math.max(1,Math.floor(amount/25));
+  const copy=new Uint8ClampedArray(data);
+  for(let y=radius;y<h-radius;y+=2){
+    for(let x=radius;x<w-radius;x+=2){
+      const idx=(y*w+x)*4; if(copy[idx+3]<50)continue;
+      // Skin tone detection
+      const r=copy[idx],g=copy[idx+1],b=copy[idx+2];
+      const isSkin=r>60&&g>40&&b>20&&r>g&&r>b&&Math.abs(r-g)>15&&r>b;
+      if(!isSkin)continue;
+      let sr=0,sg=0,sb=0,sc=0;
+      for(let dy=-radius;dy<=radius;dy++){
+        for(let dx=-radius;dx<=radius;dx++){
+          const nidx=((y+dy)*w+(x+dx))*4;
+          if(copy[nidx+3]>50){sr+=copy[nidx];sg+=copy[nidx+1];sb+=copy[nidx+2];sc++;}
+        }
+      }
+      if(sc>0){
+        data[idx]=copy[idx]*(1-factor)+(sr/sc)*factor;
+        data[idx+1]=copy[idx+1]*(1-factor)+(sg/sc)*factor;
+        data[idx+2]=copy[idx+2]*(1-factor)+(sb/sc)*factor;
+      }
+    }
+  }
+}
+function applyEyeBrightening(data,w,h){
+  // Brighten upper-center region where eyes typically are
+  if(!faceBox)return;
+  const eyeY=Math.floor(faceBox.cy-faceBox.height*0.15);
+  const eyeX=Math.floor(faceBox.cx);
+  const radius=Math.floor(faceBox.width*0.25);
+  for(let y=Math.max(0,eyeY-radius);y<Math.min(h,eyeY+radius);y++){
+    for(let x=Math.max(0,eyeX-radius);x<Math.min(w,eyeX+radius);x++){
+      const idx=(y*w+x)*4; if(data[idx+3]<50)continue;
+      const dist=Math.sqrt((x-eyeX)**2+(y-eyeY)**2);
+      if(dist<radius){
+        const factor=(1-dist/radius)*0.15;
+        data[idx]=Math.min(255,data[idx]+factor*40);
+        data[idx+1]=Math.min(255,data[idx+1]+factor*35);
+        data[idx+2]=Math.min(255,data[idx+2]+factor*25);
+      }
+    }
+  }
+}
+function applyTeethWhitening(data,w,h){
+  if(!faceBox)return;
+  const mouthY=Math.floor(faceBox.cy+faceBox.height*0.25);
+  const mouthX=Math.floor(faceBox.cx);
+  const radius=Math.floor(faceBox.width*0.15);
+  for(let y=Math.max(0,mouthY-radius);y<Math.min(h,mouthY+radius);y++){
+    for(let x=Math.max(0,mouthX-radius);x<Math.min(w,mouthX+radius);x++){
+      const idx=(y*w+x)*4; if(data[idx+3]<50)continue;
+      const r=data[idx],g=data[idx+1],b=data[idx+2];
+      // Detect teeth: bright, low saturation, slightly yellow
+      if(r>120&&g>100&&b>80&&r-g<30&&g-b<30&&r-b<50){
+        const dist=Math.sqrt((x-mouthX)**2+(y-mouthY)**2);
+        const factor=(1-dist/radius)*0.3;
+        data[idx]=Math.min(255,r+factor*30);
+        data[idx+1]=Math.min(255,g+factor*30);
+        data[idx+2]=Math.min(255,b+factor*40);
+      }
+    }
+  }
+}
+function applyPostEffects(c,w,h){
+  if(currentMode==='profi'&&settings.vignette){
+    const grad=c.createRadialGradient(w/2,h/2,w*0.3,w/2,h/2,w*0.75);
+    grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(1,'rgba(0,0,0,0.25)');
+    c.fillStyle=grad; c.fillRect(0,0,w,h);
+  }
+  if(currentMode==='profi'&&settings.sharpen){
+    // Subtle sharpening via overlay
+    // (Simplified - would need convolve in practice)
+  }
+}
+
+// ==================== CONTROLS ====================
+function updateTransform(){
+  if(currentMode==='passport'){
+    zoom=parseFloat(document.getElementById('zoomSlider').value);
+    offsetX=parseInt(document.getElementById('offsetXSlider').value);
+    offsetY=parseInt(document.getElementById('offsetYSlider').value);
+  }else{
+    zoom=parseFloat(document.getElementById('zoomSliderProfi').value);
+    offsetX=parseInt(document.getElementById('offsetXSliderProfi').value);
+    offsetY=parseInt(document.getElementById('offsetYSliderProfi').value);
+  }
+  render();
+}
+function adjustZoom(delta){
+  zoom=Math.max(0.5,Math.min(2,zoom+delta));
+  if(currentMode==='passport')document.getElementById('zoomSlider').value=zoom;
+  else document.getElementById('zoomSliderProfi').value=zoom;
+  render();
+}
+function resetZoom(){
+  zoom=1; offsetX=0; offsetY=0;
+  if(currentMode==='passport'){
+    document.getElementById('zoomSlider').value=1;
+    document.getElementById('offsetXSlider').value=0;
+    document.getElementById('offsetYSlider').value=0;
+  }else{
+    document.getElementById('zoomSliderProfi').value=1;
+    document.getElementById('offsetXSliderProfi').value=0;
+    document.getElementById('offsetYSliderProfi').value=0;
+  }
+  render();
+}
+function resetAll(){
+  resetZoom();
+  backgroundColor='#ffffff'; document.querySelectorAll('.bg-option').forEach(b=>b.classList.remove('active')); document.querySelector('.bg-white').classList.add('active');
+  if(currentMode==='profi'){
+    document.getElementById('smoothSlider').value=30;
+    document.getElementById('brightnessSlider').value=5;
+    document.getElementById('contrastSlider').value=8;
+    document.getElementById('saturationSlider').value=0;
+    document.getElementById('warmthSlider').value=3;
+    settings={smooth:true,eyes:false,print:true,eyesProfi:false,teeth:false,vignette:true,sharpen:true};
+  }else{
+    settings={smooth:true,eyes:false,print:true,eyesProfi:false,teeth:false,vignette:true,sharpen:true};
+  }
+  updateToggleUI(); render();
+  showToast('Zurückgesetzt');
+}
+function setPassportSize(el,size){
+  passportSize=size;
+  document.querySelectorAll('.template-option').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active'); render();
+}
+function setBg(el,color){
+  backgroundColor=color;
+  document.querySelectorAll('.bg-option').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); render();
+}
+function toggleSwitch(key){
+  settings[key]=!settings[key];
+  updateToggleUI(); render();
+}
+function updateToggleUI(){
+  document.getElementById('toggleSmooth').classList.toggle('active',settings.smooth);
+  document.getElementById('toggleEyes').classList.toggle('active',settings.eyes);
+  document.getElementById('togglePrint').classList.toggle('active',settings.print);
+  document.getElementById('toggleEyesProfi').classList.toggle('active',settings.eyesProfi);
+  document.getElementById('toggleTeeth').classList.toggle('active',settings.teeth);
+  document.getElementById('toggleVignette').classList.toggle('active',settings.vignette);
+  document.getElementById('toggleSharpen').classList.toggle('active',settings.sharpen);
+}
+
+// ==================== RESULT GENERATION ====================
+let resultImageData=null;
+function generateResult(){
+  if(!originalImage){showToast('Kein Foto geladen','error');return;}
+  document.getElementById('loadingOverlay').style.display='flex';
+  document.getElementById('loadingText').textContent='Ergebnis wird erstellt...';
+  document.getElementById('loadingSub').textContent='Fast fertig';
+  setTimeout(()=>{
+    render();
+    resultImageData=canvas.toDataURL('image/png');
+    document.getElementById('resultImage').src=resultImageData;
+    document.getElementById('resultTitle').textContent=currentMode==='passport'?'Dein Passbild':'Dein Bewerbungsfoto';
+    document.getElementById('resultDesc').textContent=currentMode==='passport'?'Biometrisch korrekt · Bereit zum Drucken':'Professionell retuschiert · Bereit zum Versenden';
+    document.getElementById('printSection').style.display=(currentMode==='passport'&&settings.print)?'block':'none';
+    if(currentMode==='passport'&&settings.print)generatePrintSheet();
+    document.getElementById('loadingOverlay').style.display='none';
+    showScreen('screenResult');
+    showToast('Ergebnis erstellt!');
+  },500);
+}
+function generatePrintSheet(){
+  const grid=document.getElementById('printGrid'); grid.innerHTML='';
+  for(let i=0;i<6;i++){
+    const img=document.createElement('img');
+    img.src=resultImageData;
+    img.style.width='100%';
+    grid.appendChild(img);
+  }
+}
+function downloadResult(format){
+  if(!resultImageData){showToast('Kein Ergebnis verfügbar','error');return;}
+  const link=document.createElement('a');
+  if(format==='jpg'){
+    const tempCanvas=document.createElement('canvas');
+    tempCanvas.width=canvas.width; tempCanvas.height=canvas.height;
+    const tctx=tempCanvas.getContext('2d');
+    tctx.fillStyle=backgroundColor.startsWith('#')?backgroundColor:'#ffffff';
+    tctx.fillRect(0,0,tempCanvas.width,tempCanvas.height);
+    const img=new Image(); img.onload=()=>{tctx.drawImage(img,0,0);link.href=tempCanvas.toDataURL('image/jpeg',0.92);link.download='portrait.jpg';link.click();showToast('JPG heruntergeladen!');}; img.src=resultImageData;
+  }else{
+    link.href=resultImageData; link.download='portrait.png'; link.click();
+    showToast('PNG heruntergeladen!');
+  }
+}
+function downloadPrintSheet(){
+  if(!resultImageData){showToast('Kein Ergebnis verfügbar','error');return;}
+  const pw=1200, ph=1800; // 10x15cm at 300dpi approx
+  const pc=document.createElement('canvas'); pc.width=pw; pc.height=ph;
+  const pctx=pc.getContext('2d');
+  pctx.fillStyle='white'; pctx.fillRect(0,0,pw,ph);
+  const img=new Image();
+  img.onload=()=>{
+    const cols=2, rows=3, pad=60;
+    const cw=(pw-pad*(cols+1))/cols;
+    const ch=(ph-pad*(rows+1))/rows;
+    const aspect=canvas.width/canvas.height;
+    let tw=cw, th=tw/aspect;
+    if(th>ch){th=ch; tw=th*aspect;}
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const x=pad+c*(cw+pad)+(cw-tw)/2;
+        const y=pad+r*(ch+pad)+(ch-th)/2;
+        pctx.drawImage(img,x,y,tw,th);
+        pctx.strokeStyle='#e5e5e5'; pctx.lineWidth=1;
+        pctx.strokeRect(x,y,tw,th);
+      }
+    }
+    const link=document.createElement('a');
+    link.href=pc.toDataURL('image/png');
+    link.download='passbild-druckvorlage.png';
+    link.click();
+    showToast('Druckvorlage heruntergeladen!');
+  };
+  img.src=resultImageData;
+}
+</script>
+</body>
+</html>

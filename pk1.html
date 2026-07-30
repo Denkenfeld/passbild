@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FotoStudio AI – Passbild & Bewerbungsfoto</title>
+<style>
+  :root{
+    --bg:#0b0c10; --card:#16181d; --card2:#1e2128; --line:#2a2e37;
+    --txt:#f2f3f5; --sub:#9aa1ad; --acc:#5b8cff; --acc2:#3ddc97;
+    --r:18px; --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--txt);overflow-x:hidden;
+    display:flex;flex-direction:column;min-height:100dvh;
+  }
+  header{
+    padding:calc(env(safe-area-inset-top,0px) + 14px) 20px 12px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,12,16,.85);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);z-index:50;
+  }
+  .logo{font-size:17px;font-weight:700;letter-spacing:.3px}
+  .logo span{color:var(--acc)}
+  .badge{font-size:11px;color:var(--acc2);border:1px solid var(--acc2);
+    padding:3px 9px;border-radius:99px;opacity:.9}
+  main{flex:1;display:flex;flex-direction:column;padding:20px;gap:16px;max-width:560px;margin:0 auto;width:100%}
+  .step{display:flex;gap:6px;align-items:center;justify-content:center;padding:2px 0}
+  .dot{width:26px;height:26px;border-radius:50%;background:var(--card2);color:var(--sub);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;
+    border:1px solid var(--line);transition:all .3s}
+  .dot.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .seg{width:22px;height:1px;background:var(--line)}
+  .view{display:none;flex-direction:column;gap:16px;animation:fade .35s ease}
+  .view.on{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .drop{
+    border:2px dashed var(--line);border-radius:var(--r);padding:44px 24px;text-align:center;
+    background:var(--card);transition:all .25s;cursor:pointer;user-select:none;
+  }
+  .drop:active,.drop.over{border-color:var(--acc);background:var(--card2);transform:scale(.99)}
+  .drop .ic{font-size:44px;margin-bottom:10px}
+  .drop h2{font-size:18px;font-weight:600;margin-bottom:6px}
+  .drop p{font-size:13px;color:var(--sub)}
+  .btn{
+    appearance:none;border:none;border-radius:14px;padding:15px 18px;font-size:15px;font-weight:600;
+    background:var(--acc);color:#fff;cursor:pointer;width:100%;transition:transform .15s,opacity .2s;
+    font-family:inherit;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+  .btn.green{background:var(--acc2);color:#06281b}
+  .row{display:flex;gap:10px}
+  .canvasWrap{
+    position:relative;border-radius:var(--r);overflow:hidden;background:#000;
+    border:1px solid var(--line);touch-action:none;
+  }
+  canvas{display:block;width:100%;height:auto}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px}
+  .panel h3{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--sub);font-weight:600}
+  .swatches{display:flex;gap:10px;flex-wrap:wrap}
+  .sw{width:52px;height:52px;border-radius:12px;border:2px solid transparent;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#000;
+    transition:transform .15s;flex-shrink:0}
+  .sw:active{transform:scale(.92)}
+  .sw.on{border-color:var(--acc);box-shadow:0 0 0 3px rgba(91,140,255,.25)}
+  .sliderRow{display:flex;flex-direction:column;gap:6px}
+  .sliderRow label{font-size:13px;display:flex;justify-content:space-between;color:var(--txt)}
+  .sliderRow label b{color:var(--acc);font-weight:600}
+  input[type=range]{width:100%;appearance:none;height:4px;border-radius:2px;background:var(--line);outline:none}
+  input[type=range]::-webkit-slider-thumb{
+    appearance:none;width:24px;height:24px;border-radius:50%;background:var(--acc);
+    box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:pointer;
+  }
+  .overlay{
+    position:fixed;inset:0;background:rgba(5,6,8,.94);backdrop-filter:blur(10px);
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    z-index:100;padding:30px;text-align:center;
+  }
+  .overlay.on{display:flex}
+  .ring{width:74px;height:74px;position:relative}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .bg{stroke:var(--line)}
+  .ring .fg{stroke:var(--acc);stroke-linecap:round;transition:stroke-dashoffset .3s}
+  .ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .loadMsg{font-size:15px;font-weight:600}
+  .loadSub{font-size:12.5px;color:var(--sub);max-width:300px;line-height:1.5}
+  .hint{font-size:12px;color:var(--sub);text-align:center;line-height:1.5}
+  .modeTabs{display:flex;background:var(--card2);border-radius:12px;padding:4px;gap:4px}
+  .modeTabs button{
+    flex:1;border:none;background:transparent;color:var(--sub);padding:11px;border-radius:9px;
+    font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;
+  }
+  .modeTabs button.on{background:var(--acc);color:#fff}
+  #statusBar{font-size:12px;color:var(--sub);text-align:center}
+  .shutter{
+    width:70px;height:70px;border-radius:50%;border:5px solid #fff;background:transparent;
+    cursor:pointer;margin:0 auto;display:block;transition:transform .1s;
+  }
+  .shutter:active{transform:scale(.9)}
+  video{width:100%;border-radius:var(--r);border:1px solid var(--line);background:#000;display:block}
+  .passFrame{position:relative;border-radius:var(--r);overflow:hidden}
+  .guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Foto<span>Studio</span> AI</div>
+  <div class="badge" id="gpuBadge">100 % lokal</div>
+</header>
+
+<main>
+  <div class="step">
+    <div class="dot on" id="d1">1</div><div class="seg"></div>
+    <div class="dot" id="d2">2</div><div class="seg"></div>
+    <div class="dot" id="d3">3</div>
+  </div>
+
+  <!-- VIEW 1 : UPLOAD -->
+  <section class="view on" id="v1">
+    <div class="drop" id="drop">
+      <div class="ic">📸</div>
+      <h2>Foto auswählen</h2>
+      <p>Selfie oder Portrait – den Rest erledigt die KI.<br>Nichts wird hochgeladen, alles bleibt auf deinem Gerät.</p>
+    </div>
+    <input type="file" id="fileIn" accept="image/*" hidden>
+    <div class="row">
+      <button class="btn" id="btnPick">🖼️&ensp;Galerie</button>
+      <button class="btn ghost" id="btnCam">🤳&ensp;Selfie aufnehmen</button>
+    </div>
+    <video id="cam" playsinline autoplay style="display:none"></video>
+    <button class="shutter" id="shutter" style="display:none" aria-label="Foto aufnehmen"></button>
+    <p class="hint">Tipp: Gute Ausleuchtung von vorne, schulterfrei, frontal in die Kamera schauen.</p>
+  </section>
+
+  <!-- VIEW 2 : EDIT -->
+  <section class="view" id="v2">
+    <div class="modeTabs">
+      <button class="on" id="tabPass">🪪 Passbild</button>
+      <button id="tabJob">💼 Bewerbung</button>
+    </div>
+    <div class="canvasWrap"><canvas id="editCv"></canvas></div>
+    <div class="panel" id="bgPanel">
+      <h3>Hintergrund</h3>
+      <div class="swatches" id="swatches"></div>
+    </div>
+    <div class="panel">
+      <h3>Feinschliff (KI-gestützt)</h3>
+      <div class="sliderRow">
+        <label>Haut glätten <b id="vSmooth">0 %</b></label>
+        <input type="range" id="rSmooth" min="0" max="100" value="0">
+      </div>
+      <div class="sliderRow">
+        <label>Kanten-Feinschliff <b id="vEdge">0</b></label>
+        <input type="range" id="rEdge" min="-20" max="20" value="0">
+      </div>
+      <div class="sliderRow">
+        <label>Helligkeit <b id="vBright">0</b></label>
+        <input type="range" id="rBright" min="-40" max="40" value="0">
+      </div>
+      <div class="sliderRow">
+        <label>Wärme <b id="vWarm">0</b></label>
+        <input type="range" id="rWarm" min="-30" max="30" value="0">
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="btnBack">← Neu</button>
+      <button class="btn green" id="btnGo">Weiter →</button>
+    </div>
+  </section>
+
+  <!-- VIEW 3 : EXPORT -->
+  <section class="view" id="v3">
+    <div class="canvasWrap" id="finalWrap">
+      <canvas id="finalCv"></canvas>
+      <img class="guide" id="passGuide" style="display:none" width="70%">
+    </div>
+    <p class="hint" id="finalHint"></p>
+    <div class="row">
+      <button class="btn ghost" id="btnBack2">← Bearbeiten</button>
+      <button class="btn green" id="btnDl">⬇️&ensp;Herunterladen</button>
+    </div>
+    <p id="statusBar"></p>
+  </section>
+</main>
+
+<!-- LOADING OVERLAY -->
+<div class="overlay" id="ovl">
+  <div class="ring">
+    <svg width="74" height="74">
+      <circle class="bg" cx="37" cy="37" r="32" fill="none" stroke-width="5"/>
+      <circle class="fg" id="ringFg" cx="37" cy="37" r="32" fill="none" stroke-width="5"
+              stroke-dasharray="201" stroke-dashoffset="201"/>
+    </svg>
+    <b id="ringTxt">0%</b>
+  </div>
+  <div class="loadMsg" id="loadMsg">KI wird geladen…</div>
+  <div class="loadSub" id="loadSub">Das Modell (~45 MB) wird einmalig heruntergeladen und im Browser gespeichert. Beim nächsten Mal geht's sofort.</div>
+</div>
+
+<script type="module">
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.2';
+
+env.allowLocalModels = false;
+
+const $ = id => document.getElementById(id);
+const state = {
+  mode: 'pass',            // 'pass' | 'job'
+  img: null,               // ImageBitmap original
+  cut: null,               // canvas: RGBA cutout (Originalgröße)
+  mask: null,              // Float32 mask 0..1 (Originalgröße)
+  skinMask: null,          // Float32 skin mask
+  bg: {type:'color', val:'#ffffff'},
+  f: {smooth:0, edge:0, bright:0, warm:0},
+  stream: null,
+};
+
+/* ---------- UI helpers ---------- */
+function show(v){ document.querySelectorAll('.view').forEach(e=>e.classList.remove('on')); $(v).classList.add('on');
+  const n = v==='v1'?1 : v==='v2'?2 : 3;
+  [1,2,3].forEach(i=>$('d'+i).classList.toggle('on', i<=n));
+}
+const CIRC = 201;
+function progress(p,msg,sub){
+  $('ovl').classList.add('on');
+  $('ringFg').style.strokeDashoffset = CIRC*(1-p);
+  $('ringTxt').textContent = Math.round(p*100)+'%';
+  if(msg) $('loadMsg').textContent = msg;
+  if(sub) $('loadSub').textContent = sub;
+}
+function hideOvl(){ $('ovl').classList.remove('on'); }
+
+/* ---------- KI: RMBG-1.4 (WebGPU, on-device) ---------- */
+let remover = null;
+async function loadAI(){
+  if(remover) return remover;
+  const device = navigator.gpu ? 'webgpu' : 'wasm';
+  $('gpuBadge').textContent = navigator.gpu ? '⚡ WebGPU' : '100 % lokal';
+  remover = await pipeline('background-removal', 'briaai/RMBG-1.4', {
+    device, dtype: device==='webgpu' ? 'fp16' : 'fp32',
+    progress_callback: d => {
+      if(d.status==='progress') progress(d.progress/100, 'KI-Modell wird geladen…');
+    }
+  });
+  return remover;
+}
+
+async function segment(imgBitmap){
+  progress(0,'Hintergrund wird entfernt…','Die KI analysiert dein Foto. Das kann beim ersten Mal einen Moment dauern – Qualität braucht etwas Zeit. ✨');
+  const r = await loadAI();
+  const c = document.createElement('canvas');
+  c.width = imgBitmap.width; c.height = imgBitmap.height;
+  c.getContext('2d').drawImage(imgBitmap,0,0);
+  const out = await r(c.toDataURL('image/png'));
+  const img = new Image();
+  await new Promise((res,rej)=>{ img.onload=res; img.onerror=rej; img.src = out[0].src; });
+  const cut = document.createElement('canvas');
+  cut.width = imgBitmap.width; cut.height = imgBitmap.height;
+  const cx = cut.getContext('2d',{willReadFrequently:true});
+  cx.drawImage(img,0,0);
+  // Alpha-Maske extrahieren
+  const d = cx.getImageData(0,0,cut.width,cut.height);
+  const mask = new Float32Array(cut.width*cut.height);
+  for(let i=0;i<mask.length;i++) mask[i] = d.data[i*4+3]/255;
+  return {cut, mask, ctx:cx, data:d};
+}
+
+/* ---------- Hautsegmentierung (MediaPipe) ---------- */
+let segMP = null;
+async function skinSegment(bitmap){
+  try{
+    if(!segMP){
+      const vis = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
+      const files = await vis.FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      segMP = await vis.ImageSegmenter.createFromOptions(files,{
+        baseOptions:{modelAssetPath:
+          'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite'},
+        outputConfidenceMasks:true, runningMode:'IMAGE'});
+    }
+    const res = segMP.segment(bitmap);
+    if(!res.confidenceMasks || !res.confidenceMasks[0]) return null;
+    const m = res.confidenceMasks[0]; // Klasse 0 = Hintergrund, Klasse 1 = Person
+    const w=m.width,h=m.height, data=m.getAsFloat32Array();
+    // auf Originalgröße hochskalieren (Personen-Maske ≈ Haut-/Körperregion)
+    const tmp=document.createElement('canvas'); tmp.width=w; tmp.height=h;
+    const id=new ImageData(w,h);
+    for(let i=0;i<w*h;i++){ const v=(1-data[i])*255; id.data[i*4]=id.data[i*4+1]=id.data[i*4+2]=v; id.data[i*4+3]=255; }
+    tmp.getContext('2d').putImageData(id,0,0);
+    const big=document.createElement('canvas'); big.width=bitmap.width; big.height=bitmap.height;
+    const bctx=big.getContext('2d'); bctx.imageSmoothingEnabled=true; bctx.drawImage(tmp,0,0,big.width,big.height);
+    const bd=bctx.getImageData(0,0,big.width,big.height).data;
+    const skin=new Float32Array(big.width*big.height);
+    for(let i=0;i<skin.length;i++) skin[i]=bd[i*4]/255;
+    m.close && m.close(); res.close && res.close();
+    return skin;
+  }catch(e){ console.warn('Skin-Segmentierung übersprungen', e); return null; }
+}
+
+/* ---------- Bildbearbeitung ---------- */
+function featherMask(mask,w,h,edge){
+  // edge>0: erweitern+weich, edge<0: zuschneiden. 1 Einheit = ~0.3% der Bildhöhe
+  const px = Math.round(edge * h * 0.003);
+  if(px===0) return mask;
+  // Box-Blur-basierte Dilatation/Erosion (2 Pässe ≈ Gauss)
+  let m = Float32Array.from(mask);
+  const rad = Math.abs(px), erode = px<0;
+  for(let pass=0;pass<2;pass++){
+    const tmp = new Float32Array(m.length);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      let acc=erode?1e9:0;
+      for(let k=-rad;k<=rad;k++){ const xx=Math.min(w-1,Math.max(0,x+k));
+        const v=m[y*w+xx]; acc = erode?Math.min(acc,v):Math.max(acc,v); }
+      tmp[y*w+x]=acc;
+    }
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      let acc=erode?1e9:0;
+      for(let k=-rad;k<=rad;k++){ const yy=Math.min(h-1,Math.max(0,y+k));
+        const v=tmp[yy*w+x]; acc = erode?Math.min(acc,v):Math.max(acc,v); }
+      m[y*w+x]=acc;
+    }
+  }
+  // Weichzeichnen (Blur)
+  if(rad>0){
+    const tmp=new Float32Array(m.length);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      let s=0,c=0;
+      for(let k=-rad;k<=rad;k++){ const xx=x+k; if(xx>=0&&xx<w){s+=m[y*w+xx];c++;} }
+      tmp[y*w+x]=s/c;
+    }
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      let s=0,c=0;
+      for(let k=-rad;k<=rad;k++){ const yy=y+k; if(yy>=0&&yy<h){s+=tmp[yy*w+x];c++;} }
+      m[y*w+x]=s/c;
+    }
+  }
+  return m;
+}
+
+function boxBlur(src,w,h,r){
+  // einfacher 2-Pass Box-Blur auf RGB
+  const out = new Uint8ClampedArray(src);
+  const tmp = new Uint8ClampedArray(src);
+  for(let y=0;y<h;y++){ let rs=0,gs=0,bs=0;
+    for(let x=-r;x<w+r;x++){
+      const xi=Math.min(w-1,Math.max(0,x));
+      if(x-r-1>=0){const i=(y*w+x-r-1)*4; rs-=tmp[i];gs-=tmp[i+1];bs-=tmp[i+2];}
+      const j=(y*w+xi)*4; rs+=tmp[j];gs+=tmp[j+1];bs+=tmp[j+2];
+      if(x>=0){const o=(y*w+x)*4,n=Math.min(x+r+1,w)-Math.max(x-r,0);
+        out[o]=rs/n;out[o+1]=gs/n;out[o+2]=bs/n;}
+    }}
+  const fin = new Uint8ClampedArray(out);
+  for(let x=0;x<w;x++){ let rs=0,gs=0,bs=0;
+    for(let y=-r;y<h+r;y++){
+      const yi=Math.min(h-1,Math.max(0,y));
+      if(y-r-1>=0){const i=((y-r-1)*w+x)*4; rs-=out[i];gs-=out[i+1];bs-=out[i+2];}
+      const j=(yi*w+x)*4; rs+=out[j];gs+=out[j+1];bs+=out[j+2];
+      if(y>=0){const o=(y*w+x)*4,n=Math.min(y+r+1,h)-Math.max(y-r,0);
+        fin[o]=rs/n;fin[o+1]=gs/n;fin[o+2]=bs/n;}
+    }}
+  return fin;
+}
+
+function render(){
+  if(!state.cut) return;
+  const {ctx,data,cut,mask} = state.cut;
+  const w=cut.width,h=cut.height;
+  const m = featherMask(mask,w,h,state.f.edge);
+  const px = new Uint8ClampedArray(data.data);
+
+  // Hautglättung (selektiver Blur nur auf Haut/Person, Kanten erhalten)
+  const sm = state.f.smooth/100;
+  if(sm>0){
+    const blur = boxBlur(px,w,h,Math.max(2,Math.round(w*0.006)));
+    for(let i=0;i<w*h;i++){
+      const s = state.skinMask ? state.skinMask[i] : m[i];
+      const a = sm * s * m[i];
+      if(a<=0) continue;
+      const o=i*4;
+      px[o]  = px[o]*(1-a)  + blur[o]*a;
+      px[o+1]= px[o+1]*(1-a)+ blur[o+1]*a;
+      px[o+2]= px[o+2]*(1-a)+ blur[o+2]*a;
+    }
+  }
+  // Helligkeit / Wärme (nur Vordergrund)
+  const br=state.f.bright, wa=state.f.warm;
+  if(br||wa){
+    for(let i=0;i<w*h;i++){
+      if(m[i]<0.05) continue;
+      const o=i*4;
+      px[o]  += br + wa;
+      px[o+1]+= br + wa*0.3;
+      px[o+2]+= br - wa;
+    }
+  }
+  // Composite auf Hintergrund
+  const cv=$('editCv'); cv.width=w; cv.height=h;
+  const cc=cv.getContext('2d');
+  paintBg(cc,w,h);
+  const fg=new ImageData(px,w,h);
+  for(let i=0;i<w*h;i++) fg.data[i*4+3]=m[i]*255;
+  const t=document.createElement('canvas'); t.width=w; t.height=h;
+  t.getContext('2d').putImageData(fg,0,0);
+  cc.drawImage(t,0,0);
+}
+
+function paintBg(cc,w,h){
+  const b=state.bg;
+  if(b.type==='color'){ cc.fillStyle=b.val; cc.fillRect(0,0,w,h); }
+  else if(b.type==='grad'){
+    const g=cc.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,b.val[0]); g.addColorStop(1,b.val[1]);
+    cc.fillStyle=g; cc.fillRect(0,0,w,h);
+  }
+  else if(b.type==='blur' && state.img){
+    // Hintergrund = stark weichgezeichnetes Original
+    const tmp=document.createElement('canvas'); const s=0.12;
+    tmp.width=Math.max(8,w*s); tmp.height=Math.max(8,h*s);
+    const tc=tmp.getContext('2d'); tc.drawImage(state.img,0,0,tmp.width,tmp.height);
+    cc.imageSmoothingEnabled=true; cc.drawImage(tmp,0,0,w,h);
+    cc.fillStyle='rgba(255,255,255,.35)'; cc.fillRect(0,0,w,h);
+  }
+}
+
+/* ---------- Hintergrund-Styles ---------- */
+const BGS_PASS=[{t:'color',v:'#ffffff',l:'Weiß'},{t:'color',v:'#f0f2f5',l:'Hellgrau'},{t:'color',v:'#e8eef7',l:'Hellblau'}];
+const BGS_JOB=[
+  {t:'color',v:'#ffffff',l:'Weiß'},{t:'grad',v:['#dfe3e8','#aeb6bf'],l:'Studio'},
+  {t:'grad',v:['#3a4a63','#1c2534'],l:'Business'},{t:'grad',v:['#e8dccf','#c9b8a3'],l:'Warm'},
+  {t:'blur',l:'Büro-Unschärfe'}
+];
+function buildSwatches(){
+  const list = state.mode==='pass'?BGS_PASS:BGS_JOB;
+  const el=$('swatches'); el.innerHTML='';
+  list.forEach((b,i)=>{
+    const d=document.createElement('div'); d.className='sw'; d.title=b.l;
+    if(b.t==='color') d.style.background=b.v;
+    else if(b.t==='grad') d.style.background=`linear-gradient(160deg,${b.v[0]},${b.v[1]})`;
+    else d.style.background='linear-gradient(160deg,#999,#ddd)';
+    d.style.color = b.t==='grad'&&b.v[0].startsWith('#3')?'#fff':'#000';
+    d.textContent=b.l;
+    if(i===0) d.classList.add('on');
+    d.onclick=()=>{ el.querySelectorAll('.sw').forEach(s=>s.classList.remove('on')); d.classList.add('on');
+      state.bg={type:b.t,val:b.v}; render(); };
+    el.appendChild(d);
+  });
+  state.bg={type:list[0].t,val:list[0].v};
+}
+
+/* ---------- Export ---------- */
+function exportImage(){
+  const {cut,mask}=state.cut; const w=cut.width,h=cut.height;
+  // Personen-Bounding-Box
+  let x0=w,y0=h,x1=0,y1=0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    if(mask[y*w+x]>0.5){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  }
+  const pw=x1-x0, ph=y1-y0;
+  let W,H;
+  if(state.mode==='pass'){ W=826; H=1063; }        // 35×45 mm @ ~600dpi Verhältnis
+  else { W=1063; H=1417; }                          // 3:4 Portrait Bewerbung
+  const cv=$('finalCv'); cv.width=W; cv.height=H;
+  const cc=cv.getContext('2d');
+  paintBg(cc,W,H);
+  // Skalierung: Kopf+Schulter füllt ~70% Höhe, zentriert etwas über Mitte
+  const scale = state.mode==='pass' ? (H*0.78)/ph : (H*0.9)/ph;
+  const dw=pw*scale, dh=ph*scale;
+  const dx=(W-dw)/2, dy=state.mode==='pass' ? H*0.92-dh : H-dh - H*0.02;
+  cc.drawImage($('editCv'), x0,y0,pw,ph, dx,dy,dw,dh);
+  $('passGuide').style.display = state.mode==='pass' ? 'block':'none';
+  $('finalHint').textContent = state.mode==='pass'
+    ? 'Format 35 × 45 mm (biometrisch, weißer Hintergrund). Drucke auf Fotopapier oder nutze einen dm/Rossmann-Fotoservice.'
+    : 'Format 3:4 – ideal für Lebenslauf und LinkedIn.';
+}
+
+/* ---------- Events ---------- */
+$('btnPick').onclick=()=>$('fileIn').click();
+$('drop').onclick=()=>$('fileIn').click();
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('over')};
+$('drop').ondragleave=()=>$('drop').classList.remove('over');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('over');
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);};
+$('fileIn').onchange=e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); };
+
+async function handleFile(file){
+  try{
+    const bmp = await createImageBitmap(file);
+    await processImage(bmp);
+  }catch(e){ alert('Bild konnte nicht geladen werden.'); }
+}
+
+$('btnCam').onclick=async()=>{
+  try{
+    state.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1920},height:{ideal:1920}}});
+    $('cam').srcObject=state.stream; $('cam').style.display='block'; $('shutter').style.display='block';
+  }catch(e){ alert('Kamera nicht verfügbar. Bitte Berechtigung erlauben oder ein Foto aus der Galerie wählen.'); }
+};
+$('shutter').onclick=async()=>{
+  const v=$('cam'); const c=document.createElement('canvas');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  const cc=c.getContext('2d'); cc.translate(c.width,0); cc.scale(-1,1); // Spiegelung
+  cc.drawImage(v,0,0);
+  state.stream.getTracks().forEach(t=>t.stop());
+  $('cam').style.display='none'; $('shutter').style.display='none';
+  const bmp=await createImageBitmap(c);
+  await processImage(bmp);
+};
+
+async function processImage(bmp){
+  try{
+    state.img=bmp;
+    const seg = await segment(bmp);
+    state.cut={cut:seg.cut, mask:seg.mask, ctx:seg.ctx, data:seg.data};
+    progress(0.9,'Hautanalyse läuft…','Fast fertig – die Hautglättung wird vorbereitet.');
+    state.skinMask = await skinSegment(bmp);
+    hideOvl();
+    buildSwatches();
+    show('v2'); render();
+  }catch(e){
+    hideOvl(); console.error(e);
+    alert('Fehler bei der KI-Verarbeitung: '+e.message);
+  }
+}
+
+/* Slider */
+const bind=(id,vid,key,fmt)=>{
+  $(id).oninput=e=>{ state.f[key]=+e.target.value; $(vid).textContent=fmt?fmt(e.target.value):e.target.value;
+    clearTimeout(state._t); state._t=setTimeout(render,60); };
+};
+bind('rSmooth','vSmooth','smooth',v=>v+' %');
+bind('rEdge','vEdge','edge');
+bind('rBright','vBright','bright');
+bind('rWarm','vWarm','warm');
+
+/* Tabs */
+$('tabPass').onclick=()=>{ state.mode='pass'; $('tabPass').classList.add('on'); $('tabJob').classList.remove('on'); buildSwatches(); render(); };
+$('tabJob').onclick=()=>{ state.mode='job'; $('tabJob').classList.add('on'); $('tabPass').classList.remove('on'); buildSwatches(); render(); };
+
+/* Navigation */
+$('btnBack').onclick=()=>show('v1');
+$('btnGo').onclick=()=>{ exportImage(); show('v3'); };
+$('btnBack2').onclick=()=>show('v2');
+$('btnDl').onclick=()=>{
+  const a=document.createElement('a');
+  a.download = state.mode==='pass'?'passbild.png':'bewerbungsfoto.png';
+  a.href=$('finalCv').toDataURL('image/png');
+  a.click();
+  $('statusBar').textContent='✅ Gespeichert – danke fürs Nutzen von FotoStudio AI';
+};
+</script>
+</body>
+</html>
