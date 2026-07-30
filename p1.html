@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Passport & Photo Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --radius: 16px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 24px 0 16px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 24px 0;
+        }
+
+        .step {
+            width: 40px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: var(--primary);
+            width: 60px;
+        }
+
+        .step.completed {
+            background: var(--success);
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .card.hidden {
+            display: none;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.04);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mode-card {
+            padding: 20px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-card:hover {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.04);
+        }
+
+        .mode-card.selected {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.08);
+        }
+
+        .mode-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .mode-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .mode-desc {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        .preview-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3/4;
+            background: var(--bg);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #previewCanvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: var(--text-light);
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .tool-btn {
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .tool-btn:hover,
+        .tool-btn.active {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.04);
+        }
+
+        .tool-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .tool-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .slider-container {
+            margin: 16px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: var(--shadow);
+        }
+
+        .bg-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 16px 0;
+        }
+
+        .bg-option {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .bg-option:hover,
+        .bg-option.selected {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .bg-option.white { background: #ffffff; }
+        .bg-option.gray { background: #e5e7eb; }
+        .bg-option.blue { background: #dbeafe; }
+        .bg-option.gradient { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .crop-controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 16px 0;
+        }
+
+        .crop-btn {
+            width: 44px;
+            height: 44px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .crop-btn:hover {
+            background: var(--bg);
+            border-color: var(--primary);
+        }
+
+        .info-box {
+            background: rgba(37, 99, 235, 0.08);
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 380px) {
+            .container {
+                padding: 16px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .mode-selector {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📸 AI Photo Studio</h1>
+            <p class="subtitle">Biometrische Passbilder & Bewerbungsfotos</p>
+        </header>
+
+        <div class="step-indicator">
+            <div class="step active" id="step1"></div>
+            <div class="step" id="step2"></div>
+            <div class="step" id="step3"></div>
+        </div>
+
+        <!-- Step 1: Upload -->
+        <div class="card" id="uploadCard">
+            <h2 class="card-title">Foto hochladen</h2>
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-icon">🤳</div>
+                <div class="upload-text">Selfie oder Foto wählen</div>
+                <div class="upload-hint">Unterstützt: JPG, PNG, HEIC • Max. 10MB</div>
+                <input type="file" id="fileInput" accept="image/*" capture="user">
+            </div>
+            <div class="info-box" style="margin-top: 16px;">
+                💡 Tipp: Für beste Ergebnisse direkt ins Gesicht fotografieren, gute Beleuchtung, neutraler Ausdruck
+            </div>
+        </div>
+
+        <!-- Step 2: Mode Selection -->
+        <div class="card hidden" id="modeCard">
+            <h2 class="card-title">Modus wählen</h2>
+            <div class="mode-selector">
+                <div class="mode-card selected" data-mode="passport">
+                    <div class="mode-icon">🆔</div>
+                    <div class="mode-label">Passbild</div>
+                    <div class="mode-desc">Biometrisch, weißer Hintergrund</div>
+                </div>
+                <div class="mode-card" data-mode="professional">
+                    <div class="mode-icon">💼</div>
+                    <div class="mode-label">Bewerbung</div>
+                    <div class="mode-desc">Professionell, mit Retusche</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="processBtn">
+                <span class="btn-text">KI verarbeiten</span>
+            </button>
+            <div class="progress-container hidden" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Lade KI-Modell...</div>
+            </div>
+        </div>
+
+        <!-- Step 3: Edit -->
+        <div class="card hidden" id="editCard">
+            <h2 class="card-title">Bearbeiten</h2>
+            <div class="preview-container">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+            
+            <div class="tools-grid">
+                <div class="tool-btn active" data-tool="background">
+                    <div class="tool-icon">🎨</div>
+                    <div class="tool-label">Hintergrund</div>
+                </div>
+                <div class="tool-btn" data-tool="crop">
+                    <div class="tool-icon">✂️</div>
+                    <div class="tool-label">Zuschneiden</div>
+                </div>
+                <div class="tool-btn" data-tool="retouch">
+                    <div class="tool-icon">✨</div>
+                    <div class="tool-label">Retusche</div>
+                </div>
+                <div class="tool-btn" data-tool="adjust">
+                    <div class="tool-icon">🔧</div>
+                    <div class="tool-label">Anpassen</div>
+                </div>
+            </div>
+
+            <!-- Background Tool -->
+            <div id="backgroundTool">
+                <div class="slider-label">Hintergrund wählen</div>
+                <div class="bg-selector">
+                    <div class="bg-option white selected" data-bg="white"></div>
+                    <div class="bg-option gray" data-bg="gray"></div>
+                    <div class="bg-option blue" data-bg="blue"></div>
+                    <div class="bg-option gradient" data-bg="gradient"></div>
+                </div>
+            </div>
+
+            <!-- Crop Tool -->
+            <div id="cropTool" class="hidden">
+                <div class="slider-label">Position feinjustieren</div>
+                <div class="crop-controls">
+                    <button class="crop-btn" data-direction="up">⬆️</button>
+                    <button class="crop-btn" data-direction="down">⬇️</button>
+                    <button class="crop-btn" data-direction="left">⬅️</button>
+                    <button class="crop-btn" data-direction="right">➡️</button>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Zoom</span>
+                        <span id="zoomValue">100%</span>
+                    </div>
+                    <input type="range" class="slider" id="zoomSlider" min="80" max="150" value="100">
+                </div>
+            </div>
+
+            <!-- Retouch Tool -->
+            <div id="retouchTool" class="hidden">
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Haut glätten</span>
+                        <span id="smoothValue">0%</span>
+                    </div>
+                    <input type="range" class="slider" id="smoothSlider" min="0" max="100" value="0">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Helligkeit</span>
+                        <span id="brightnessValue">0%</span>
+                    </div>
+                    <input type="range" class="slider" id="brightnessSlider" min="-50" max="50" value="0">
+                </div>
+            </div>
+
+            <!-- Adjust Tool -->
+            <div id="adjustTool" class="hidden">
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Kontrast</span>
+                        <span id="contrastValue">0%</span>
+                    </div>
+                    <input type="range" class="slider" id="contrastSlider" min="-50" max="50" value="0">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Sättigung</span>
+                        <span id="saturationValue">0%</span>
+                    </div>
+                    <input type="range" class="slider" id="saturationSlider" min="-50" max="50" value="0">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;">
+                <button class="btn btn-secondary" id="backBtn">Zurück</button>
+                <button class="btn btn-primary" id="downloadBtn">⬇️ Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { env, AutoModel, AutoProcessor, RawImage } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+
+        // Config
+        env.allowLocalModels = false;
+        env.useBrowserCache = true;
+
+        // State
+        let originalImage = null;
+        let processedImage = null;
+        let segmentationMask = null;
+        let currentMode = 'passport';
+        let currentTool = 'background';
+        let selectedBg = 'white';
+        let cropOffset = { x: 0, y: 0 };
+        let zoomLevel = 100;
+        let smoothLevel = 0;
+        let brightnessLevel = 0;
+        let contrastLevel = 0;
+        let saturationLevel = 0;
+
+        // DOM Elements
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const ctx = previewCanvas.getContext('2d');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        // Event Listeners
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            }
+        });
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        document.querySelectorAll('.mode-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                currentMode = card.dataset.mode;
+            });
+        });
+
+        document.getElementById('processBtn').addEventListener('click', processImage);
+        document.getElementById('backBtn').addEventListener('click', () => {
+            showCard('modeCard');
+            updateStep(2);
+        });
+        document.getElementById('downloadBtn').addEventListener('click', downloadImage);
+
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+                showTool(currentTool);
+            });
+        });
+
+        document.querySelectorAll('.bg-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.bg-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                selectedBg = opt.dataset.bg;
+                renderPreview();
+            });
+        });
+
+        document.querySelectorAll('.crop-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const dir = btn.dataset.direction;
+                const step = 10;
+                if (dir === 'up') cropOffset.y -= step;
+                if (dir === 'down') cropOffset.y += step;
+                if (dir === 'left') cropOffset.x -= step;
+                if (dir === 'right') cropOffset.x += step;
+                renderPreview();
+            });
+        });
+
+        document.getElementById('zoomSlider').addEventListener('input', (e) => {
+            zoomLevel = parseInt(e.target.value);
+            document.getElementById('zoomValue').textContent = zoomLevel + '%';
+            renderPreview();
+        });
+
+        document.getElementById('smoothSlider').addEventListener('input', (e) => {
+            smoothLevel = parseInt(e.target.value);
+            document.getElementById('smoothValue').textContent = smoothLevel + '%';
+            renderPreview();
+        });
+
+        document.getElementById('brightnessSlider').addEventListener('input', (e) => {
+            brightnessLevel = parseInt(e.target.value);
+            document.getElementById('brightnessValue').textContent = brightnessLevel + '%';
+            renderPreview();
+        });
+
+        document.getElementById('contrastSlider').addEventListener('input', (e) => {
+            contrastLevel = parseInt(e.target.value);
+            document.getElementById('contrastValue').textContent = contrastLevel + '%';
+            renderPreview();
+        });
+
+        document.getElementById('saturationSlider').addEventListener('input', (e) => {
+            saturationLevel = parseInt(e.target.value);
+            document.getElementById('saturationValue').textContent = saturationLevel + '%';
+            renderPreview();
+        });
+
+        // Functions
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    showCard('modeCard');
+                    updateStep(2);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showCard(cardId) {
+            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+            document.getElementById(cardId).classList.remove('hidden');
+        }
+
+        function updateStep(step) {
+            document.querySelectorAll('.step').forEach((s, i) => {
+                s.classList.remove('active', 'completed');
+                if (i + 1 < step) s.classList.add('completed');
+                if (i + 1 === step) s.classList.add('active');
+            });
+        }
+
+        async function processImage() {
+            const btn = document.getElementById('processBtn');
+            const btnText = btn.querySelector('.btn-text');
+            
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loading-spinner"></span> Verarbeite...';
+            progressContainer.classList.remove('hidden');
+
+            try {
+                // Load model
+                updateProgress(10, 'Lade Segmentierungs-KI...');
+                
+                const model = await AutoModel.from_pretrained('briaai/RMBG-1.4', {
+                    progress_callback: (progress) => {
+                        const pct = Math.round(progress * 40);
+                        updateProgress(10 + pct, `Lade Modell... ${pct}%`);
+                    }
+                });
+
+                const processor = await AutoProcessor.from_pretrained('briaai/RMBG-1.4');
+
+                updateProgress(50, 'Analysiere Bild...');
+
+                // Process image
+                const { pixel_values } = await processor(originalImage);
+                const { output } = await model({ input: pixel_values });
+                
+                updateProgress(70, 'Entferne Hintergrund...');
+
+                // Create mask
+                const mask = await RawImage.fromTensor(output[0].mul(255).to('uint8')).resize(
+                    originalImage.width,
+                    originalImage.height
+                );
+                
+                segmentationMask = mask;
+                processedImage = await createComposite(originalImage, mask);
+
+                updateProgress(100, 'Fertig!');
+                
+                setTimeout(() => {
+                    showCard('editCard');
+                    updateStep(3);
+                    renderPreview();
+                    btn.disabled = false;
+                    btnText.textContent = 'KI verarbeiten';
+                    progressContainer.classList.add('hidden');
+                }, 500);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Fehler bei der Verarbeitung: ' + error.message);
+                btn.disabled = false;
+                btnText.textContent = 'KI verarbeiten';
+                progressContainer.classList.add('hidden');
+            }
+        }
+
+        async function createComposite(img, mask) {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+
+            // Draw original image
+            ctx.drawImage(img, 0, 0);
+
+            // Get image data
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            const maskData = mask.data;
+
+            // Apply alpha mask
+            for (let i = 0; i < maskData.length; i += 4) {
+                const alpha = maskData[i] / 255;
+                data[i + 3] = Math.round(alpha * 255);
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            return canvas;
+        }
+
+        function renderPreview() {
+            if (!processedImage) return;
+
+            const canvasSize = Math.min(400, window.innerWidth - 80);
+            previewCanvas.width = canvasSize;
+            previewCanvas.height = canvasSize * (4/3);
+
+            // Background
+            let bgStyle = selectedBg;
+            if (bgStyle === 'white') ctx.fillStyle = '#ffffff';
+            else if (bgStyle === 'gray') ctx.fillStyle = '#e5e7eb';
+            else if (bgStyle === 'blue') ctx.fillStyle = '#dbeafe';
+            else if (bgStyle === 'gradient') {
+                const gradient = ctx.createLinearGradient(0, 0, canvasSize, canvasSize);
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(1, '#764ba2');
+                ctx.fillStyle = gradient;
+            }
+            ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+            // Draw processed image with adjustments
+            const imgWidth = canvasSize * (zoomLevel / 100);
+            const imgHeight = (canvasSize * (4/3)) * (zoomLevel / 100);
+            const x = (canvasSize - imgWidth) / 2 + cropOffset.x;
+            const y = (canvasSize * (4/3) - imgHeight) / 2 + cropOffset.y;
+
+            ctx.save();
+            
+            // Apply filters
+            let filter = '';
+            if (smoothLevel > 0) {
+                filter += `blur(${smoothLevel * 0.05}px) `;
+            }
+            if (brightnessLevel !== 0) {
+                filter += `brightness(${100 + brightnessLevel}%) `;
+            }
+            if (contrastLevel !== 0) {
+                filter += `contrast(${100 + contrastLevel}%) `;
+            }
+            if (saturationLevel !== 0) {
+                filter += `saturate(${100 + saturationLevel}%) `;
+            }
+            ctx.filter = filter.trim();
+
+            ctx.drawImage(processedImage, x, y, imgWidth, imgHeight);
+            ctx.restore();
+        }
+
+        function showTool(tool) {
+            ['background', 'crop', 'retouch', 'adjust'].forEach(t => {
+                document.getElementById(t + 'Tool').classList.add('hidden');
+            });
+            document.getElementById(tool + 'Tool').classList.remove('hidden');
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            const suffix = currentMode === 'passport' ? 'passport' : 'professional';
+            link.download = `photo-${suffix}-${Date.now()}.png`;
+            link.href = previewCanvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+
+        function updateProgress(percent, text) {
+            progressFill.style.width = percent + '%';
+            progressText.textContent = text;
+        }
+
+        // Touch support for crop
+        let isDragging = false;
+        let lastX = 0, lastY = 0;
+
+        previewCanvas.addEventListener('touchstart', (e) => {
+            if (currentTool === 'crop') {
+                isDragging = true;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+            }
+        });
+
+        previewCanvas.addEventListener('touchmove', (e) => {
+            if (isDragging && currentTool === 'crop') {
+                const dx = e.touches[0].clientX - lastX;
+                const dy = e.touches[0].clientY - lastY;
+                cropOffset.x += dx;
+                cropOffset.y += dy;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+                renderPreview();
+            }
+        });
+
+        previewCanvas.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+    </script>
+</body>
+</html>
