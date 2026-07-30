@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PhotoStudio AI - Biometrisches Passbild & Bewerbungsfoto</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#f0f9ff', 500: '#0284c7', 600: '#0369a1', 700: '#075985' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- imgly Background Removal JS (Client-Side AI with WebGPU Support) -->
+  <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.umd.js"></script>
+
+  <style>
+    /* Mobile-first Tweaks & UI Polish */
+    body {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .checkered-bg {
+      background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                        linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                        linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: #0284c7;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -6px;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+  <!-- HEADER -->
+  <header class="w-full border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <div class="p-2 bg-brand-500/20 text-brand-500 rounded-xl">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+        <span class="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">PhotoStudio <span class="text-brand-500">AI</span></span>
+      </div>
+      <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400 flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> On-Device AI
+      </span>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-md mx-auto w-full flex-1 flex flex-col p-4 space-y-4">
+
+    <!-- STEP 1: UPLOAD SCREEN -->
+    <div id="step-upload" class="flex-1 flex flex-col justify-center items-center text-center space-y-6 my-auto">
+      <div class="space-y-2">
+        <h1 class="text-2xl font-bold text-white">Perfektes Foto in Sekunden</h1>
+        <p class="text-sm text-slate-400 max-w-xs mx-auto">Vollautomatische KI-Freistellung direkt auf Ihrem Gerät. Keine Server, 100% Datenschutz.</p>
+      </div>
+
+      <div class="w-full">
+        <label for="image-input" class="group relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-3xl cursor-pointer bg-slate-800/50 hover:bg-slate-800 transition-all duration-200 overflow-hidden">
+          <div class="flex flex-col items-center justify-center pt-5 pb-6 space-y-3 px-4">
+            <div class="w-16 h-16 rounded-full bg-brand-500/10 text-brand-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <i data-lucide="camera" class="w-8 h-8"></i>
+            </div>
+            <div class="space-y-1">
+              <p class="text-sm font-semibold text-slate-200">Selfie aufnehmen oder hochladen</p>
+              <p class="text-xs text-slate-500">JPG, PNG oder WEBP (max. 15MB)</p>
+            </div>
+          </div>
+          <input id="image-input" type="file" accept="image/*" class="hidden" />
+        </label>
+      </div>
+
+      <!-- Features Cards -->
+      <div class="grid grid-cols-2 gap-3 w-full text-left">
+        <div class="p-3 bg-slate-800/40 border border-slate-800 rounded-2xl flex items-center gap-3">
+          <i data-lucide="file-badge" class="w-5 h-5 text-brand-500 flex-shrink-0"></i>
+          <div>
+            <p class="text-xs font-semibold text-slate-200">Passbild 35x45mm</p>
+            <p class="text-[10px] text-slate-400">Reine KI-Freistellung</p>
+          </div>
+        </div>
+        <div class="p-3 bg-slate-800/40 border border-slate-800 rounded-2xl flex items-center gap-3">
+          <i data-lucide="user-check" class="w-5 h-5 text-purple-400 flex-shrink-0"></i>
+          <div>
+            <p class="text-xs font-semibold text-slate-200">Bewerbung</p>
+            <p class="text-[10px] text-slate-400">Studio-Retusche</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: PROCESSING SCREEN -->
+    <div id="step-processing" class="hidden flex-1 flex flex-col justify-center items-center text-center space-y-6 my-auto">
+      <div class="relative w-24 h-24 flex items-center justify-center">
+        <div class="absolute inset-0 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin"></div>
+        <i data-lucide="cpu" class="w-10 h-10 text-brand-500 animate-pulse"></i>
+      </div>
+      <div class="space-y-2">
+        <h2 class="text-xl font-bold text-white">KI segmentiert Ihr Bild...</h2>
+        <p id="status-text" class="text-xs text-slate-400">WebGPU/WASM Modell wird geladen...</p>
+      </div>
+      <div class="w-full max-w-xs bg-slate-800 h-1.5 rounded-full overflow-hidden">
+        <div id="progress-bar" class="bg-brand-500 h-full w-0 transition-all duration-300"></div>
+      </div>
+    </div>
+
+    <!-- STEP 3: EDITOR SCREEN -->
+    <div id="step-editor" class="hidden flex-1 flex flex-col space-y-4">
+      
+      <!-- MODE SELECTION TABS -->
+      <div class="grid grid-cols-2 p-1 bg-slate-800/80 rounded-2xl border border-slate-700/50">
+        <button id="tab-biometric" onclick="setMode('biometric')" class="py-2 text-xs font-semibold rounded-xl transition-all bg-brand-500 text-white shadow-md">
+          Biometrisch (35x45)
+        </button>
+        <button id="tab-business" onclick="setMode('business')" class="py-2 text-xs font-semibold rounded-xl transition-all text-slate-400 hover:text-white">
+          Bewerbungsfoto
+        </button>
+      </div>
+
+      <!-- CANVAS EDITOR PREVIEW CONTAINER -->
+      <div class="relative w-full aspect-[3/4] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center checkered-bg shadow-2xl">
+        <canvas id="main-canvas" class="max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing"></canvas>
+        
+        <!-- BIOMETRIC OVERLAY MASK -->
+        <div id="biometric-overlay" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-between p-6">
+          <svg class="w-full h-full opacity-60 text-brand-500 stroke-current" viewBox="0 0 300 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Head Oval Guide -->
+            <ellipse cx="150" cy="170" rx="65" ry="85" stroke-width="2" stroke-dasharray="4 4"/>
+            <!-- Eye Level Line -->
+            <line x1="60" y1="150" x2="240" y2="150" stroke-width="1.5" stroke-dasharray="2 2"/>
+            <!-- Chin Line -->
+            <line x1="100" y1="255" x2="200" y2="255" stroke-width="1.5"/>
+          </svg>
+          <span class="absolute bottom-3 bg-slate-900/80 text-[10px] text-slate-300 px-2 py-0.5 rounded-full border border-slate-700 backdrop-blur">
+            Kopf innerhalb der Linie ausrichten
+          </span>
+        </div>
+      </div>
+
+      <!-- CONTROLS CONTAINER -->
+      <div class="bg-slate-800/60 border border-slate-800 rounded-2xl p-4 space-y-4 backdrop-blur">
+        
+        <!-- COMMON CONTROLS: ZOOM & POSITION -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-xs text-slate-400 font-medium">
+            <span>Größe & Zoom</span>
+            <span id="zoom-val">100%</span>
+          </div>
+          <input id="zoom-slider" type="range" min="0.5" max="2.5" step="0.01" value="1" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <!-- BUSINESS SPECIFIC CONTROLS -->
+        <div id="business-controls" class="hidden space-y-3 pt-2 border-t border-slate-700/50">
+          
+          <!-- BACKGROUND COLOR PALETTE -->
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400 font-medium block">Hintergrundstil</label>
+            <div class="flex gap-2 overflow-x-auto pb-1">
+              <button onclick="setBgColor('#ffffff')" class="w-8 h-8 rounded-full bg-white border-2 border-slate-600 flex-shrink-0 focus:ring-2 ring-brand-500"></button>
+              <button onclick="setBgColor('#f1f5f9')" class="w-8 h-8 rounded-full bg-slate-100 border border-slate-600 flex-shrink-0"></button>
+              <button onclick="setBgColor('#e2e8f0')" class="w-8 h-8 rounded-full bg-slate-200 border border-slate-600 flex-shrink-0"></button>
+              <button onclick="setBgGradient(['#1e293b', '#0f172a'])" class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 flex-shrink-0"></button>
+              <button onclick="setBgGradient(['#0284c7', '#0f172a'])" class="w-8 h-8 rounded-full bg-gradient-to-br from-sky-600 to-slate-900 border border-slate-600 flex-shrink-0"></button>
+              <button onclick="setBgGradient(['#3b82f6', '#1e1b4b'])" class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-950 border border-slate-600 flex-shrink-0"></button>
+            </div>
+          </div>
+
+          <!-- RETOUCH SLIDERS -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-[11px] text-slate-400 justify-between flex">Haut glätten</label>
+              <input id="smooth-slider" type="range" min="0" max="10" step="1" value="0" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] text-slate-400 justify-between flex">Kanten-Feinjustage</label>
+              <input id="feather-slider" type="range" min="0" max="10" step="0.5" value="1" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ACTION BUTTONS -->
+      <div class="flex gap-2">
+        <button onclick="resetApp()" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl font-semibold text-xs transition-colors flex items-center justify-center gap-1.5">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Neu
+        </button>
+        <button onclick="downloadResult()" class="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-2xl font-semibold text-sm transition-all shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2">
+          <i data-lucide="download" class="w-4 h-4"></i> Foto herunterladen
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="w-full border-t border-slate-800 py-3 text-center text-[10px] text-slate-500">
+    <p>100% Client-Side Privacy. Verarbeitet mit WebGPU / WASM.</p>
+  </footer>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    // App State
+    let originalImage = null;
+    let foregroundMask = null;
+    let currentMode = 'biometric'; // 'biometric' | 'business'
+    
+    // Canvas & Transformations
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    let scale = 1.0;
+    let offsetX = 0;
+    let offsetY = 0;
+    let isDragging = false;
+    let startX, startY;
+
+    // Customization Settings
+    let bgColor = '#ffffff';
+    let bgGradient = null;
+    let skinSmoothness = 0;
+    let edgeFeather = 1;
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // DOM Elements
+    const fileInput = document.getElementById('image-input');
+    const stepUpload = document.getElementById('step-upload');
+    const stepProcessing = document.getElementById('step-processing');
+    const stepEditor = document.getElementById('step-editor');
+    const statusText = document.getElementById('status-text');
+    const progressBar = document.getElementById('progress-bar');
+    const biometricOverlay = document.getElementById('biometric-overlay');
+    const businessControls = document.getElementById('business-controls');
+    const zoomSlider = document.getElementById('zoom-slider');
+
+    // Event Listeners
+    fileInput.addEventListener('change', handleImageUpload);
+    zoomSlider.addEventListener('input', (e) => {
+      scale = parseFloat(e.target.value);
+      document.getElementById('zoom-val').innerText = `${Math.round(scale * 100)}%`;
+      renderCanvas();
+    });
+
+    document.getElementById('smooth-slider').addEventListener('input', (e) => {
+      skinSmoothness = parseInt(e.target.value);
+      renderCanvas();
+    });
+
+    document.getElementById('feather-slider').addEventListener('input', (e) => {
+      edgeFeather = parseFloat(e.target.value);
+      renderCanvas();
+    });
+
+    // Touch & Mouse Dragging for positioning photo
+    canvas.addEventListener('mousedown', startDrag);
+    canvas.addEventListener('mousemove', drag);
+    canvas.addEventListener('mouseup', endDrag);
+    canvas.addEventListener('touchstart', (e) => startDrag(e.touches[0]));
+    canvas.addEventListener('touchmove', (e) => drag(e.touches[0]));
+    canvas.addEventListener('touchend', endDrag);
+
+    function startDrag(e) {
+      isDragging = true;
+      startX = e.clientX - offsetX;
+      startY = e.clientY - offsetY;
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      offsetX = e.clientX - startX;
+      offsetY = e.clientY - startY;
+      renderCanvas();
+    }
+
+    function endDrag() { isDragging = false; }
+
+    // Upload & Segmentation Pipeline
+    async function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Switch to Processing UI
+      stepUpload.classList.add('hidden');
+      stepProcessing.classList.remove('hidden');
+      updateProgress(10, 'Lade Foto...');
+
+      const imgUrl = URL.createObjectURL(file);
+      originalImage = new Image();
+      originalImage.src = imgUrl;
+
+      await new Promise(r => originalImage.onload = r);
+
+      try {
+        updateProgress(30, 'Lade KI-Modell (WebGPU)...');
+
+        // Configure @imgly/background-removal
+        const config = {
+          progress: (key, current, total) => {
+            if (total > 0) {
+              const p = Math.round((current / total) * 100);
+              updateProgress(30 + Math.round(p * 0.4), `Lade KI-Komponenten (${p}%)...`);
+            }
+          },
+          device: 'gpu', // Prefers WebGPU if supported, falls back to WASM automatically
+          model: 'isnet_fp16'
+        };
+
+        updateProgress(70, 'Segmentiere Motiv präzise...');
+        
+        // Execute Segmentation
+        const blob = await imglyRemoveBackground(imgUrl, config);
+        
+        foregroundMask = new Image();
+        foregroundMask.src = URL.createObjectURL(blob);
+        await new Promise(r => foregroundMask.onload = r);
+
+        updateProgress(100, 'Fertiggestellt!');
+        
+        // Setup Editor
+        initEditor();
+
+      } catch (error) {
+        console.error("AI Processing Error:", error);
+        alert("Fehler bei der KI-Verarbeitung. Versuche ein kleineres Bild oder einen modernen Browser mit WebGPU.");
+        resetApp();
+      }
+    }
+
+    function updateProgress(percent, text) {
+      progressBar.style.width = `${percent}%`;
+      statusText.innerText = text;
+    }
+
+    function initEditor() {
+      // Setup default aspect ratio (Standard Biometric 35x45 aspect ratio -> 1050x1350px)
+      canvas.width = 1050;
+      canvas.height = 1350;
+
+      // Auto-center and fit image
+      scale = Math.max(canvas.width / originalImage.width, canvas.height / originalImage.height);
+      zoomSlider.value = scale;
+      document.getElementById('zoom-val').innerText = `${Math.round(scale * 100)}%`;
+
+      offsetX = (canvas.width - originalImage.width * scale) / 2;
+      offsetY = (canvas.height - originalImage.height * scale) / 2;
+
+      stepProcessing.classList.add('hidden');
+      stepEditor.classList.remove('hidden');
+      
+      setMode('biometric');
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      const tabBio = document.getElementById('tab-biometric');
+      const tabBus = document.getElementById('tab-business');
+
+      if (mode === 'biometric') {
+        tabBio.className = "py-2 text-xs font-semibold rounded-xl transition-all bg-brand-500 text-white shadow-md";
+        tabBus.className = "py-2 text-xs font-semibold rounded-xl transition-all text-slate-400 hover:text-white";
+        biometricOverlay.classList.remove('hidden');
+        businessControls.classList.add('hidden');
+        bgColor = '#ffffff'; // White background strictly required for biometric standard
+        bgGradient = null;
+      } else {
+        tabBus.className = "py-2 text-xs font-semibold rounded-xl transition-all bg-brand-500 text-white shadow-md";
+        tabBio.className = "py-2 text-xs font-semibold rounded-xl transition-all text-slate-400 hover:text-white";
+        biometricOverlay.classList.add('hidden');
+        businessControls.classList.remove('hidden');
+      }
+      renderCanvas();
+    }
+
+    function setBgColor(color) {
+      bgColor = color;
+      bgGradient = null;
+      renderCanvas();
+    }
+
+    function setBgGradient(colors) {
+      bgGradient = colors;
+      renderCanvas();
+    }
+
+    // MAIN CANVAS RENDERING ENGINE
+    function renderCanvas() {
+      if (!originalImage || !foregroundMask) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Draw Background
+      if (bgGradient) {
+        const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grad.addColorStop(0, bgGradient[0]);
+        grad.addColorStop(1, bgGradient[1]);
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = bgColor;
+      }
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Temporary Canvas for Compositing & Retouch Effects
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tCtx = tempCanvas.getContext('2d');
+
+      // Draw Cutout Foreground onto Temp Canvas with transform
+      tCtx.save();
+      tCtx.translate(offsetX, offsetY);
+      tCtx.scale(scale, scale);
+
+      // Apply Edge Feathering / Blur if requested
+      if (edgeFeather > 0 && currentMode === 'business') {
+        tCtx.filter = `blur(${edgeFeather}px)`;
+      }
+
+      tCtx.drawImage(foregroundMask, 0, 0);
+      tCtx.restore();
+
+      // Apply Skin Smoothing / Soft Light Pass (If enabled)
+      if (skinSmoothness > 0 && currentMode === 'business') {
+        const smoothCanvas = document.createElement('canvas');
+        smoothCanvas.width = canvas.width;
+        smoothCanvas.height = canvas.height;
+        const sCtx = smoothCanvas.getContext('2d');
+
+        sCtx.drawImage(tempCanvas, 0, 0);
+        sCtx.globalCompositeOperation = 'source-in';
+        
+        // Draw original scaled image with blur filter to create skin-smoothing overlay
+        sCtx.save();
+        sCtx.translate(offsetX, offsetY);
+        sCtx.scale(scale, scale);
+        sCtx.filter = `blur(${skinSmoothness * 1.5}px) contrast(95%) brightness(105%)`;
+        sCtx.drawImage(originalImage, 0, 0);
+        sCtx.restore();
+
+        // Blend smoothed layer softly over foreground
+        tCtx.globalAlpha = 0.35;
+        tCtx.drawImage(smoothCanvas, 0, 0);
+        tCtx.globalAlpha = 1.0;
+      }
+
+      // Draw Composite onto Main Canvas
+      ctx.drawImage(tempCanvas, 0, 0);
+    }
+
+    // Download Handler
+    function downloadResult() {
+      // Offscreen canvas for export at precise biometric print dimensions (35x45mm at 300 DPI = 413x531 px)
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = 1050; // High resolution 300 DPI master
+      exportCanvas.height = 1350;
+      const eCtx = exportCanvas.getContext('2d');
+
+      // Render exact canvas state
+      eCtx.drawImage(canvas, 0, 0);
+
+      // Create download link
+      const link = document.createElement('a');
+      link.download = currentMode === 'biometric' ? 'passbild_biometrisch.jpg' : 'bewerbungsfoto_studio.jpg';
+      link.href = exportCanvas.toDataURL('image/jpeg', 0.95);
+      link.click();
+    }
+
+    function resetApp() {
+      originalImage = null;
+      foregroundMask = null;
+      fileInput.value = '';
+      stepEditor.classList.add('hidden');
+      stepProcessing.classList.add('hidden');
+      stepUpload.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
