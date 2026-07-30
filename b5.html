@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biometric Photo Lab — Pipeline-Vergleich</title>
+<style>
+  :root{
+    --bg: #F1F0EC;
+    --panel: #FBFAF8;
+    --ink: #1B1B18;
+    --ink-soft: #6B6860;
+    --line: #DAD7D0;
+    --accent: #2F5FD6;
+    --accent-soft: #E7ECFB;
+    --good: #2E7D4F;
+    --warn: #B5471B;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);}
+  body{min-height:100vh;}
+
+  .topbar{
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding:22px 32px; border-bottom:1px solid var(--line);
+    background:var(--panel);
+  }
+  .brand{display:flex; align-items:baseline; gap:12px;}
+  .brand .mark{
+    font-family:var(--mono); font-size:12px; letter-spacing:.08em;
+    padding:3px 7px; border:1px solid var(--ink); border-radius:3px;
+  }
+  .brand h1{font-size:17px; font-weight:600; margin:0; letter-spacing:-.01em;}
+  .brand .sub{font-family:var(--mono); font-size:11px; color:var(--ink-soft); letter-spacing:.02em;}
+
+  .layout{display:grid; grid-template-columns: 300px 1fr; min-height:calc(100vh - 66px);}
+
+  .side{
+    border-right:1px solid var(--line); padding:24px; background:var(--panel);
+    display:flex; flex-direction:column; gap:20px;
+  }
+  .side h2{font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-soft); margin:0 0 4px;}
+
+  .dropzone{
+    border:1.5px dashed var(--line); border-radius:6px; padding:22px 14px;
+    text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
+    background:var(--bg);
+  }
+  .dropzone:hover, .dropzone.drag{border-color:var(--accent); background:var(--accent-soft);}
+  .dropzone svg{opacity:.5; margin-bottom:8px;}
+  .dropzone .hint{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+  input[type=file]{display:none;}
+
+  .preview{
+    width:100%; aspect-ratio:3/4; border-radius:6px; overflow:hidden;
+    border:1px solid var(--line); background:
+      repeating-conic-gradient(#eee 0% 25%, #f6f6f4 0% 50%) 50% / 16px 16px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .preview img{width:100%; height:100%; object-fit:cover;}
+  .preview .empty{font-family:var(--mono); font-size:11px; color:var(--ink-soft);}
+
+  button.primary{
+    background:var(--ink); color:#fff; border:none; border-radius:5px;
+    padding:11px 14px; font-family:var(--sans); font-weight:600; font-size:13px;
+    cursor:pointer; letter-spacing:.01em;
+  }
+  button.primary:disabled{background:#ccc9c2; cursor:not-allowed;}
+  button.primary:hover:not(:disabled){background:var(--accent);}
+
+  .status{font-family:var(--mono); font-size:11px; color:var(--ink-soft); line-height:1.5; min-height:16px;}
+  .status .err{color:var(--warn);}
+  .status .ok{color:var(--good);}
+
+  .legend{font-size:12px; color:var(--ink-soft); line-height:1.5; border-top:1px solid var(--line); padding-top:14px;}
+  .legend b{color:var(--ink);}
+
+  main{padding:28px 32px;}
+  .grid-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+  .grid-head h2{font-size:14px; margin:0; font-weight:600;}
+  .grid-head .count{font-family:var(--mono); font-size:11px; color:var(--ink-soft);}
+
+  .grid{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap:18px;
+  }
+  .cell{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    overflow:hidden; display:flex; flex-direction:column;
+  }
+  .cell.winner{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft);}
+  .frame{
+    position:relative; aspect-ratio:3/4;
+    background:
+      repeating-conic-gradient(#eee 0% 25%, #f6f6f4 0% 50%) 50% / 16px 16px;
+  }
+  .frame canvas{width:100%; height:100%; object-fit:cover; display:block;}
+  .frame .corner{position:absolute; width:14px; height:14px; opacity:.55;}
+  .frame .corner.tl{top:6px; left:6px; border-top:2px solid #fff; border-left:2px solid #fff;}
+  .frame .corner.tr{top:6px; right:6px; border-top:2px solid #fff; border-right:2px solid #fff;}
+  .frame .corner.bl{bottom:6px; left:6px; border-bottom:2px solid #fff; border-left:2px solid #fff;}
+  .frame .corner.br{bottom:6px; right:6px; border-bottom:2px solid #fff; border-right:2px solid #fff;}
+  .frame .idx{
+    position:absolute; top:8px; left:8px; font-family:var(--mono); font-size:10px;
+    background:rgba(27,27,24,.72); color:#fff; padding:2px 6px; border-radius:3px;
+  }
+  .frame .loading{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:11px; color:var(--ink-soft); background:rgba(251,250,248,.75);
+  }
+  .meta{padding:11px 12px 12px;}
+  .meta .name{font-size:12.5px; font-weight:600; margin:0 0 3px;}
+  .meta .desc{font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); line-height:1.5; margin:0 0 9px; min-height:28px;}
+  .meta .row{display:flex; gap:6px;}
+  .meta .row button{
+    flex:1; font-family:var(--sans); font-size:11px; font-weight:600;
+    border:1px solid var(--line); background:#fff; border-radius:4px; padding:6px 4px; cursor:pointer;
+  }
+  .meta .row button:hover{border-color:var(--accent); color:var(--accent);}
+  .meta .row button.win{border-color:var(--accent); background:var(--accent-soft); color:var(--accent);}
+
+  footer{padding:20px 32px 40px; font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); line-height:1.6; border-top:1px solid var(--line); margin-top:12px;}
+
+  @media (max-width: 920px){
+    .layout{grid-template-columns:1fr;}
+    .side{border-right:none; border-bottom:1px solid var(--line);}
+    .grid{grid-template-columns:1fr 1fr;}
+  }
+  @media (max-width: 600px){ .grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="mark">◍ LAB</span>
+    <div>
+      <h1>Biometric Photo Lab</h1>
+      <div class="sub">client-side pipeline arena — kein Upload zu Servern</div>
+    </div>
+  </div>
+  <div class="sub" id="engineState">Engines: nicht geladen</div>
+</div>
+
+<div class="layout">
+  <aside class="side">
+    <div>
+      <h2>Eingabe</h2>
+      <div class="dropzone" id="dropzone">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="black" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="black" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <div>Selfie hier ablegen<br>oder klicken</div>
+        <div class="hint">JPG / PNG, idealerweise frontal, gute Beleuchtung</div>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+    </div>
+
+    <div>
+      <h2>Vorschau</h2>
+      <div class="preview" id="previewBox"><span class="empty">kein Bild geladen</span></div>
+    </div>
+
+    <button class="primary" id="runBtn" disabled>9 Modelle antreten lassen</button>
+    <div class="status" id="statusBox">Warte auf Bild.</div>
+
+    <div class="legend">
+      <b>Was hier verglichen wird:</b> 9 grundsätzlich verschiedene <b>Ausschneide-/Segmentierungs-Techniken</b> (ML-Matting, klassische Segmentierungsmodelle, klassische Bildverarbeitung ohne KI, Landmark-Geometrie). Jede Zelle macht ihren eigenen Cutout. Danach läuft überall exakt dieselbe minimale Nachbearbeitung (Weiß-Compositing + Auto-Licht) — Unterschiede im Ergebnis kommen also wirklich von der Technik, nicht von Filtereinstellungen.
+    </div>
+  </aside>
+
+  <main>
+    <div class="grid-head">
+      <h2>Ergebnis-Arena — 3 × 3</h2>
+      <div class="count" id="countBox">0 / 9 fertig</div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
+
+<footer>
+  Verarbeitung läuft vollständig lokal im Browser (WASM/WebGPU). Bibliotheken werden von CDN geladen (esm.sh, jsdelivr, storage.googleapis.com für MediaPipe-Modellgewichte) — für den ersten Lauf ist Internetzugang nötig, danach greifen Browser-Caches. Für ein rechtlich korrektes Passfoto prüfe zusätzlich die konkreten Vorgaben deines Landes (Kopfgröße, Blickrichtung, Hintergrundweiß-Toleranz, keine Retusche über biometrische Merkmale hinweg).
+</footer>
+
+<script type="module">
+import { removeBackground } from "https://esm.sh/@imgly/background-removal@1.5.8";
+import { ImageSegmenter, FaceLandmarker, FilesetResolver } from "https://esm.sh/@mediapipe/tasks-vision@0.10.14";
+import { pipeline as hfPipeline, env as hfEnv } from "https://esm.sh/@huggingface/transformers@3.0.2";
+hfEnv.allowLocalModels = false;
+if (hfEnv.backends && hfEnv.backends.onnx && hfEnv.backends.onnx.wasm) {
+  hfEnv.backends.onnx.wasm.numThreads = 1;
+}
+
+const fileInput = document.getElementById('fileInput');
+const dropzone = document.getElementById('dropzone');
+const previewBox = document.getElementById('previewBox');
+const runBtn = document.getElementById('runBtn');
+const statusBox = document.getElementById('statusBox');
+const grid = document.getElementById('grid');
+const countBox = document.getElementById('countBox');
+const engineState = document.getElementById('engineState');
+
+let currentFile = null;
+let currentImg = null; // HTMLImageElement
+
+// ---------- Pipeline definitions ----------
+// Jede Pipeline liefert ihren EIGENEN Cutout über eine eigene Technik.
+// runner(imgEl, W, H) -> muss ein WxH Canvas mit Alpha-Kanal (Vordergrund=deckend) zurückgeben.
+const PIPELINES = [
+  { id:'p1', name:'@imgly ML-Matting (ISNet)', desc:'dediziertes Matting-Modell, weiche Kanten inkl. Haare', category:'ML-Matting', runner: runImgly },
+  { id:'p2', name:'MediaPipe Selfie Segmentation', desc:'leichtgewichtiges binäres Segmentierungsmodell (Google)', category:'ML-Segmentierung', runner: runMediapipeSelfie },
+  { id:'p3', name:'MediaPipe Multiclass Segmenter', desc:'Klassen: Haut/Haar/Kleidung getrennt erkannt', category:'ML-Segmentierung', runner: runMediapipeMulticlass },
+  { id:'p4', name:'K-Means Farbclustering (k=2)', desc:'klassisches Clustering: teilt Pixel in 2 Farbgruppen, ohne Modell', category:'Klassische CV', runner: runKMeans },
+  { id:'p5', name:'Tiefenschätzung (Depth Anything)', desc:'Monokulare Tiefe: nähester Bildbereich = Vordergrund', category:'ML, andere Modalität', runner: runDepthMatte },
+  { id:'p6', name:'Segformer (ADE20k)', desc:'allgemeines Szenen-Segmentierungsmodell, Klasse "person"', category:'ML-Segmentierung', runner: runSegformer },
+  { id:'p7', name:'OpenCV GrabCut', desc:'klassischer Graph-Cut-Algorithmus, keine KI', category:'Klassische CV', runner: runGrabCut },
+  { id:'p8', name:'Region-Growing Flood-Fill', desc:'wächst von den Bildecken, solange Farbe ähnlich bleibt', category:'Klassische CV', runner: runFloodFill },
+  { id:'p9', name:'Face-Landmark Konvexhülle', desc:'478-Punkte-Gesichtsnetz, geometrischer Kopf-Ausschnitt', category:'Geometrisch', runner: runFaceHull },
+];
+
+// ---------- shared helpers ----------
+function drawImageCover(imgEl, w, h){
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  const scale = Math.max(w / imgEl.naturalWidth, h / imgEl.naturalHeight);
+  const dw = imgEl.naturalWidth * scale, dh = imgEl.naturalHeight * scale;
+  ctx.drawImage(imgEl, (w-dw)/2, (h-dh)/2, dw, dh);
+  return c;
+}
+
+// apply an alpha mask (canvas, grayscale 0..255 in R channel, same WxH) onto a base RGB canvas
+function applyAlphaMask(baseCanvas, maskCanvas){
+  const w = baseCanvas.width, h = baseCanvas.height;
+  const bctx = baseCanvas.getContext('2d');
+  const bd = bctx.getImageData(0,0,w,h);
+  const mctx = maskCanvas.getContext('2d');
+  const md = mctx.getImageData(0,0,w,h).data;
+  for (let i=0; i<bd.data.length; i+=4){
+    bd.data[i+3] = md[i];
+  }
+  bctx.putImageData(bd, 0, 0);
+  return baseCanvas;
+}
+
+function blankMask(w, h, value){
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = `rgb(${value},${value},${value})`;
+  ctx.fillRect(0,0,w,h);
+  return c;
+}
+
+function featherMask(maskCanvas, radius){
+  const c = document.createElement('canvas');
+  c.width = maskCanvas.width; c.height = maskCanvas.height;
+  const ctx = c.getContext('2d');
+  ctx.filter = `blur(${radius}px)`;
+  ctx.drawImage(maskCanvas, 0, 0);
+  return c;
+}
+
+// removes small mis-classified islands/noise from a binary-ish mask: blur to merge
+// small specks into their surroundings, then re-threshold back to a clean binary mask.
+function despeckleMask(maskCanvas, blurRadius, threshold){
+  const w = maskCanvas.width, h = maskCanvas.height;
+  const blurred = featherMask(maskCanvas, blurRadius);
+  const bctx = blurred.getContext('2d');
+  const bd = bctx.getImageData(0,0,w,h);
+  for (let i=0;i<bd.data.length;i+=4){
+    const v = bd.data[i] > threshold ? 255 : 0;
+    bd.data[i]=v; bd.data[i+1]=v; bd.data[i+2]=v; bd.data[i+3]=255;
+  }
+  bctx.putImageData(bd, 0, 0);
+  return blurred;
+}
+
+// ---------- Technique 1: @imgly (ML matting) ----------
+async function runImgly(imgEl, w, h, file){
+  const blob = await removeBackground(file, { output: { format: 'image/png' } });
+  const url = URL.createObjectURL(blob);
+  const cutImg = await loadImage(url);
+  return drawImageCover(cutImg, w, h);
+}
+function loadImage(src){
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+}
+
+// ---------- Technique 2: MediaPipe Selfie Segmentation (binary, confidence mask) ----------
+let selfieSegmenter = null;
+async function runMediapipeSelfie(imgEl, w, h){
+  if (!selfieSegmenter){
+    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    selfieSegmenter = await ImageSegmenter.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite", delegate: "GPU" },
+      outputCategoryMask: false, outputConfidenceMasks: true, runningMode: "IMAGE"
+    });
+  }
+  const result = selfieSegmenter.segment(imgEl);
+  const conf = result.confidenceMasks[0]; // foreground confidence 0..1
+  const arr = conf.getAsFloat32Array();
+  const mw = conf.width, mh = conf.height;
+  const mask = rasterizeFloatMask(arr, mw, mh, w, h);
+  conf.close();
+  const base = drawImageCover(imgEl, w, h);
+  return applyAlphaMask(base, featherMask(mask, 2));
+}
+
+function rasterizeFloatMask(arr, mw, mh, w, h){
+  const tmp = document.createElement('canvas'); tmp.width = mw; tmp.height = mh;
+  const tctx = tmp.getContext('2d');
+  const id = tctx.createImageData(mw, mh);
+  for (let i=0;i<arr.length;i++){
+    const v = Math.round(Math.min(1, Math.max(0, arr[i])) * 255);
+    id.data[i*4]=v; id.data[i*4+1]=v; id.data[i*4+2]=v; id.data[i*4+3]=255;
+  }
+  tctx.putImageData(id, 0, 0);
+  const out = document.createElement('canvas'); out.width = w; out.height = h;
+  out.getContext('2d').drawImage(tmp, 0, 0, w, h);
+  return out;
+}
+
+// ---------- Technique 3: MediaPipe Multiclass Segmenter (categorical) ----------
+let multiSegmenter = null;
+async function runMediapipeMulticlass(imgEl, w, h){
+  if (!multiSegmenter){
+    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    multiSegmenter = await ImageSegmenter.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite", delegate: "CPU" },
+      outputCategoryMask: true, outputConfidenceMasks: false, runningMode: "IMAGE"
+    });
+  }
+  const result = multiSegmenter.segment(imgEl);
+  const catMask = result.categoryMask;
+  const data = catMask.getAsUint8Array();
+  const mw = catMask.width, mh = catMask.height;
+  const tmp = document.createElement('canvas'); tmp.width = mw; tmp.height = mh;
+  const tctx = tmp.getContext('2d');
+  const id = tctx.createImageData(mw, mh);
+  for (let i=0;i<data.length;i++){
+    // categories: 0 background, 1 hair, 2 body-skin, 3 face-skin, 4 clothes, 5 others -> all except background = foreground
+    const v = data[i] === 0 ? 0 : 255;
+    id.data[i*4]=v; id.data[i*4+1]=v; id.data[i*4+2]=v; id.data[i*4+3]=255;
+  }
+  tctx.putImageData(id, 0, 0);
+  catMask.close();
+  const mask = document.createElement('canvas'); mask.width = w; mask.height = h;
+  const mctx0 = mask.getContext('2d');
+  mctx0.imageSmoothingEnabled = true; mctx0.imageSmoothingQuality = 'high';
+  mctx0.drawImage(tmp, 0, 0, w, h);
+  const cleaned = despeckleMask(mask, 5, 140); // merge small mis-classified holes/islands
+  const base = drawImageCover(imgEl, w, h);
+  return applyAlphaMask(base, featherMask(cleaned, 3));
+}
+
+// ---------- Technique 4: K-Means color clustering (k=2, classic, no ML) ----------
+function patchAverage(d, w, h, cx, cy, radius){
+  let r=0,g=0,b=0,n=0;
+  for (let y=cy-radius; y<=cy+radius; y++){
+    for (let x=cx-radius; x<=cx+radius; x++){
+      if (x<0||y<0||x>=w||y>=h) continue;
+      const i = (y*w+x)*4;
+      r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++;
+    }
+  }
+  return [r/n, g/n, b/n];
+}
+async function runKMeans(imgEl, w, h){
+  const base = drawImageCover(imgEl, w, h);
+  const ctx = base.getContext('2d');
+  const id = ctx.getImageData(0,0,w,h);
+  const d = id.data;
+  // sample a subset of pixels for fast clustering
+  const sampleStep = 4;
+  const samples = [];
+  for (let i=0; i<d.length; i+=4*sampleStep) samples.push([d[i], d[i+1], d[i+2]]);
+  // seed centroids from small AREA averages (not single noisy pixels): corners = background guess,
+  // center = foreground/face guess
+  const corners = [[6,6],[w-7,6],[6,h-7],[w-7,h-7]];
+  let bgSeed = [0,0,0];
+  corners.forEach(([x,y]) => { const p = patchAverage(d,w,h,x,y,5); bgSeed[0]+=p[0]; bgSeed[1]+=p[1]; bgSeed[2]+=p[2]; });
+  bgSeed = bgSeed.map(v => v/4);
+  const fgSeed = patchAverage(d, w, h, Math.floor(w/2), Math.floor(h/2), 12);
+  let centroids = [bgSeed, fgSeed];
+
+  for (let iter=0; iter<8; iter++){
+    const sums = [[0,0,0],[0,0,0]], counts=[0,0];
+    for (const s of samples){
+      const d0 = dist3(s, centroids[0]), d1 = dist3(s, centroids[1]);
+      const k = d0 <= d1 ? 0 : 1;
+      sums[k][0]+=s[0]; sums[k][1]+=s[1]; sums[k][2]+=s[2]; counts[k]++;
+    }
+    for (let k=0;k<2;k++){ if (counts[k]>0) centroids[k] = [sums[k][0]/counts[k], sums[k][1]/counts[k], sums[k][2]/counts[k]]; }
+  }
+  // cluster 0 = background (seeded from corners)
+  const mask = document.createElement('canvas'); mask.width=w; mask.height=h;
+  const mctx = mask.getContext('2d');
+  const mid = mctx.createImageData(w,h);
+  for (let i=0, p=0; i<d.length; i+=4, p++){
+    const px = [d[i], d[i+1], d[i+2]];
+    const d0 = dist3(px, centroids[0]), d1 = dist3(px, centroids[1]);
+    const v = d1 < d0 ? 255 : 0; // foreground = closer to cluster 1
+    mid.data[i]=v; mid.data[i+1]=v; mid.data[i+2]=v; mid.data[i+3]=255;
+  }
+  mctx.putImageData(mid, 0, 0);
+  return applyAlphaMask(base, featherMask(despeckleMask(mask, 4, 130), 2));
+}
+function dist3(a,b){ return (a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2; }
+
+// ---------- Technique 5: monocular depth estimation as a foreground heuristic ----------
+let depthPipe = null;
+async function runDepthMatte(imgEl, w, h, file){
+  if (!depthPipe){
+    depthPipe = await hfPipeline('depth-estimation', 'Xenova/depth-anything-small-hf', { device: 'wasm' });
+  }
+  const url = URL.createObjectURL(file);
+  const out = await depthPipe(url);
+  const depthImg = out.depth; // RawImage, brighter = closer to camera
+  const mw = depthImg.width, mh = depthImg.height;
+  const src = depthImg.data;
+  const channels = src.length / (mw*mh);
+  // compute mean + stddev of depth values to set an adaptive threshold
+  let sum=0; for (let i=0;i<mw*mh;i++) sum += src[i*channels];
+  const mean = sum/(mw*mh);
+  let variance=0; for (let i=0;i<mw*mh;i++) variance += (src[i*channels]-mean)**2;
+  const std = Math.sqrt(variance/(mw*mh));
+  const threshold = mean + std*0.25; // keep the nearest chunk of the scene (typically the person)
+  const tmp = document.createElement('canvas'); tmp.width=mw; tmp.height=mh;
+  const tctx = tmp.getContext('2d');
+  const id = tctx.createImageData(mw, mh);
+  for (let i=0;i<mw*mh;i++){
+    const v = src[i*channels] > threshold ? 255 : 0;
+    id.data[i*4]=v; id.data[i*4+1]=v; id.data[i*4+2]=v; id.data[i*4+3]=255;
+  }
+  tctx.putImageData(id, 0, 0);
+  const mask = document.createElement('canvas'); mask.width=w; mask.height=h;
+  mask.getContext('2d').drawImage(tmp, 0, 0, w, h);
+  const base = drawImageCover(imgEl, w, h);
+  return applyAlphaMask(base, featherMask(mask, 3));
+}
+
+// ---------- Technique 6: Segformer semantic segmentation (person class) ----------
+let segformerPipe = null;
+async function runSegformer(imgEl, w, h, file){
+  if (!segformerPipe){
+    segformerPipe = await hfPipeline('image-segmentation', 'Xenova/segformer-b0-finetuned-ade-512-512', { device: 'wasm' });
+  }
+  const url = URL.createObjectURL(file);
+  const results = await segformerPipe(url);
+  const personResult = results.find(r => /person/i.test(r.label)) || results[0];
+  const rm = personResult.mask; // RawImage grayscale, values 0/255 or 0..1
+  const mw = rm.width, mh = rm.height;
+  const tmp = document.createElement('canvas'); tmp.width = mw; tmp.height = mh;
+  const tctx = tmp.getContext('2d');
+  const id = tctx.createImageData(mw, mh);
+  const src = rm.data;
+  const channels = src.length / (mw*mh);
+  for (let i=0;i<mw*mh;i++){
+    const v = src[i*channels];
+    id.data[i*4]=v; id.data[i*4+1]=v; id.data[i*4+2]=v; id.data[i*4+3]=255;
+  }
+  tctx.putImageData(id, 0, 0);
+  const mask = document.createElement('canvas'); mask.width = w; mask.height = h;
+  mask.getContext('2d').drawImage(tmp, 0, 0, w, h);
+  const cleaned = despeckleMask(mask, 5, 130); // close small false-negative holes inside the person
+  const base = drawImageCover(imgEl, w, h);
+  return applyAlphaMask(base, featherMask(cleaned, 3));
+}
+
+// ---------- Technique 7: OpenCV GrabCut, run entirely inside a Web Worker ----------
+// (OpenCV.js is a ~10MB WASM blob whose load+init is synchronous; running it on the
+// main thread freezes the whole tab. A worker keeps the UI responsive no matter what.)
+let grabCutWorker = null;
+function getGrabCutWorker(){
+  if (grabCutWorker) return grabCutWorker;
+  const workerSrc = `
+    self.importScripts('https://docs.opencv.org/4.9.0/opencv.js');
+    function whenReady(cb){
+      if (self.cv && self.cv.Mat) return cb();
+      self.cv['onRuntimeInitialized'] = cb;
+    }
+    self.onmessage = function(e){
+      whenReady(() => {
+        try{
+          const { buffer, width, height } = e.data;
+          const cv = self.cv;
+          const src = new cv.Mat(height, width, cv.CV_8UC4);
+          src.data.set(new Uint8Array(buffer));
+          const src3 = new cv.Mat();
+          cv.cvtColor(src, src3, cv.COLOR_RGBA2RGB);
+          const mask = new cv.Mat(height, width, cv.CV_8UC1, new cv.Scalar(0));
+          const bgdModel = new cv.Mat();
+          const fgdModel = new cv.Mat();
+          const marginX = Math.round(width*0.08), marginY = Math.round(height*0.05);
+          const rect = new cv.Rect(marginX, marginY, width - marginX*2, height - marginY*2);
+          cv.grabCut(src3, mask, rect, bgdModel, fgdModel, 6, cv.GC_INIT_WITH_RECT);
+          const out = new Uint8Array(width*height);
+          for (let i=0;i<out.length;i++){
+            const c = mask.data[i];
+            out[i] = (c===1||c===3) ? 255 : 0;
+          }
+          src.delete(); src3.delete(); mask.delete(); bgdModel.delete(); fgdModel.delete();
+          self.postMessage({ ok:true, mask: out.buffer, width, height }, [out.buffer]);
+        }catch(err){
+          self.postMessage({ ok:false, error: String((err && err.message) || err) });
+        }
+      });
+    };
+  `;
+  const blob = new Blob([workerSrc], { type: 'application/javascript' });
+  grabCutWorker = new Worker(URL.createObjectURL(blob));
+  return grabCutWorker;
+}
+
+async function runGrabCut(imgEl, w, h){
+  // downscale heavily for the actual GrabCut computation (fast + keeps worker message small),
+  // the resulting mask is then upscaled back to the full working resolution.
+  const gw = 320, gh = Math.round(320 * h / w);
+  const small = drawImageCover(imgEl, gw, gh);
+  const imgData = small.getContext('2d').getImageData(0, 0, gw, gh);
+
+  const worker = getGrabCutWorker();
+  const result = await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      worker.removeEventListener('message', handler);
+      reject(new Error('GrabCut-Worker antwortet nicht (Timeout nach 25s)'));
+    }, 25000);
+    const handler = (e) => {
+      clearTimeout(timeout);
+      worker.removeEventListener('message', handler);
+      if (e.data.ok) resolve(e.data); else reject(new Error(e.data.error));
+    };
+    worker.addEventListener('message', handler);
+    const bufferCopy = imgData.data.buffer.slice(0);
+    worker.postMessage({ buffer: bufferCopy, width: gw, height: gh }, [bufferCopy]);
+  });
+
+  const maskArr = new Uint8Array(result.mask);
+  const tmp = document.createElement('canvas'); tmp.width = gw; tmp.height = gh;
+  const tctx = tmp.getContext('2d');
+  const tid = tctx.createImageData(gw, gh);
+  for (let i=0;i<maskArr.length;i++){
+    const v = maskArr[i];
+    tid.data[i*4]=v; tid.data[i*4+1]=v; tid.data[i*4+2]=v; tid.data[i*4+3]=255;
+  }
+  tctx.putImageData(tid, 0, 0);
+  const mask = document.createElement('canvas'); mask.width = w; mask.height = h;
+  const mctxg = mask.getContext('2d');
+  mctxg.imageSmoothingEnabled = true; mctxg.imageSmoothingQuality = 'high';
+  mctxg.drawImage(tmp, 0, 0, w, h);
+  const cleaned = despeckleMask(mask, 4, 130); // remove stray isolated dots from the low-res result
+  const base = drawImageCover(imgEl, w, h);
+  return applyAlphaMask(base, featherMask(cleaned, 4));
+}
+
+// ---------- Technique 8: region-growing flood-fill from the corners (classic CV, no model) ----------
+async function runFloodFill(imgEl, w, h){
+  const base = drawImageCover(imgEl, w, h);
+  const ctx = base.getContext('2d');
+  const id = ctx.getImageData(0,0,w,h);
+  const d = id.data;
+
+  // fixed reference: average background color sampled from several border patches.
+  // BUG FIX: the previous version only compared each pixel to its immediate neighbor,
+  // which lets the "accepted color" slowly drift across smooth gradients (lighting falloff,
+  // skin shading) until it has drifted far enough to swallow the whole face. Now every
+  // candidate must ALSO stay close to this fixed global reference, which stops the leak.
+  const borderPatches = [[4,4],[w-5,4],[4,h-5],[w-5,h-5],[Math.floor(w/2),3]];
+  let ref = [0,0,0];
+  borderPatches.forEach(([x,y]) => { const p = patchAverage(d,w,h,x,y,4); ref[0]+=p[0]; ref[1]+=p[1]; ref[2]+=p[2]; });
+  ref = ref.map(v => v/borderPatches.length);
+
+  const visited = new Uint8Array(w*h); // 1 = background (reached by flood fill)
+  const stack = [];
+  borderPatches.forEach(([x,y]) => { stack.push(y*w+x); visited[y*w+x] = 2; });
+  const localTol = 22*22;   // step-to-step tolerance (keeps growing only through smoothly connected bg)
+  const globalTol = 40*40;  // hard ceiling: never drift too far from the original background color
+  while (stack.length){
+    const idx = stack.pop();
+    if (visited[idx] === 1) continue;
+    visited[idx] = 1;
+    const x = idx % w, y = (idx / w) | 0;
+    const i = idx*4;
+    const r=d[i], g=d[i+1], b=d[i+2];
+    const neighbors = [[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+    for (const [nx,ny] of neighbors){
+      if (nx<0||ny<0||nx>=w||ny>=h) continue;
+      const nIdx = ny*w+nx;
+      if (visited[nIdx]) continue;
+      const ni = nIdx*4;
+      const localDist = (d[ni]-r)**2 + (d[ni+1]-g)**2 + (d[ni+2]-b)**2;
+      const globalDist = (d[ni]-ref[0])**2 + (d[ni+1]-ref[1])**2 + (d[ni+2]-ref[2])**2;
+      if (localDist < localTol && globalDist < globalTol){ visited[nIdx] = 2; stack.push(nIdx); }
+    }
+  }
+  const mask = document.createElement('canvas'); mask.width=w; mask.height=h;
+  const mctx = mask.getContext('2d');
+  const mid = mctx.createImageData(w,h);
+  for (let p=0; p<w*h; p++){
+    const v = visited[p] ? 0 : 255; // reached = background -> 0, else foreground -> 255
+    mid.data[p*4]=v; mid.data[p*4+1]=v; mid.data[p*4+2]=v; mid.data[p*4+3]=255;
+  }
+  mctx.putImageData(mid, 0, 0);
+  const cleaned = despeckleMask(mask, 4, 130);
+  return applyAlphaMask(base, featherMask(cleaned, 3));
+}
+
+// ---------- Technique 9: Face Landmarker convex hull (geometric, no pixel segmentation) ----------
+let faceLandmarker = null;
+async function runFaceHull(imgEl, w, h){
+  if (!faceLandmarker){
+    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task", delegate: "CPU" },
+      outputFaceBlendshapes: false, runningMode: "IMAGE", numFaces: 1
+    });
+  }
+  const base = drawImageCover(imgEl, w, h);
+  const result = faceLandmarker.detect(base);
+  const mask = document.createElement('canvas'); mask.width = w; mask.height = h;
+  const mctx = mask.getContext('2d');
+  mctx.fillStyle = '#000'; mctx.fillRect(0,0,w,h);
+  if (result.faceLandmarks && result.faceLandmarks[0]){
+    const pts = result.faceLandmarks[0].map(p => [p.x*w, p.y*h]);
+    // BUG FIX: a literal convex hull of 478 points is a jagged polygon (visible hard facets
+    // in the screenshot). A real "geometric passport crop" uses a smooth head oval instead.
+    const xs = pts.map(p=>p[0]), ys = pts.map(p=>p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const faceW = maxX - minX, faceH = maxY - minY;
+    const cx = (minX+maxX)/2;
+    const headCy = (minY+maxY)/2 - faceH*0.12; // shift up a bit to make room for hair/forehead
+    const rx = faceW * 0.72, ry = faceH * 0.92;
+
+    mctx.fillStyle = '#fff';
+    mctx.beginPath();
+    mctx.ellipse(cx, headCy, rx, ry, 0, 0, Math.PI*2);
+    mctx.fill();
+
+    // smooth shoulders using curves instead of a hard-edged trapezoid
+    const shoulderTopY = headCy + ry*0.68;
+    const neckHalfW = faceW*0.42;
+    const shoulderHalfW = w*0.42;
+    mctx.beginPath();
+    mctx.moveTo(cx-neckHalfW, shoulderTopY);
+    mctx.quadraticCurveTo(cx-shoulderHalfW, shoulderTopY + (h-shoulderTopY)*0.35, cx-shoulderHalfW, h);
+    mctx.lineTo(cx+shoulderHalfW, h);
+    mctx.quadraticCurveTo(cx+shoulderHalfW, shoulderTopY + (h-shoulderTopY)*0.35, cx+neckHalfW, shoulderTopY);
+    mctx.closePath();
+    mctx.fill();
+  }
+  return applyAlphaMask(base, featherMask(mask, 12));
+}
+function convexHull(points){
+  const pts = [...points].sort((a,b) => a[0]-b[0] || a[1]-b[1]);
+  const cross = (o,a,b) => (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0]);
+  const lower = [];
+  for (const p of pts){ while (lower.length>=2 && cross(lower[lower.length-2], lower[lower.length-1], p) <=0) lower.pop(); lower.push(p); }
+  const upper = [];
+  for (let i=pts.length-1;i>=0;i--){ const p=pts[i]; while (upper.length>=2 && cross(upper[upper.length-2], upper[upper.length-1], p) <=0) upper.pop(); upper.push(p); }
+  upper.pop(); lower.pop();
+  return lower.concat(upper);
+}
+
+// build grid cells
+PIPELINES.forEach((p, i) => {
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+  cell.id = 'cell-' + p.id;
+  cell.innerHTML = `
+    <div class="frame" id="frame-${p.id}">
+      <canvas id="canvas-${p.id}" width="480" height="640"></canvas>
+      <div class="idx">${String(i+1).padStart(2,'0')}</div>
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="loading" id="loading-${p.id}">bereit</div>
+    </div>
+    <div class="meta">
+      <p class="name">${p.name} <span style="font-family:var(--mono); font-weight:400; font-size:9.5px; color:var(--accent); border:1px solid var(--accent-soft); background:var(--accent-soft); padding:1px 5px; border-radius:3px; margin-left:4px;">${p.category}</span></p>
+      <p class="desc">${p.desc}</p>
+      <div class="row">
+        <button data-act="win" data-id="${p.id}">★ Als Sieger</button>
+        <button data-act="dl" data-id="${p.id}">↓ Download</button>
+      </div>
+    </div>`;
+  grid.appendChild(cell);
+});
+
+grid.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.act === 'dl') downloadCanvas(id);
+  if (btn.dataset.act === 'win') markWinner(id);
+});
+
+function markWinner(id){
+  document.querySelectorAll('.cell').forEach(c => c.classList.remove('winner'));
+  document.querySelectorAll('.row button[data-act="win"]').forEach(b => b.classList.remove('win'));
+  document.getElementById('cell-' + id).classList.add('winner');
+  document.querySelector(`.row button[data-act="win"][data-id="${id}"]`).classList.add('win');
+  statusBox.innerHTML = `<span class="ok">Sieger: ${PIPELINES.find(p=>p.id===id).name} — als Basis gemerkt (Download nutzt dieses Ergebnis weiter).</span>`;
+}
+
+function downloadCanvas(id){
+  const canvas = document.getElementById('canvas-' + id);
+  const a = document.createElement('a');
+  a.download = `biometric-${id}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+// ---------- File handling ----------
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file){
+  currentFile = file;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    currentImg = img;
+    previewBox.innerHTML = '';
+    const imEl = document.createElement('img');
+    imEl.src = url;
+    previewBox.appendChild(imEl);
+    runBtn.disabled = false;
+    statusBox.textContent = `Bild geladen: ${img.naturalWidth}×${img.naturalHeight}px. Bereit zum Start.`;
+  };
+  img.src = url;
+}
+
+// composite an RGBA cutout canvas onto a white WxH background
+function compositeOnWhite(cutoutCanvas, w, h){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,w,h);
+  ctx.drawImage(cutoutCanvas, 0, 0, w, h);
+  return c;
+}
+
+// ---------- Image processing helpers (identical light post-processing for every cell) ----------
+function autoLight(canvas){
+  const ctx = canvas.getContext('2d');
+  const {width:w, height:h} = canvas;
+  const data = ctx.getImageData(0,0,w,h);
+  const d = data.data;
+  let min = [255,255,255], max = [0,0,0], sum=[0,0,0], n=0;
+  for (let i=0; i<d.length; i+=4){
+    if (d[i+3] < 10) continue;
+    for (let c=0;c<3;c++){
+      const v = d[i+c];
+      if (v<min[c]) min[c]=v;
+      if (v>max[c]) max[c]=v;
+      sum[c]+=v;
+    }
+    n++;
+  }
+  const avg = sum.map(s => s/Math.max(n,1));
+  const grey = (avg[0]+avg[1]+avg[2])/3;
+  const gain = avg.map(a => grey / Math.max(a,1));
+  for (let i=0;i<d.length;i+=4){
+    if (d[i+3] < 10) continue;
+    for (let c=0;c<3;c++){
+      let v = d[i+c] * gain[c];
+      const range = Math.max(max[c]-min[c], 40);
+      v = (v - min[c]) * (255/range);
+      d[i+c] = Math.min(255, Math.max(0, v));
+    }
+  }
+  ctx.putImageData(data, 0, 0);
+}
+
+// ---------- Main run ----------
+runBtn.addEventListener('click', runArena);
+
+async function runArena(){
+  if (!currentFile || !currentImg) return;
+  runBtn.disabled = true;
+  document.querySelectorAll('.cell').forEach(c => c.classList.remove('winner'));
+  countBox.textContent = '0 / 9 fertig';
+  statusBox.textContent = 'Starte alle 9 Techniken (jede lädt ihre eigene Engine bei Bedarf)...';
+  engineState.textContent = 'Engines: laufen nacheinander...';
+  let done = 0, failed = 0;
+  const W = 480, H = 640;
+
+  // sequential (not parallel) to avoid overloading WASM/WebGL/memory in the browser at once
+  for (const p of PIPELINES){
+    const loadingEl = document.getElementById('loading-' + p.id);
+    const frameEl = document.getElementById('frame-' + p.id);
+    loadingEl.style.display = 'flex';
+    loadingEl.textContent = `lädt Engine (${p.category})...`;
+    await new Promise(r => setTimeout(r, 10)); // let UI paint
+
+    try{
+      const cutout = await p.runner(currentImg, W, H, currentFile);
+      autoLight(cutout); // apply BEFORE white compositing — autoLight skips transparent pixels,
+                          // so it only corrects the person, never tints the white backdrop
+      const composed = compositeOnWhite(cutout, W, H);
+
+      const target = document.getElementById('canvas-' + p.id);
+      target.getContext('2d').clearRect(0,0,W,H);
+      target.getContext('2d').drawImage(composed, 0, 0);
+      loadingEl.style.display = 'none';
+      done++;
+    }catch(err){
+      console.error(`Pipeline ${p.id} failed:`, err);
+      loadingEl.style.display = 'flex';
+      loadingEl.style.background = 'rgba(181,71,27,.12)';
+      loadingEl.style.color = '#B5471B';
+      loadingEl.textContent = 'Engine nicht verfügbar / Fehler — siehe Konsole';
+      failed++;
+    }
+    countBox.textContent = `${done} / 9 fertig${failed ? ` (${failed} fehlgeschlagen)` : ''}`;
+  }
+
+  statusBox.innerHTML = failed
+    ? `<span class="err">${done} Techniken fertig, ${failed} fehlgeschlagen (z.B. wegen Netzwerk/Modell-Verfügbarkeit). Wähle unter den erfolgreichen den Sieger.</span>`
+    : '<span class="ok">Alle 9 Techniken fertig. Wähle den Sieger aus.</span>';
+  engineState.textContent = 'Engines: bereit';
+  runBtn.disabled = false;
+}
+</script>
+</body>
+</html>
