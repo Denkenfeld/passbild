@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#12151A">
+<meta name="description" content="Aus deinem Selfie wird ein biometrisches Passfoto oder ein professionelles Bewerbungsfoto – komplett mit KI, direkt auf deinem Gerät. Kein Upload, keine Server.">
+<title>Lichtbild · KI-Fotostudio auf deinem Gerät</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2312151A'/%3E%3Crect x='27' y='23' width='46' height='58' rx='4' fill='none' stroke='%23F7F6F2' stroke-width='5'/%3E%3Ccircle cx='50' cy='47' r='11' fill='none' stroke='%23FF5D3A' stroke-width='5'/%3E%3Cpath d='M35 81 L35 70 Q50 58 65 70 L65 81' fill='none' stroke='%2343C9A0' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12151A;
+    --ink-2:#1B2029;
+    --ink-3:#242B36;
+    --ink-4:#2E3644;
+    --paper:#F7F6F2;
+    --paper-dim:#CFCEC8;
+    --line:#FF5D3A;
+    --line-dim:#7A3B2C;
+    --signal:#43C9A0;
+    --signal-dim:#1F4A3D;
+    --danger:#FF6B6B;
+    --text:#F7F6F2;
+    --text-60:rgba(247,246,242,.62);
+    --text-40:rgba(247,246,242,.38);
+    --border:rgba(247,246,242,.10);
+    --border-2:rgba(247,246,242,.16);
+    --radius-s:10px;
+    --radius-m:16px;
+    --radius-l:24px;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Consolas,monospace;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #app{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    background:
+      radial-gradient(120% 60% at 50% -10%, rgba(255,93,58,.10), transparent 60%),
+      var(--ink);
+    overflow:hidden;
+  }
+  button{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:6px;}
+  ::selection{background:var(--line);color:var(--ink);}
+
+  /* ---------- Header ---------- */
+  header#appHeader{
+    padding:calc(14px + var(--safe-top)) 18px 12px;
+    display:flex;align-items:center;gap:10px;
+    position:relative;z-index:20;
+    flex-shrink:0;
+  }
+  .iconbtn{
+    width:38px;height:38px;border-radius:12px;border:1px solid var(--border);
+    background:var(--ink-2);color:var(--text);display:flex;align-items:center;justify-content:center;
+    cursor:pointer;flex-shrink:0;transition:background .15s,transform .15s;
+  }
+  .iconbtn:active{transform:scale(.92);}
+  .iconbtn[hidden]{display:none;}
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:.02em;
+    display:flex;align-items:center;gap:8px;
+  }
+  .brand .dot{width:7px;height:7px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 3px var(--signal-dim);}
+  .header-spacer{flex:1;}
+  .steps{display:flex;gap:6px;margin-right:2px;}
+  .steps i{width:6px;height:6px;border-radius:50%;background:var(--border-2);display:block;}
+  .steps i.on{background:var(--line);}
+  .privacy-pill{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;color:var(--signal);
+    border:1px solid var(--signal-dim);background:rgba(67,201,160,.08);
+    padding:5px 9px 5px 7px;border-radius:99px;display:flex;align-items:center;gap:5px;
+    white-space:nowrap;
+  }
+  .privacy-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--signal);}
+
+  main{flex:1;position:relative;display:flex;flex-direction:column;min-height:0;}
+
+  .screen{display:none;flex-direction:column;flex:1;min-height:0;animation:fadeIn .35s ease both;}
+  .screen.active{display:flex;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){
+    .screen{animation:none;}
+    *{transition-duration:.001ms !important;animation-duration:.001ms !important;}
+  }
+
+  /* ---------- Start screen ---------- */
+  #screenStart{padding:6px 20px calc(28px + var(--safe-bottom));justify-content:center;gap:26px;}
+  .hero h1{
+    font-size:27px;line-height:1.18;margin:0 0 8px;letter-spacing:-.01em;font-weight:650;
+  }
+  .hero p{margin:0;color:var(--text-60);font-size:14.5px;line-height:1.55;max-width:38ch;}
+  .mode-cards{display:flex;flex-direction:column;gap:12px;}
+  .mode-card{
+    text-align:left;border:1px solid var(--border);background:var(--ink-2);
+    border-radius:var(--radius-l);padding:18px 18px 17px;cursor:pointer;color:var(--text);
+    display:flex;gap:14px;align-items:flex-start;position:relative;overflow:hidden;
+    transition:border-color .15s, transform .15s, background .15s;
+  }
+  .mode-card:active{transform:scale(.985);}
+  .mode-card:hover{border-color:var(--border-2);background:var(--ink-3);}
+  .mode-card .glyph{
+    width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    background:var(--ink-3);border:1px solid var(--border);
+  }
+  .mode-card.a .glyph{color:var(--line);}
+  .mode-card.b .glyph{color:var(--signal);}
+  .mode-card h3{margin:1px 0 3px;font-size:16.5px;font-weight:650;letter-spacing:-.005em;}
+  .mode-card .sub{margin:0;font-size:12.5px;color:var(--text-60);font-family:var(--mono);letter-spacing:.01em;}
+  .mode-card .desc{margin:7px 0 0;font-size:13px;color:var(--text-60);line-height:1.5;}
+  .mode-card .arrow{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--text-40);}
+
+  .trust-row{display:flex;align-items:flex-start;gap:10px;padding:2px 2px;}
+  .trust-row svg{flex-shrink:0;margin-top:2px;color:var(--signal);}
+  .trust-row p{margin:0;font-size:12.5px;color:var(--text-60);line-height:1.55;}
+  .trust-row b{color:var(--text);font-weight:600;}
+
+  /* ---------- Processing screen ---------- */
+  #screenProcessing{align-items:center;justify-content:center;gap:28px;padding:24px;}
+  .device-frame{
+    width:168px;height:216px;border-radius:22px;border:2px solid var(--border-2);
+    position:relative;overflow:hidden;background:var(--ink-2);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 8px rgba(255,255,255,.02);
+  }
+  .device-frame img{width:100%;height:100%;object-fit:cover;filter:saturate(.85);}
+  .device-frame .placeholder{color:var(--text-40);}
+  .scanline{
+    position:absolute;left:0;right:0;height:38%;top:-40%;
+    background:linear-gradient(180deg, rgba(67,201,160,0) 0%, rgba(67,201,160,.28) 45%, rgba(255,93,58,.22) 100%);
+    animation:scan 2.1s cubic-bezier(.4,0,.2,1) infinite;
+    filter:blur(1px);
+  }
+  @keyframes scan{0%{top:-40%;}100%{top:100%;}}
+  .device-frame::after{
+    content:"";position:absolute;inset:0;border-radius:20px;
+    box-shadow:inset 0 0 26px rgba(0,0,0,.5);pointer-events:none;
+  }
+  .proc-text{text-align:center;}
+  .proc-status{font-family:var(--mono);font-size:13px;color:var(--text);min-height:18px;letter-spacing:.01em;}
+  .proc-sub{font-size:12px;color:var(--text-40);margin-top:7px;}
+  .proc-bar{width:200px;height:3px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:16px;}
+  .proc-bar > i{display:block;height:100%;width:8%;background:linear-gradient(90deg,var(--line),var(--signal));border-radius:3px;transition:width .25s ease;}
+
+  /* ---------- Edit screen ---------- */
+  #screenEdit{flex:1;min-height:0;}
+  .stage-wrap{
+    flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+    padding:10px 22px 6px;position:relative;
+  }
+  .stage{
+    position:relative;max-width:100%;max-height:100%;border-radius:14px;overflow:hidden;
+    box-shadow:0 14px 34px -12px rgba(0,0,0,.55), 0 0 0 1px var(--border);
+    touch-action:none;background:#000;
+  }
+  .stage canvas{display:block;width:100%;height:100%;}
+  #overlayCanvas{position:absolute;inset:0;pointer-events:none;}
+  .measure-pill{
+    position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
+    font-family:var(--mono);font-size:11px;letter-spacing:.02em;
+    background:rgba(18,21,26,.82);backdrop-filter:blur(6px);
+    border:1px solid var(--border-2);padding:6px 11px;border-radius:99px;
+    display:flex;align-items:center;gap:6px;white-space:nowrap;pointer-events:none;
+  }
+  .measure-pill .ok{color:var(--signal);}
+  .measure-pill .warn{color:var(--line);}
+  .zoom-hint{
+    position:absolute;top:10px;right:10px;background:rgba(18,21,26,.75);border:1px solid var(--border-2);
+    border-radius:99px;padding:5px 10px;font-size:10.5px;font-family:var(--mono);color:var(--text-60);
+    display:flex;gap:4px;align-items:center;pointer-events:none;
+  }
+  .swatch-row{
+    display:flex;gap:9px;padding:12px 20px 4px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;
+  }
+  .swatch-row::-webkit-scrollbar{display:none;}
+  .swatch{
+    flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:none;color:var(--text-60);cursor:pointer;padding:2px;
+  }
+  .swatch .chip{
+    width:38px;height:38px;border-radius:50%;border:2px solid transparent;position:relative;
+    box-shadow:0 0 0 1px var(--border-2);
+  }
+  .swatch.active .chip{border-color:var(--line);}
+  .swatch.active{color:var(--text);}
+  .swatch .chip.custom{display:flex;align-items:center;justify-content:center;background:var(--ink-3);color:var(--text-60);}
+  .swatch label{font-size:10px;font-family:var(--mono);white-space:nowrap;}
+  .swatch .rec{position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:var(--signal);border:2px solid var(--ink);}
+  input[type=color].hidden-color{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;padding:0;}
+
+  .aspect-row{display:flex;gap:8px;padding:2px 20px 10px;flex-shrink:0;}
+  .aspect-chip{
+    font-family:var(--mono);font-size:12px;padding:6px 13px;border-radius:99px;border:1px solid var(--border-2);
+    background:var(--ink-2);color:var(--text-60);cursor:pointer;
+  }
+  .aspect-chip.active{background:var(--line);border-color:var(--line);color:var(--ink);font-weight:600;}
+
+  .info-note{
+    margin:0 20px 10px;font-size:11.5px;color:var(--text-40);display:flex;gap:7px;align-items:flex-start;
+    background:var(--ink-2);border:1px solid var(--border);padding:9px 11px;border-radius:12px;
+  }
+  .info-note button{
+    background:none;border:none;color:var(--signal);font-family:inherit;font-size:11.5px;font-weight:600;
+    text-decoration:underline;cursor:pointer;padding:0;flex-shrink:0;
+  }
+  .info-note svg{flex-shrink:0;margin-top:1px;color:var(--text-40);}
+
+  /* ---------- Bottom sheet ---------- */
+  #bottomSheet{
+    flex-shrink:0;background:var(--ink-2);border-top:1px solid var(--border);
+    border-radius:20px 20px 0 0;box-shadow:0 -10px 24px -14px rgba(0,0,0,.5);
+    position:relative;z-index:15;
+  }
+  .sheet-handle{
+    height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  }
+  .sheet-handle .bar{width:36px;height:4px;border-radius:3px;background:var(--border-2);}
+  .sheet-tabs{display:flex;gap:6px;padding:0 16px 12px;}
+  .sheet-tab{
+    flex:1;text-align:center;padding:9px 10px;border-radius:11px;border:1px solid var(--border);
+    background:var(--ink);color:var(--text-60);font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .sheet-tab.active{background:var(--ink-4);color:var(--text);border-color:var(--border-2);}
+  /* Closed: max-height 0 so the flex layout reclaims the space for the stage above.
+     Open: expands to a scrollable panel. Transitioned for a smooth slide feel. */
+  .sheet-body{
+    max-height:0;overflow:hidden;padding:0 20px;
+    transition:max-height .32s cubic-bezier(.32,.72,0,1), padding .32s ease;
+  }
+  #bottomSheet.open .sheet-body{max-height:46vh;overflow-y:auto;padding:2px 20px 22px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .brush-row{display:flex;gap:10px;margin-bottom:16px;}
+  .brush-btn{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:12px;
+    border:1px solid var(--border-2);background:var(--ink);color:var(--text-60);font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .brush-btn.active.add{background:rgba(67,201,160,.14);border-color:var(--signal);color:var(--signal);}
+  .brush-btn.active.remove{background:rgba(255,93,58,.14);border-color:var(--line);color:var(--line);}
+  .field{margin-bottom:16px;}
+  .field:last-child{margin-bottom:2px;}
+  .field-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;}
+  .field-label b{font-weight:600;}
+  .field-label span{font-family:var(--mono);color:var(--text-60);font-size:12px;}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:3px;background:var(--border-2);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:19px;height:19px;border-radius:50%;background:var(--paper);
+    box-shadow:0 2px 5px rgba(0,0,0,.3);cursor:pointer;margin-top:0;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:19px;height:19px;border-radius:50%;background:var(--paper);border:none;box-shadow:0 2px 5px rgba(0,0,0,.3);cursor:pointer;
+  }
+  .reset-link{
+    display:block;margin:14px auto 0;background:none;border:none;color:var(--text-40);font-size:12px;
+    text-decoration:underline;cursor:pointer;font-family:inherit;
+  }
+  .hint-line{font-size:12px;color:var(--text-40);margin:0 0 14px;line-height:1.5;}
+
+  /* ---------- Bottom action bar ---------- */
+  #actionBar{
+    flex-shrink:0;padding:14px 20px calc(16px + var(--safe-bottom));display:flex;gap:10px;
+    background:var(--ink);position:relative;z-index:16;border-top:1px solid var(--border);
+  }
+  .btn{
+    border:none;border-radius:14px;font-family:inherit;font-weight:650;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s,opacity .12s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.45;pointer-events:none;}
+  .btn-primary{flex:1;background:var(--paper);color:var(--ink);font-size:15px;padding:15px;}
+  .btn-secondary{background:var(--ink-2);color:var(--text);border:1px solid var(--border-2)!important;font-size:13px;padding:15px 16px;}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:absolute;left:20px;right:20px;bottom:calc(90px + var(--safe-bottom));z-index:60;
+    background:var(--ink-3);border:1px solid var(--border-2);border-radius:14px;padding:13px 15px;
+    font-size:13px;line-height:1.5;display:flex;gap:10px;box-shadow:0 12px 26px -12px rgba(0,0,0,.6);
+    transform:translateY(140%);transition:transform .3s cubic-bezier(.32,.72,0,1);
+  }
+  #toast.show{transform:none;}
+  #toast svg{flex-shrink:0;margin-top:1px;color:var(--line);}
+  #toast .msg b{display:block;margin-bottom:2px;}
+  #toast .msg{color:var(--text-60);}
+
+  /* ---------- Modal (legal info) ---------- */
+  .modal-scrim{
+    position:absolute;inset:0;background:rgba(8,9,11,.68);z-index:70;display:none;
+    align-items:flex-end;backdrop-filter:blur(2px);
+  }
+  .modal-scrim.show{display:flex;}
+  .modal{
+    background:var(--ink-2);border:1px solid var(--border-2);border-radius:20px 20px 0 0;
+    width:100%;padding:22px 22px calc(22px + var(--safe-bottom));max-height:78vh;overflow-y:auto;
+  }
+  .modal h4{margin:0 0 12px;font-size:16px;}
+  .modal p{font-size:13.5px;line-height:1.6;color:var(--text-60);margin:0 0 12px;}
+  .modal p b{color:var(--text);}
+  .modal .btn{width:100%;margin-top:6px;}
+
+  /* ---------- misc ---------- */
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+  @media (min-width:521px){
+    #app{border-left:1px solid var(--border);border-right:1px solid var(--border);}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header id="appHeader">
+    <button class="iconbtn" id="backBtn" hidden aria-label="Zurück">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="brand"><span class="dot"></span>LICHTBILD</div>
+    <div class="header-spacer"></div>
+    <div class="steps" id="stepDots" hidden><i></i><i></i><i></i></div>
+    <div class="privacy-pill"><span class="dot"></span>Läuft lokal</div>
+  </header>
+
+  <main>
+
+    <!-- ============ START ============ -->
+    <section class="screen active" id="screenStart">
+      <div class="hero">
+        <h1>Aus deinem Selfie wird&nbsp;ein perfektes Foto.</h1>
+        <p>Biometrisches Passfoto oder Bewerbungsfoto — freigestellt und optimiert von einer KI, die komplett auf deinem Gerät läuft.</p>
+      </div>
+
+      <div class="mode-cards">
+        <button class="mode-card a" data-mode="passport">
+          <span class="glyph">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 17c1-2.2 2.7-3 4.5-3s3.5.8 4.5 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </span>
+          <div>
+            <h3>Biometrisches Foto</h3>
+            <p class="sub">35 × 45&nbsp;MM · HELLGRAU ODER WEISS</p>
+            <p class="desc">Für Ausweise, Visa &amp; viele Dokumente. Kopfgröße und Augenlinie werden automatisch ausgerichtet.</p>
+          </div>
+        </button>
+        <button class="mode-card b" data-mode="application">
+          <span class="glyph">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="6" width="17" height="14" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M8 6V5a2 2 0 012-2h4a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12.5" r="2.6" stroke="currentColor" stroke-width="1.8"/></svg>
+          </span>
+          <div>
+            <h3>Bewerbungsfoto</h3>
+            <p class="sub">FREI WÄHLBAR · STUDIO-HINTERGRÜNDE</p>
+            <p class="desc">Professionelles Porträt für Lebenslauf, LinkedIn &amp; Co. mit Hautglättung und Studio-Look.</p>
+          </div>
+        </button>
+      </div>
+
+      <div class="trust-row">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.5-3 8.5-7 9.5-4-1-7-5-7-9.5V6l7-3z" stroke="currentColor" stroke-width="1.7"/></svg>
+        <p><b>Kein Upload, kein Server.</b> Dein Foto wird direkt in diesem Browser verarbeitet — von KI-Modellen, die einmalig geladen und danach lokal ausgeführt werden.</p>
+      </div>
+    </section>
+
+    <!-- ============ PROCESSING ============ -->
+    <section class="screen" id="screenProcessing">
+      <div class="device-frame" id="deviceFrame">
+        <div class="placeholder" id="deviceFramePlaceholder">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c1.5-3.3 4-4.8 7-4.8s5.5 1.5 7 4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <img id="deviceFrameImg" hidden alt="">
+        <div class="scanline" id="scanline"></div>
+      </div>
+      <div class="proc-text">
+        <div class="proc-status" id="procStatus">KI-Modelle werden geladen …</div>
+        <div class="proc-sub" id="procSub">Beim ersten Mal lädt dein Browser einmalig die Modelle (ca. 40–70&nbsp;MB) — danach läuft alles offline.</div>
+        <div class="proc-bar"><i id="procBarFill"></i></div>
+      </div>
+    </section>
+
+    <!-- ============ EDIT ============ -->
+    <section class="screen" id="screenEdit">
+      <div class="stage-wrap">
+        <div class="stage" id="stage">
+          <canvas id="viewCanvas"></canvas>
+          <canvas id="overlayCanvas"></canvas>
+          <div class="measure-pill" id="measurePill" hidden></div>
+          <div class="zoom-hint" id="zoomHint" hidden>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            Ziehen &amp; zum Zoomen kneifen
+          </div>
+        </div>
+      </div>
+
+      <div class="aspect-row" id="aspectRow" hidden></div>
+      <div class="swatch-row" id="swatchRow"></div>
+      <div class="info-note" id="passportNote" hidden>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v5.5M12 8v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Für Personalausweis &amp; Reisepass gelten seit Mai 2025 Sonderregeln. <button id="openLegalModal">Details</button></span>
+      </div>
+
+      <div id="bottomSheet">
+        <div class="sheet-handle" id="sheetHandle"><span class="bar"></span></div>
+        <div class="sheet-tabs">
+          <div class="sheet-tab active" data-tab="cutout">Ausschneiden</div>
+          <div class="sheet-tab" data-tab="adjust">Anpassen</div>
+        </div>
+        <div class="sheet-body">
+          <div class="tab-panel active" data-panel="cutout">
+            <p class="hint-line">Male über Ränder, die noch nicht perfekt sind — z.&nbsp;B. Haare hinzufügen oder Bildreste entfernen.</p>
+            <div class="brush-row">
+              <button class="brush-btn add active" data-brushmode="add">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg>
+                Hinzufügen
+              </button>
+              <button class="brush-btn remove" data-brushmode="remove">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg>
+                Entfernen
+              </button>
+            </div>
+            <div class="field">
+              <div class="field-label"><b>Pinselgröße</b><span id="brushSizeVal">40</span></div>
+              <input type="range" id="brushSize" min="8" max="140" value="40">
+            </div>
+            <button class="reset-link" id="resetCutoutBtn">Freistellung zurücksetzen</button>
+          </div>
+          <div class="tab-panel" data-panel="adjust">
+            <div class="field">
+              <div class="field-label"><b>Haut glätten</b><span id="valSkin">35</span></div>
+              <input type="range" id="rngSkin" min="0" max="100" value="35">
+            </div>
+            <div class="field">
+              <div class="field-label"><b>Helligkeit</b><span id="valBrightness">0</span></div>
+              <input type="range" id="rngBrightness" min="-50" max="50" value="0">
+            </div>
+            <div class="field">
+              <div class="field-label"><b>Kontrast</b><span id="valContrast">0</span></div>
+              <input type="range" id="rngContrast" min="-50" max="50" value="0">
+            </div>
+            <div class="field">
+              <div class="field-label"><b>Wärme</b><span id="valWarmth">0</span></div>
+              <input type="range" id="rngWarmth" min="-50" max="50" value="0">
+            </div>
+            <div class="field">
+              <div class="field-label"><b>Schärfe</b><span id="valSharpen">20</span></div>
+              <input type="range" id="rngSharpen" min="0" max="100" value="20">
+            </div>
+            <button class="reset-link" id="resetAdjustBtn">Anpassungen zurücksetzen</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="actionBar">
+        <button class="btn btn-secondary" id="printSheetBtn" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="4" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="4" y="14" width="7" height="6" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="14" width="7" height="6" rx="1" stroke="currentColor" stroke-width="1.6"/></svg>
+          6er
+        </button>
+        <button class="btn btn-primary" id="downloadBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Foto herunterladen
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <input type="file" id="fileInput" accept="image/*" hidden>
+
+  <div id="toast"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v5M12 16v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><div class="msg" id="toastMsg"></div></div>
+
+  <div class="modal-scrim" id="legalScrim">
+    <div class="modal">
+      <h4>Wichtig für Personalausweis &amp; Reisepass</h4>
+      <p><b>Seit dem 1.&nbsp;Mai 2025</b> akzeptieren deutsche Behörden für Personalausweis, Reisepass und elektronischen Aufenthaltstitel ausschließlich digitale Lichtbilder, die direkt im Bürgeramt oder bei einem zertifizierten Fotografen bzw. Fotodienstleister aufgenommen und über eine gesicherte Cloud an die Behörde übermittelt werden.</p>
+      <p>Ein selbst erstelltes Foto — auch in exakt korrektem Format — kannst du dafür <b>nicht mehr hochladen, ausdrucken oder mitbringen.</b></p>
+      <p>Für <b>Visa-Anträge anderer Länder, andere Ausweisdokumente, Bewerbungsunterlagen</b> oder als Vorlage bleibt dieses Tool trotzdem bestens geeignet — informiere dich vorab über die jeweils geltenden Vorgaben.</p>
+      <button class="btn btn-primary" id="closeLegalModal">Verstanden</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/dist/transformers.web.min.js";
+
+/* =========================================================================
+   CONFIG
+   ========================================================================= */
+const MEDIAPIPE_VERSION = "1.0.0";
+const CDN = {
+  visionModule: `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/vision_bundle.mjs`,
+  visionWasm: `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`,
+  faceModel: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+};
+const SEG_MODEL_ID = "Xenova/modnet";
+
+const BIO = { wMM: 35, hMM: 45, headMinMM: 32, headMaxMM: 36, headTargetMM: 34, eyeFromTop: 0.40, dpi: 600 };
+const BIO_PX = { w: Math.round(BIO.wMM / 25.4 * BIO.dpi), h: Math.round(BIO.hMM / 25.4 * BIO.dpi) }; // 827 x 1063
+
+const MAX_WORKING_DIM = 1900;
+const HEAD_CROWN_FACTOR = 0.22; // heuristic extra headroom above face-oval top to approximate hair crown
+
+const BACKGROUNDS = {
+  passport: [
+    { id: "grey", label: "Hellgrau", css: "#E7E7E2", recommended: true },
+    { id: "white", label: "Weiß", css: "#FFFFFF" }
+  ],
+  application: [
+    { id: "white", label: "Weiß", css: "#FFFFFF" },
+    { id: "grey", label: "Hellgrau", css: "#E7E7E2" },
+    { id: "blue", label: "Blaugrau", gradient: ["#8FA6B8", "#4E6478"] },
+    { id: "charcoal", label: "Anthrazit", gradient: ["#4B5058", "#20242A"] },
+    { id: "custom", label: "Eigene", custom: true }
+  ]
+};
+const APP_ASPECTS = [
+  { id: "34", label: "3:4", w: 3, h: 4 },
+  { id: "11", label: "1:1", w: 1, h: 1 },
+  { id: "45", label: "4:5", w: 4, h: 5 }
+];
+
+const PROC_MESSAGES = [
+  "KI-Modelle werden geladen …",
+  "Person wird erkannt …",
+  "Hintergrund wird entfernt …",
+  "Gesicht wird vermessen …",
+  "Feinschliff wird vorbereitet …"
+];
+
+/* =========================================================================
+   DOM
+   ========================================================================= */
+const $ = (id) => document.getElementById(id);
+const screens = { start: $("screenStart"), processing: $("screenProcessing"), edit: $("screenEdit") };
+const backBtn = $("backBtn");
+const stepDots = $("stepDots");
+const fileInput = $("fileInput");
+const stageEl = $("stage");
+const viewCanvas = $("viewCanvas");
+const overlayCanvas = $("overlayCanvas");
+const measurePill = $("measurePill");
+const zoomHint = $("zoomHint");
+const swatchRow = $("swatchRow");
+const aspectRow = $("aspectRow");
+const passportNote = $("passportNote");
+const bottomSheet = $("bottomSheet");
+const sheetHandle = $("sheetHandle");
+const downloadBtn = $("downloadBtn");
+const printSheetBtn = $("printSheetBtn");
+const toastEl = $("toast");
+const toastMsg = $("toastMsg");
+const legalScrim = $("legalScrim");
+
+const vctx = viewCanvas.getContext("2d");
+const octx = overlayCanvas.getContext("2d");
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+const state = {
+  mode: null,                 // 'passport' | 'application'
+  original: null,             // canvas: working-resolution oriented source photo
+  cutoutOriginal: null,       // canvas: RGBA cutout as produced by the AI (immutable backup)
+  cutoutWorking: null,        // canvas: RGBA cutout, alpha edited live by the brush tool
+  retouched: null,            // canvas: cutoutWorking + skin/brightness/contrast/warmth/sharpen baked in (cache)
+  retouchedDirty: true,
+  faceLandmarks: null,        // [{x,y}] in source pixel coords, or null
+  skinMask: null,             // canvas: single feature mask (white=skin) for smoothing, or null
+  aspect: { w: 35, h: 45 },   // current output aspect ratio
+  view: { scale: 0, offsetX: 0, offsetY: 0 }, // frame-unit space (frame height = 1 unit)
+  background: null,           // {type:'solid'|'gradient', css, stops}
+  retouch: { skin: 35, brightness: 0, contrast: 0, warmth: 0, sharpen: 20 },
+  brushMode: "add",
+  brushSize: 40,
+  activeTab: "cutout",
+  faceOvalHull: null,         // pixel-space hull points for skin mask reuse
+};
+
+let segmenter = null;
+let faceLandmarker = null;
+let modelsReadyPromise = null;
+let FaceLandmarkerClass = null;
+
+/* =========================================================================
+   UTILITIES — geometry
+   ========================================================================= */
+function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function convexHull(points) {
+  const pts = points.slice().sort((a, b) => a.x - b.x || a.y - b.y);
+  if (pts.length < 3) return pts;
+  const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const lower = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  upper.pop(); lower.pop();
+  return lower.concat(upper);
+}
+
+function connectionsToIndices(connections) {
+  const set = new Set();
+  (connections || []).forEach(c => { set.add(c.start); set.add(c.end); });
+  return [...set];
+}
+
+function regionHullPx(landmarks, indices, w, h) {
+  const pts = indices.map(i => ({ x: landmarks[i].x * w, y: landmarks[i].y * h }));
+  return convexHull(pts);
+}
+
+function fillHullPath(ctx, hull) {
+  ctx.beginPath();
+  hull.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.closePath();
+}
+
+/* =========================================================================
+   UTILITIES — image loading / orientation
+   ========================================================================= */
+async function loadOrientedBitmap(file) {
+  try {
+    return await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch (e) {
+    // Fallback for older engines: plain <img> decode (usually already display-oriented by the browser).
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.decoding = "async";
+      const p = new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+      img.src = url;
+      await p;
+      return img;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+}
+
+function drawWorkingCanvas(bitmap) {
+  const bw = bitmap.width, bh = bitmap.height;
+  const longest = Math.max(bw, bh);
+  const scale = longest > MAX_WORKING_DIM ? MAX_WORKING_DIM / longest : 1;
+  const w = Math.round(bw * scale), h = Math.round(bh * scale);
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  c.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+  return c;
+}
+
+function cloneCanvas(src) {
+  const c = document.createElement("canvas");
+  c.width = src.width; c.height = src.height;
+  c.getContext("2d").drawImage(src, 0, 0);
+  return c;
+}
+
+/* =========================================================================
+   MODEL LOADING
+   ========================================================================= */
+function setProgress(pct, label) {
+  $("procBarFill").style.width = clamp(pct, 4, 100) + "%";
+  if (label) $("procStatus").textContent = label;
+}
+
+function ensureModelsLoaded() {
+  if (modelsReadyPromise) return modelsReadyPromise;
+  modelsReadyPromise = (async () => {
+    let segProgress = 0, faceReady = false;
+
+    const segPromise = pipeline("background-removal", SEG_MODEL_ID, {
+      device: "auto",
+      dtype: "fp32",
+      progress_callback: (p) => {
+        if (typeof p?.progress === "number") segProgress = p.progress;
+        if (!faceReady) setProgress(6 + segProgress * 0.55, PROC_MESSAGES[0]);
+      }
+    }).then(p => { segmenter = p; });
+
+    const facePromise = (async () => {
+      const visionMod = await import(CDN.visionModule);
+      FaceLandmarkerClass = visionMod.FaceLandmarker;
+      const filesetResolver = await visionMod.FilesetResolver.forVisionTasks(CDN.visionWasm);
+      try {
+        faceLandmarker = await visionMod.FaceLandmarker.createFromOptions(filesetResolver, {
+          baseOptions: { modelAssetPath: CDN.faceModel, delegate: "GPU" },
+          runningMode: "IMAGE",
+          numFaces: 1
+        });
+      } catch (e) {
+        faceLandmarker = await visionMod.FaceLandmarker.createFromOptions(filesetResolver, {
+          baseOptions: { modelAssetPath: CDN.faceModel, delegate: "CPU" },
+          runningMode: "IMAGE",
+          numFaces: 1
+        });
+      }
+      faceReady = true;
+      setProgress(65, PROC_MESSAGES[0]);
+    })();
+
+    await Promise.all([segPromise, facePromise]);
+    setProgress(70, PROC_MESSAGES[0]);
+  })();
+  return modelsReadyPromise;
+}
+
+/* =========================================================================
+   SCREEN / NAV
+   ========================================================================= */
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove("active"));
+  screens[name].classList.add("active");
+  backBtn.hidden = name === "start";
+  stepDots.hidden = name === "start";
+  if (name !== "start") {
+    const idx = name === "processing" ? 0 : 1;
+    [...stepDots.children].forEach((dot, i) => dot.classList.toggle("on", i <= idx));
+  }
+}
+
+backBtn.addEventListener("click", () => {
+  showScreen("start");
+  fileInput.value = "";
+});
+
+function showToast(title, body) {
+  toastMsg.innerHTML = `<b>${title}</b>${body}`;
+  toastEl.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toastEl.classList.remove("show"), 5200);
+}
+
+/* =========================================================================
+   MODE SELECTION → FILE PICK
+   ========================================================================= */
+document.querySelectorAll(".mode-card").forEach(card => {
+  card.addEventListener("click", () => {
+    state.mode = card.dataset.mode;
+    ensureModelsLoaded(); // kick off in background while the OS picker is open
+    fileInput.value = "";
+    fileInput.click();
+  });
+});
+
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    showToast("Kein Bildformat.", "Bitte wähle ein Foto (JPG oder PNG).");
+    return;
+  }
+  showScreen("processing");
+  setProgress(4, PROC_MESSAGES[0]);
+  try {
+    await handleImageFile(file);
+  } catch (err) {
+    console.error(err);
+    showScreen("start");
+    showToast("Das hat leider nicht geklappt.", "Dieses Bildformat wird eventuell nicht unterstützt — bitte versuche es mit einem JPG oder PNG, oder nimm ein neues Foto auf.");
+  }
+});
+
+/* =========================================================================
+   MAIN PIPELINE
+   ========================================================================= */
+async function handleImageFile(file) {
+  const bitmap = await loadOrientedBitmap(file);
+  state.original = drawWorkingCanvas(bitmap);
+  if (bitmap.close) bitmap.close();
+
+  await ensureModelsLoaded();
+  setProgress(72, PROC_MESSAGES[2]);
+
+  const [cutout, landmarkResult] = await Promise.all([
+    runSegmentation(state.original),
+    runFaceLandmarks(state.original)
+  ]);
+
+  state.cutoutOriginal = cutout;
+  state.cutoutWorking = cloneCanvas(cutout);
+  state.retouchedDirty = true;
+
+  setProgress(90, PROC_MESSAGES[3]);
+
+  if (landmarkResult && landmarkResult.length) {
+    state.faceLandmarks = landmarkResult;
+    computeSkinMask();
+  } else {
+    state.faceLandmarks = null;
+    state.skinMask = null;
+  }
+
+  setProgress(97, PROC_MESSAGES[4]);
+  await new Promise(r => setTimeout(r, 150));
+  // Screen must become visible BEFORE we measure the stage (getBoundingClientRect
+  // is zero on display:none elements), so layout/render happens after this line.
+  showScreen("edit");
+  setupModeUI();
+  computeAutoView();
+  renderAll();
+}
+
+async function runSegmentation(canvas) {
+  const out = await segmenter(canvas);
+  const raw = Array.isArray(out) ? out[0] : out;
+  return raw.toCanvas();
+}
+
+function runFaceLandmarks(canvas) {
+  try {
+    const result = faceLandmarker.detect(canvas);
+    if (result && result.faceLandmarks && result.faceLandmarks.length) {
+      return result.faceLandmarks[0];
+    }
+  } catch (e) { console.warn("Face landmark detection failed:", e); }
+  return null;
+}
+
+/* =========================================================================
+   FACE ANALYSIS — skin mask + auto alignment
+   ========================================================================= */
+function getRegionIndices(name) {
+  const map = {
+    FACE_OVAL: FaceLandmarkerClass.FACE_LANDMARKS_FACE_OVAL,
+    LEFT_EYE: FaceLandmarkerClass.FACE_LANDMARKS_LEFT_EYE,
+    RIGHT_EYE: FaceLandmarkerClass.FACE_LANDMARKS_RIGHT_EYE,
+    LEFT_EYEBROW: FaceLandmarkerClass.FACE_LANDMARKS_LEFT_EYEBROW,
+    RIGHT_EYEBROW: FaceLandmarkerClass.FACE_LANDMARKS_RIGHT_EYEBROW,
+    LIPS: FaceLandmarkerClass.FACE_LANDMARKS_LIPS,
+    LEFT_IRIS: FaceLandmarkerClass.FACE_LANDMARKS_LEFT_IRIS,
+    RIGHT_IRIS: FaceLandmarkerClass.FACE_LANDMARKS_RIGHT_IRIS
+  };
+  return connectionsToIndices(map[name]);
+}
+
+function computeSkinMask() {
+  const w = state.original.width, h = state.original.height;
+  const lm = state.faceLandmarks;
+  const faceOvalHull = regionHullPx(lm, getRegionIndices("FACE_OVAL"), w, h);
+  state.faceOvalHull = faceOvalHull;
+
+  const mask = document.createElement("canvas");
+  mask.width = w; mask.height = h;
+  const mctx = mask.getContext("2d");
+  mctx.fillStyle = "#000"; mctx.fillRect(0, 0, w, h);
+  mctx.fillStyle = "#fff";
+  fillHullPath(mctx, faceOvalHull); mctx.fill();
+
+  mctx.fillStyle = "#000";
+  ["LEFT_EYE", "RIGHT_EYE", "LEFT_EYEBROW", "RIGHT_EYEBROW", "LIPS"].forEach(region => {
+    const idx = getRegionIndices(region);
+    if (!idx.length) return;
+    const hull = regionHullPx(lm, idx, w, h);
+    if (hull.length < 3) return;
+    // pad eyebrows/eyes slightly for a safety margin around delicate features
+    fillHullPath(mctx, hull);
+    mctx.fill();
+  });
+
+  // soften the mask edges so smoothing fades naturally rather than showing a hard ring
+  const soft = document.createElement("canvas");
+  soft.width = w; soft.height = h;
+  const sctx = soft.getContext("2d");
+  sctx.filter = `blur(${Math.max(3, Math.round(w * 0.012))}px)`;
+  sctx.drawImage(mask, 0, 0);
+  state.skinMask = soft;
+}
+
+function computeAutoView() {
+  const lm = state.faceLandmarks;
+  const w = state.original.width, h = state.original.height;
+  const frameAspect = state.aspect.w / state.aspect.h;
+
+  if (state.mode === "passport" && lm && state.faceOvalHull) {
+    const hull = state.faceOvalHull;
+    const chinY = Math.max(...hull.map(p => p.y));
+    const topY = Math.min(...hull.map(p => p.y));
+    const centerX = hull.reduce((s, p) => s + p.x, 0) / hull.length;
+    const faceSpan = chinY - topY;
+    const crownY = topY - faceSpan * HEAD_CROWN_FACTOR;
+    const headHeightPx = chinY - crownY;
+
+    const leftIris = getRegionIndices("LEFT_IRIS"), rightIris = getRegionIndices("RIGHT_IRIS");
+    let eyeY;
+    if (leftIris.length && rightIris.length) {
+      const ly = leftIris.reduce((s, i) => s + lm[i].y, 0) / leftIris.length;
+      const ry = rightIris.reduce((s, i) => s + lm[i].y, 0) / rightIris.length;
+      eyeY = ((ly + ry) / 2) * h;
+    } else {
+      const le = getRegionIndices("LEFT_EYE"), re = getRegionIndices("RIGHT_EYE");
+      const ly = le.reduce((s, i) => s + lm[i].y, 0) / le.length;
+      const ry = re.reduce((s, i) => s + lm[i].y, 0) / re.length;
+      eyeY = ((ly + ry) / 2) * h;
+    }
+
+    const targetHeadUnits = BIO.headTargetMM / BIO.hMM;
+    const scale = targetHeadUnits / headHeightPx;
+    const offsetX = frameAspect / 2 - centerX * scale;
+    const offsetY = BIO.eyeFromTop - eyeY * scale;
+    state.view = { scale, offsetX, offsetY };
+  } else if (lm && state.faceOvalHull) {
+    // application mode with a detected face: center the face nicely with headroom
+    const hull = state.faceOvalHull;
+    const chinY = Math.max(...hull.map(p => p.y));
+    const topY = Math.min(...hull.map(p => p.y));
+    const centerX = hull.reduce((s, p) => s + p.x, 0) / hull.length;
+    const faceSpan = chinY - topY;
+    const crownY = topY - faceSpan * HEAD_CROWN_FACTOR;
+    const headHeightPx = chinY - crownY;
+    const targetHeadUnits = 0.56; // face takes up a flattering ~56% of frame height
+    const scale = targetHeadUnits / headHeightPx;
+    const centerYSrc = (crownY + chinY) / 2;
+    const offsetX = frameAspect / 2 - centerX * scale;
+    const offsetY = 0.46 - centerYSrc * scale;
+    state.view = { scale, offsetX, offsetY };
+  } else {
+    // no face detected: center the whole photo, scaled to fully cover the frame
+    const fs = Math.max(frameAspect / w, 1 / h) * 1.08;
+    state.view = { scale: fs, offsetX: frameAspect / 2 - (w / 2) * fs, offsetY: 0.5 - (h / 2) * fs };
+    showToast("Gesicht nicht automatisch erkannt.", "Bitte richte Ausschnitt und Zoom manuell aus.");
+  }
+}
+
+/* =========================================================================
+   RETOUCH PIPELINE
+   ========================================================================= */
+function buildRetouchedCutout() {
+  const src = state.cutoutWorking;
+  const w = src.width, h = src.height;
+  const out = document.createElement("canvas");
+  out.width = w; out.height = h;
+  const ctx = out.getContext("2d");
+
+  const r = state.retouch;
+  ctx.filter = `brightness(${100 + r.brightness}%) contrast(${100 + r.contrast}%)`;
+  ctx.drawImage(src, 0, 0);
+  ctx.filter = "none";
+
+  if (r.warmth !== 0) {
+    const id = ctx.getImageData(0, 0, w, h);
+    const d = id.data;
+    const shift = r.warmth * 0.55;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] === 0) continue;
+      d[i] = clamp(d[i] + shift, 0, 255);
+      d[i + 2] = clamp(d[i + 2] - shift, 0, 255);
+    }
+    ctx.putImageData(id, 0, 0);
+  }
+
+  if (r.skin > 0) {
+    const blurPx = Math.max(2, Math.round(w * 0.018));
+    const blurred = document.createElement("canvas");
+    blurred.width = w; blurred.height = h;
+    const bctx = blurred.getContext("2d");
+    bctx.filter = `blur(${blurPx}px)`;
+    bctx.drawImage(out, 0, 0);
+
+    const base = ctx.getImageData(0, 0, w, h);
+    const bl = bctx.getImageData(0, 0, w, h).data;
+    const maskData = state.skinMask ? state.skinMask.getContext("2d").getImageData(0, 0, w, h).data : null;
+    const bd = base.data;
+    const amount = r.skin / 100;
+    for (let i = 0; i < bd.length; i += 4) {
+      if (bd[i + 3] === 0) continue;
+      const localMask = maskData ? maskData[i] / 255 : Math.min(1, bd[i + 3] / 255);
+      const t = amount * localMask * 0.9;
+      bd[i] += (bl[i] - bd[i]) * t;
+      bd[i + 1] += (bl[i + 1] - bd[i + 1]) * t;
+      bd[i + 2] += (bl[i + 2] - bd[i + 2]) * t;
+    }
+    ctx.putImageData(base, 0, 0);
+  }
+
+  if (r.sharpen > 0) {
+    const blurred = document.createElement("canvas");
+    blurred.width = w; blurred.height = h;
+    const bctx = blurred.getContext("2d");
+    bctx.filter = "blur(2.2px)";
+    bctx.drawImage(out, 0, 0);
+    const base = ctx.getImageData(0, 0, w, h);
+    const bl = bctx.getImageData(0, 0, w, h).data;
+    const bd = base.data;
+    const amount = r.sharpen / 100 * 0.9;
+    for (let i = 0; i < bd.length; i += 4) {
+      if (bd[i + 3] === 0) continue;
+      bd[i] = clamp(bd[i] + (bd[i] - bl[i]) * amount, 0, 255);
+      bd[i + 1] = clamp(bd[i + 1] + (bd[i + 1] - bl[i + 1]) * amount, 0, 255);
+      bd[i + 2] = clamp(bd[i + 2] + (bd[i + 2] - bl[i + 2]) * amount, 0, 255);
+    }
+    ctx.putImageData(base, 0, 0);
+  }
+
+  state.retouched = out;
+  state.retouchedDirty = false;
+}
+
+/* =========================================================================
+   BACKGROUND
+   ========================================================================= */
+function paintBackground(ctx, w, h, bg) {
+  if (!bg) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); return; }
+  if (bg.type === "gradient") {
+    const g = ctx.createLinearGradient(0, 0, w * 0.3, h);
+    g.addColorStop(0, bg.stops[0]);
+    g.addColorStop(1, bg.stops[1]);
+    ctx.fillStyle = g;
+  } else {
+    ctx.fillStyle = bg.css;
+  }
+  ctx.fillRect(0, 0, w, h);
+}
+
+/* =========================================================================
+   RENDER
+   ========================================================================= */
+function frameSizePx() {
+  const wrapRect = stageEl.parentElement.getBoundingClientRect();
+  const availH = Math.max(240, wrapRect.height - 4);
+  const availW = Math.max(240, wrapRect.width - 4);
+  const frameAspect = state.aspect.w / state.aspect.h;
+  let h = availH, w = h * frameAspect;
+  if (w > availW) { w = availW; h = w / frameAspect; }
+  return { w: Math.round(w), h: Math.round(h) };
+}
+
+function layoutStage() {
+  const { w, h } = frameSizePx();
+  stageEl.style.width = w + "px";
+  stageEl.style.height = h + "px";
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  [viewCanvas, overlayCanvas].forEach(c => {
+    c.width = Math.round(w * dpr);
+    c.height = Math.round(h * dpr);
+  });
+}
+
+function renderAll() {
+  if (!state.original) return;
+  if (state.retouchedDirty) buildRetouchedCutout();
+  renderStage();
+  renderOverlay();
+  updateMeasurePill();
+}
+
+function renderStage() {
+  const w = viewCanvas.width, h = viewCanvas.height;
+  paintBackground(vctx, w, h, state.background);
+  const px = state.view.scale * h;
+  const ox = state.view.offsetX * h;
+  const oy = state.view.offsetY * h;
+  vctx.drawImage(state.retouched, ox, oy, state.retouched.width * px, state.retouched.height * px);
+}
+
+function renderOverlay() {
+  const w = overlayCanvas.width, h = overlayCanvas.height;
+  octx.clearRect(0, 0, w, h);
+  if (state.mode === "passport") {
+    octx.save();
+    octx.strokeStyle = "rgba(255,93,58,.85)";
+    octx.lineWidth = Math.max(1, h * 0.0022);
+    octx.setLineDash([h * 0.012, h * 0.01]);
+    const eyeY = BIO.eyeFromTop * h;
+    octx.beginPath(); octx.moveTo(0, eyeY); octx.lineTo(w, eyeY); octx.stroke();
+    octx.restore();
+  }
+  if (brushActive() && cursorFramePt) {
+    const r = (state.brushSize / 1000) * h;
+    octx.save();
+    octx.strokeStyle = state.brushMode === "add" ? "rgba(67,201,160,.95)" : "rgba(255,93,58,.95)";
+    octx.lineWidth = Math.max(1.5, h * 0.0018);
+    octx.beginPath();
+    octx.arc(cursorFramePt.x * h, cursorFramePt.y * h, Math.max(2, r), 0, Math.PI * 2);
+    octx.stroke();
+    octx.restore();
+  }
+}
+
+function currentHeadHeightMM() {
+  if (!state.faceOvalHull) return null;
+  const hull = state.faceOvalHull;
+  const chinY = Math.max(...hull.map(p => p.y));
+  const topY = Math.min(...hull.map(p => p.y));
+  const faceSpan = chinY - topY;
+  const crownY = topY - faceSpan * HEAD_CROWN_FACTOR;
+  const headHeightUnits = (chinY - crownY) * state.view.scale; // frame units
+  return headHeightUnits * BIO.hMM;
+}
+
+function updateMeasurePill() {
+  if (state.mode !== "passport") { measurePill.hidden = true; return; }
+  const mm = currentHeadHeightMM();
+  if (mm == null) { measurePill.hidden = true; return; }
+  const ok = mm >= BIO.headMinMM && mm <= BIO.headMaxMM;
+  measurePill.hidden = false;
+  measurePill.innerHTML = ok
+    ? `<span class="ok">●</span> Kopfgröße ${mm.toFixed(1)}&nbsp;mm · passt`
+    : mm < BIO.headMinMM
+      ? `<span class="warn">●</span> ${mm.toFixed(1)}&nbsp;mm · näher heranzoomen`
+      : `<span class="warn">●</span> ${mm.toFixed(1)}&nbsp;mm · etwas herauszoomen`;
+}
+
+window.addEventListener("resize", () => { layoutStage(); renderAll(); });
+
+/* =========================================================================
+   MODE UI SETUP
+   ========================================================================= */
+function setupModeUI() {
+  const isPassport = state.mode === "passport";
+  state.aspect = isPassport ? { w: BIO.wMM, h: BIO.hMM } : { w: 3, h: 4 };
+  aspectRow.hidden = isPassport;
+  passportNote.hidden = !isPassport;
+  printSheetBtn.hidden = !isPassport;
+
+  const bgList = BACKGROUNDS[isPassport ? "passport" : "application"];
+  state.background = bgList[0].gradient
+    ? { type: "gradient", stops: bgList[0].gradient }
+    : { type: "solid", css: bgList[0].css };
+  renderSwatches(bgList);
+
+  if (!isPassport) {
+    aspectRow.innerHTML = "";
+    APP_ASPECTS.forEach((a, i) => {
+      const chip = document.createElement("div");
+      chip.className = "aspect-chip" + (i === 0 ? " active" : "");
+      chip.textContent = a.label;
+      chip.addEventListener("click", () => {
+        [...aspectRow.children].forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+        state.aspect = { w: a.w, h: a.h };
+        computeAutoView();
+        layoutStage(); renderAll();
+      });
+      aspectRow.appendChild(chip);
+    });
+  }
+
+  layoutStage();
+  setActiveTab("cutout");
+  bottomSheet.classList.remove("open");
+}
+
+function renderSwatches(list) {
+  swatchRow.innerHTML = "";
+  list.forEach((bg, i) => {
+    const btn = document.createElement("button");
+    btn.className = "swatch" + (i === 0 ? " active" : "");
+    const chip = document.createElement("span");
+    chip.className = "chip" + (bg.custom ? " custom" : "");
+    if (bg.gradient) chip.style.background = `linear-gradient(135deg, ${bg.gradient[0]}, ${bg.gradient[1]})`;
+    else if (bg.css) chip.style.background = bg.css;
+    if (bg.recommended) { const r = document.createElement("span"); r.className = "rec"; chip.appendChild(r); }
+    if (bg.custom) {
+      chip.innerHTML += '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+      const input = document.createElement("input");
+      input.type = "color"; input.className = "hidden-color"; input.value = "#4E6478";
+      input.addEventListener("input", () => {
+        state.background = { type: "solid", css: input.value };
+        chip.style.background = input.value;
+        [...swatchRow.children].forEach(c => c.classList.remove("active"));
+        btn.classList.add("active");
+        renderAll();
+      });
+      chip.appendChild(input);
+    }
+    const label = document.createElement("label"); label.textContent = bg.label;
+    btn.appendChild(chip); btn.appendChild(label);
+    btn.addEventListener("click", () => {
+      [...swatchRow.children].forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      state.background = bg.gradient ? { type: "gradient", stops: bg.gradient } : { type: "solid", css: bg.css };
+      renderAll();
+    });
+    swatchRow.appendChild(btn);
+  });
+}
+
+/* =========================================================================
+   BOTTOM SHEET / TABS
+   ========================================================================= */
+sheetHandle.addEventListener("click", () => {
+  bottomSheet.classList.toggle("open");
+  if (!bottomSheet.classList.contains("open")) cursorFramePt = null;
+  if (state.original) renderOverlay();
+});
+document.querySelectorAll(".sheet-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    setActiveTab(tab.dataset.tab);
+    bottomSheet.classList.add("open");
+  });
+});
+function setActiveTab(name) {
+  state.activeTab = name;
+  document.querySelectorAll(".sheet-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.dataset.panel === name));
+  if (name !== "cutout") cursorFramePt = null;
+  if (state.original) renderOverlay();
+  zoomHint.hidden = false;
+  clearTimeout(setActiveTab._t);
+  setActiveTab._t = setTimeout(() => zoomHint.hidden = true, 2200);
+}
+
+/* =========================================================================
+   GESTURES — pan / pinch-zoom + brush painting on the stage
+   ========================================================================= */
+const pointers = new Map();
+let gestureStartView = null;
+let gestureStartDist = null;
+let gestureStartMid = null;
+let lastBrushPoint = null;
+let cursorFramePt = null;
+
+function stageToFrameUnits(clientX, clientY) {
+  const rect = stageEl.getBoundingClientRect();
+  const h = rect.height;
+  return { x: (clientX - rect.left) / h, y: (clientY - rect.top) / h, hpx: h };
+}
+
+// Brushing is only "live" when the Ausschneiden panel is actually open — otherwise
+// a single-finger drag always pans/zooms the photo, which is the expected default.
+function brushActive() {
+  return state.activeTab === "cutout" && bottomSheet.classList.contains("open");
+}
+
+overlayCanvas.style.pointerEvents = "auto";
+overlayCanvas.addEventListener("pointerdown", (e) => {
+  overlayCanvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 1) {
+    if (brushActive()) {
+      lastBrushPoint = stageToFrameUnits(e.clientX, e.clientY);
+      cursorFramePt = lastBrushPoint;
+      paintDab(lastBrushPoint);
+      renderStage(); renderOverlay();
+    } else {
+      gestureStartView = { ...state.view };
+    }
+  } else if (pointers.size === 2) {
+    const pts = [...pointers.values()];
+    gestureStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    gestureStartMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    gestureStartView = { ...state.view };
+  }
+});
+
+overlayCanvas.addEventListener("pointermove", (e) => {
+  if (!pointers.has(e.pointerId)) {
+    // Hover only (no button down): just keep the brush-cursor preview in sync.
+    if (brushActive()) { cursorFramePt = stageToFrameUnits(e.clientX, e.clientY); renderOverlay(); }
+    return;
+  }
+  const prev = pointers.get(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (pointers.size === 1 && brushActive()) {
+    const pt = stageToFrameUnits(e.clientX, e.clientY);
+    cursorFramePt = pt;
+    strokeBrush(lastBrushPoint, pt); // applies all interpolated dabs, one render at the end
+    lastBrushPoint = pt;
+  } else if (pointers.size === 1 && gestureStartView) {
+    const rect = stageEl.getBoundingClientRect();
+    const dx = (e.clientX - prev.x) / rect.height;
+    const dy = (e.clientY - prev.y) / rect.height;
+    state.view.offsetX += dx;
+    state.view.offsetY += dy;
+    renderStage(); updateMeasurePill();
+  } else if (pointers.size === 2 && gestureStartView) {
+    const pts = [...pointers.values()];
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    const rect = stageEl.getBoundingClientRect();
+    const ratio = dist / (gestureStartDist || dist);
+    const midFrame = { x: (gestureStartMid.x - rect.left) / rect.height, y: (gestureStartMid.y - rect.top) / rect.height };
+    const srcPointX = (midFrame.x - gestureStartView.offsetX) / gestureStartView.scale;
+    const srcPointY = (midFrame.y - gestureStartView.offsetY) / gestureStartView.scale;
+    const newScale = gestureStartView.scale * ratio;
+    const panDX = (mid.x - gestureStartMid.x) / rect.height;
+    const panDY = (mid.y - gestureStartMid.y) / rect.height;
+    state.view.scale = newScale;
+    state.view.offsetX = midFrame.x + panDX - srcPointX * newScale;
+    state.view.offsetY = midFrame.y + panDY - srcPointY * newScale;
+    renderStage(); updateMeasurePill();
+  }
+});
+
+function endPointer(e) {
+  pointers.delete(e.pointerId);
+  if (pointers.size === 0) { gestureStartView = null; gestureStartDist = null; lastBrushPoint = null; }
+}
+overlayCanvas.addEventListener("pointerup", endPointer);
+overlayCanvas.addEventListener("pointercancel", endPointer);
+overlayCanvas.addEventListener("pointerleave", (e) => {
+  if (pointers.size <= 1) { endPointer(e); cursorFramePt = null; renderOverlay(); }
+});
+
+overlayCanvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const rect = stageEl.getBoundingClientRect();
+  const midFrame = { x: (e.clientX - rect.left) / rect.height, y: (e.clientY - rect.top) / rect.height };
+  const factor = Math.exp(-e.deltaY * 0.0016);
+  const srcPointX = (midFrame.x - state.view.offsetX) / state.view.scale;
+  const srcPointY = (midFrame.y - state.view.offsetY) / state.view.scale;
+  state.view.scale *= factor;
+  state.view.offsetX = midFrame.x - srcPointX * state.view.scale;
+  state.view.offsetY = midFrame.y - srcPointY * state.view.scale;
+  renderStage(); updateMeasurePill();
+}, { passive: false });
+
+// Applies one dab's alpha change to both the working cutout AND the cached
+// retouched preview (whose alpha channel simply mirrors the cutout's), so the
+// stage stays visually correct without re-running the full retouch pipeline.
+function paintDab(framePt) {
+  const srcX = (framePt.x - state.view.offsetX) / state.view.scale;
+  const srcY = (framePt.y - state.view.offsetY) / state.view.scale;
+  const radiusPx = (state.brushSize / 1000) / state.view.scale;
+  applyBrushDab(srcX, srcY, radiusPx);
+}
+
+function strokeBrush(fromPt, toPt) {
+  if (!fromPt) { paintDab(toPt); renderStage(); return; }
+  const distFrame = Math.hypot(toPt.x - fromPt.x, toPt.y - fromPt.y);
+  const step = Math.max((state.brushSize / 1000) * 0.25, 0.002);
+  const n = Math.max(1, Math.ceil(distFrame / step));
+  for (let i = 1; i <= n; i++) {
+    const t = i / n;
+    paintDab({ x: lerp(fromPt.x, toPt.x, t), y: lerp(fromPt.y, toPt.y, t) });
+  }
+  renderStage(); // one redraw per pointermove event, not per interpolated dab
+}
+
+function applyBrushDab(cx, cy, radiusPx) {
+  const canvas = state.cutoutWorking;
+  const ctx = canvas.getContext("2d");
+  const x0 = Math.max(0, Math.floor(cx - radiusPx)), y0 = Math.max(0, Math.floor(cy - radiusPx));
+  const x1 = Math.min(canvas.width, Math.ceil(cx + radiusPx)), y1 = Math.min(canvas.height, Math.ceil(cy + radiusPx));
+  const w = x1 - x0, h = y1 - y0;
+  if (w <= 1 || h <= 1) return;
+  const imgData = ctx.getImageData(x0, y0, w, h);
+  const d = imgData.data;
+  const mode = state.brushMode;
+  for (let yy = 0; yy < h; yy++) {
+    for (let xx = 0; xx < w; xx++) {
+      const px = x0 + xx, py = y0 + yy;
+      const dist = Math.hypot(px - cx, py - cy);
+      if (dist > radiusPx) continue;
+      const t = 1 - dist / radiusPx;
+      const weight = t * t * (3 - 2 * t) * 0.5;
+      const idx = (yy * w + xx) * 4 + 3;
+      const a = d[idx];
+      d[idx] = mode === "add" ? a + (255 - a) * weight : a * (1 - weight);
+    }
+  }
+  ctx.putImageData(imgData, x0, y0);
+
+  if (state.retouched) {
+    const rctx = state.retouched.getContext("2d");
+    const rdata = rctx.getImageData(x0, y0, w, h);
+    const rd = rdata.data;
+    for (let k = 3; k < rd.length; k += 4) rd[k] = d[k];
+    rctx.putImageData(rdata, x0, y0);
+  }
+}
+
+/* =========================================================================
+   BRUSH / TAB CONTROLS
+   ========================================================================= */
+document.querySelectorAll(".brush-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".brush-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    state.brushMode = btn.dataset.brushmode;
+  });
+});
+$("brushSize").addEventListener("input", (e) => {
+  state.brushSize = +e.target.value;
+  $("brushSizeVal").textContent = e.target.value;
+});
+$("resetCutoutBtn").addEventListener("click", () => {
+  state.cutoutWorking = cloneCanvas(state.cutoutOriginal);
+  state.retouchedDirty = true;
+  renderAll();
+});
+$("resetAdjustBtn").addEventListener("click", () => {
+  state.retouch = { skin: 35, brightness: 0, contrast: 0, warmth: 0, sharpen: 20 };
+  ["Skin", "Brightness", "Contrast", "Warmth", "Sharpen"].forEach(k => {
+    const el = $("rng" + k); if (el) el.value = state.retouch[k.toLowerCase()];
+    const v = $("val" + k); if (v) v.textContent = state.retouch[k.toLowerCase()];
+  });
+  state.retouchedDirty = true;
+  renderAll();
+});
+
+function bindSlider(id, key, labelId) {
+  const el = $(id);
+  el.addEventListener("input", () => {
+    state.retouch[key] = +el.value;
+    $(labelId).textContent = el.value;
+    state.retouchedDirty = true;
+    clearTimeout(bindSlider._t);
+    bindSlider._t = setTimeout(renderAll, 16);
+  });
+}
+bindSlider("rngSkin", "skin", "valSkin");
+bindSlider("rngBrightness", "brightness", "valBrightness");
+bindSlider("rngContrast", "contrast", "valContrast");
+bindSlider("rngWarmth", "warmth", "valWarmth");
+bindSlider("rngSharpen", "sharpen", "valSharpen");
+
+/* =========================================================================
+   LEGAL MODAL
+   ========================================================================= */
+$("openLegalModal").addEventListener("click", () => legalScrim.classList.add("show"));
+$("closeLegalModal").addEventListener("click", () => legalScrim.classList.remove("show"));
+legalScrim.addEventListener("click", (e) => { if (e.target === legalScrim) legalScrim.classList.remove("show"); });
+
+/* =========================================================================
+   EXPORT
+   ========================================================================= */
+function renderExportCanvas(wPx, hPx) {
+  const canvas = document.createElement("canvas");
+  canvas.width = wPx; canvas.height = hPx;
+  const ctx = canvas.getContext("2d");
+  paintBackground(ctx, wPx, hPx, state.background);
+  if (state.retouchedDirty) buildRetouchedCutout();
+  const px = state.view.scale * hPx;
+  const ox = state.view.offsetX * hPx;
+  const oy = state.view.offsetY * hPx;
+  ctx.drawImage(state.retouched, ox, oy, state.retouched.width * px, state.retouched.height * px);
+  return canvas;
+}
+
+function downloadCanvas(canvas, filename) {
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }, "image/png", 1);
+}
+
+downloadBtn.addEventListener("click", () => {
+  if (state.mode === "passport") {
+    const canvas = renderExportCanvas(BIO_PX.w, BIO_PX.h);
+    downloadCanvas(canvas, "biometrisches-foto-35x45.png");
+  } else {
+    const targetH = 1400;
+    const targetW = Math.round(targetH * (state.aspect.w / state.aspect.h));
+    const canvas = renderExportCanvas(targetW, targetH);
+    downloadCanvas(canvas, "bewerbungsfoto.png");
+  }
+});
+
+printSheetBtn.addEventListener("click", () => {
+  const single = renderExportCanvas(BIO_PX.w, BIO_PX.h);
+  const sheetW = 2362, sheetH = 3543, cols = 2, rows = 3, gap = 26;
+  const canvas = document.createElement("canvas");
+  canvas.width = sheetW; canvas.height = sheetH;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, sheetW, sheetH);
+  const marginX = (sheetW - cols * BIO_PX.w - (cols - 1) * gap) / 2;
+  const marginY = (sheetH - rows * BIO_PX.h - (rows - 1) * gap) / 2;
+  ctx.strokeStyle = "#c9c9c4"; ctx.setLineDash([8, 8]); ctx.lineWidth = 2;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = marginX + c * (BIO_PX.w + gap);
+      const y = marginY + r * (BIO_PX.h + gap);
+      ctx.drawImage(single, x, y);
+      ctx.strokeRect(x - 4, y - 4, BIO_PX.w + 8, BIO_PX.h + 8);
+    }
+  }
+  downloadCanvas(canvas, "druckvorlage-10x15cm.png");
+});
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+env.allowLocalModels = false;
+layoutStage();
+</script>
+</body>
+</html>
