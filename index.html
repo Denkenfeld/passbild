@@ -806,10 +806,21 @@ body{
 .quality-title{
   margin:0 0 14px; font-size:.95rem; font-weight:700; color:var(--ink); text-align:center;
 }
+.quality-body{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+}
 .quality-list{
   list-style:none; margin:0; padding:0;
   display:flex; flex-direction:column; gap:10px;
+  flex:1; min-width:0;
 }
+.quality-seal{
+  flex:none;
+  width:130px; height:130px;
+  margin:2px 2px 0 0;
+  display:none;
+}
+.quality-seal.show{ display:block; }
 .quality-item{
   display:flex; align-items:center; gap:10px; font-size:.85rem; color:var(--ink);
 }
@@ -1269,7 +1280,10 @@ body{
 
     <div class="quality-section" id="qualitySection" style="display:none;">
       <h3 class="quality-title">Qualitätsprüfung deines Fotos</h3>
-      <ul class="quality-list" id="qualityList"></ul>
+      <div class="quality-body">
+        <ul class="quality-list" id="qualityList"></ul>
+        <img src="siegel.png" alt="Siegel: Biometrisches Foto erfolgreich" class="quality-seal" id="qualitySeal" onerror="this.style.display='none';">
+      </div>
 
       <div class="quality-fail-actions" id="qualityFailActions" style="display:none;">
         <p class="quality-fail-note">Einige Kriterien für ein offizielles biometrisches Foto wurden nicht erfüllt. Wir empfehlen ein neues Foto — du kannst dein aktuelles Foto aber auch trotzdem verwenden.</p>
@@ -2268,6 +2282,7 @@ function renderQualityResults(results){
     list.appendChild(li);
   });
   document.getElementById('qualitySection').style.display = 'block';
+  document.getElementById('qualitySeal').classList.toggle('show', results.every(r=>r.passed));
 }
 
 document.getElementById('qualityUseBtn').addEventListener('click', ()=>{
