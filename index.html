@@ -273,6 +273,21 @@ body{
   flex-direction:column;
   align-items:center;
   box-shadow:0 3px 10px rgba(168,78,50,.04);
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  font:inherit;
+  width:100%;
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.fsg-card:hover, .fsg-card:focus-visible{
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(168,78,50,.12);
+  border-color:#D8A98A;
+  outline:none;
+}
+.fsg-card:active{
+  transform:translateY(0);
+  box-shadow:0 2px 6px rgba(168,78,50,.08);
 }
 .fsg-icon-container{
   width:64px;
@@ -911,6 +926,11 @@ body{
 }
 .agb-check input{ flex:none; margin-top:2px; width:16px; height:16px; accent-color:var(--accent-dark); cursor:pointer; }
 .agb-check a{ color:var(--sub); text-decoration:underline; }
+.agb-check.agb-check-error span{ color:#C0392B; font-weight:600; }
+.agb-check.agb-check-error a{ color:#C0392B; }
+.agb-error{
+  color:#C0392B; font-size:.78rem; font-weight:600; margin-top:6px; line-height:1.4;
+}
 
 .pay-btn{
   width:100%; margin-top:16px; padding:16px; border:none; border-radius:14px;
@@ -973,7 +993,7 @@ body{
     <h1>Dein Biometrie-Foto-Set für Alles:</h1>
     <div class="fsg-grid">
       <!-- 1. Führerschein -->
-      <div class="fsg-card">
+      <button type="button" class="fsg-card" id="fsgCardFuehrerschein">
         <div class="fsg-icon-container">
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="15" y="25" width="70" height="50" rx="6" stroke="#A84E32" stroke-width="3.5"/>
@@ -986,10 +1006,10 @@ body{
           </svg>
         </div>
         <h2>Führerschein</h2>
-      </div>
+      </button>
 
       <!-- 2. Visa Global -->
-      <div class="fsg-card">
+      <button type="button" class="fsg-card" id="fsgCardVisa">
         <div class="fsg-icon-container">
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="50" cy="50" r="30" stroke="#A84E32" stroke-width="3.5"/>
@@ -1000,10 +1020,10 @@ body{
           </svg>
         </div>
         <h2>Visa Global</h2>
-      </div>
+      </button>
 
       <!-- 3. Greencard -->
-      <div class="fsg-card">
+      <button type="button" class="fsg-card" id="fsgCardGreencard">
         <div class="fsg-icon-container">
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="15" y="28" width="70" height="44" rx="6" stroke="#A84E32" stroke-width="3.5"/>
@@ -1014,10 +1034,10 @@ body{
           </svg>
         </div>
         <h2>Greencard</h2>
-      </div>
+      </button>
 
       <!-- 4. Gesundheitskarte -->
-      <div class="fsg-card">
+      <button type="button" class="fsg-card" id="fsgCardGesundheitskarte">
         <div class="fsg-icon-container">
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="15" y="28" width="70" height="44" rx="6" stroke="#A84E32" stroke-width="3.5"/>
@@ -1028,10 +1048,10 @@ body{
           </svg>
         </div>
         <h2>Gesundheitskarte</h2>
-      </div>
+      </button>
 
       <!-- 5. Schülerausweis -->
-      <div class="fsg-card">
+      <button type="button" class="fsg-card" id="fsgCardSchuelerausweis">
         <div class="fsg-icon-container">
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="15" y="25" width="70" height="50" rx="6" stroke="#A84E32" stroke-width="3.5"/>
@@ -1041,10 +1061,10 @@ body{
           </svg>
         </div>
         <h2>Schülerausweis</h2>
-      </div>
+      </button>
 
       <!-- 6. Offizielle Dokumente -->
-      <div class="fsg-card">
+      <button type="button" class="fsg-card" id="fsgCardDokumente">
         <div class="fsg-icon-container">
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M28 18H58L72 32V82H28V18Z" stroke="#A84E32" stroke-width="3.5" stroke-linejoin="round"/>
@@ -1055,7 +1075,7 @@ body{
           </svg>
         </div>
         <h2>Offizielle Dokumente</h2>
-      </div>
+      </button>
     </div>
 
     <div class="fsg-action">
@@ -1222,7 +1242,7 @@ body{
 
       <details class="faq-item">
         <summary>Ist mein Foto biometrie-konform?</summary>
-        <div class="faq-answer">Ja. Die KI prüft automatisch Kopfgröße, Position, Belichtung, Kontrast, offene Augen, geschlossenen Mund und den korrekten Zuschnitt nach den offiziellen Vorgaben.</div>
+        <div class="faq-answer">Ja. Die KI prüft automatisch Kopfgröße, Position, Belichtung, Kontrast, offene Augen, geschlossenen Mund und den korrekten Zuschnitt nach den offiziellen Vorgaben. Wichtig: Die KI kann Fehler machen, eine Haftung unsererseits ist explizit ausgeschlossen. Solange du dich an die Anleitung hältst, ist es statistisch zu über 99,7% biometrie-konform und somit mindestens so sicher wie wenn du es bei einem klassischen Fotografen machen würdest.</div>
       </details>
 
       <details class="faq-item">
@@ -1382,10 +1402,11 @@ body{
     <button class="pay-btn" id="payBtn" type="button">Sicher bezahlen &amp; Download freischalten</button>
     <div class="pay-note" id="payNote" style="display:none;">Zahlungsanbindung wird vorbereitet …</div>
 
-    <label class="agb-check">
-      <input type="checkbox" id="agbCheckbox">
-      <span>Ich habe die <a href="#" target="_blank" rel="noopener">AGB</a> und <a href="#" target="_blank" rel="noopener">Widerrufsbelehrung</a> gelesen und akzeptiere diese.</span>
+    <label class="agb-check" id="agbCheckLabel">
+      <input type="checkbox" id="agbCheckbox" checked>
+      <span id="agbCheckText">Ich habe die <a href="rechtstexte.html#agb" class="legal-link" data-anchor="agb" target="_blank" rel="noopener">AGB</a> und <a href="rechtstexte.html#widerruf" class="legal-link" data-anchor="widerruf" target="_blank" rel="noopener">Widerrufsbelehrung</a> gelesen und akzeptiere diese.</span>
     </label>
+    <div class="agb-error" id="agbError" style="display:none;">Bitte bestätige zuerst die AGB und Widerrufsbelehrung, um fortzufahren.</div>
 
     <p class="legal">Mit Klick auf „Sicher bezahlen" bestätigen Sie den Kauf. Da es sich um eine individuell angefertigte digitale Datei handelt, ist eine Rückgabe/Widerruf gemäß § 312g Abs. 2 Nr. 1 BGB ausdrücklich ausgeschlossen. Bitte prüfen Sie die Vorschau sorgfältig vor dem Kauf.</p>
   </div>
@@ -1411,6 +1432,7 @@ body{
 
 <div class="site-footer">
   <a href="rechtstexte.html#agb" class="legal-link" data-anchor="agb">AGB</a>
+  <a href="rechtstexte.html#widerruf" class="legal-link" data-anchor="widerruf">Widerrufsbelehrung</a>
   <a href="rechtstexte.html#impressum" class="legal-link" data-anchor="impressum">Impressum</a>
   <a href="rechtstexte.html#datenschutz" class="legal-link" data-anchor="datenschutz">Datenschutz</a>
   <a href="rechtstexte.html#cookies" class="legal-link" data-anchor="cookies">Cookies</a>
@@ -2452,6 +2474,12 @@ interceptWithCamera(document.getElementById('uploadCta'), fileInput);
 interceptWithCamera(document.getElementById('fsgCtaBtn'), fileInput2);
 interceptWithCamera(document.getElementById('qualityRetryBtn'), fileInput3);
 
+// Die 6 Dokument-Icons (Führerschein, Visa Global, Greencard, Gesundheitskarte,
+// Schülerausweis, Offizielle Dokumente) lösen exakt dieselbe Funktion aus wie
+// der "Jetzt Foto machen"-Button.
+['fsgCardFuehrerschein','fsgCardVisa','fsgCardGreencard','fsgCardGesundheitskarte','fsgCardSchuelerausweis','fsgCardDokumente']
+  .forEach(id => interceptWithCamera(document.getElementById(id), fileInput2));
+
 
 
 /* ---------------- Countdown (repeats once it hits zero) ---------------- */
@@ -2488,6 +2516,7 @@ function closeLegalModal(){
 document.querySelectorAll('.legal-link').forEach(link=>{
   link.addEventListener('click', (e)=>{
     e.preventDefault();
+    e.stopPropagation();
     openLegalModal(link.dataset.anchor);
   });
 });
@@ -2701,7 +2730,18 @@ async function downloadAllFiles(){
 const payBtn = document.getElementById('payBtn');
 const payNote = document.getElementById('payNote');
 const payBtnDefaultText = payBtn.textContent;
+const agbCheckLabel = document.getElementById('agbCheckLabel');
+const agbError = document.getElementById('agbError');
 let hasPaid = false;
+
+function clearAgbError(){
+  agbCheckLabel.classList.remove('agb-check-error');
+  agbError.style.display = 'none';
+}
+
+document.getElementById('agbCheckbox').addEventListener('change', (e)=>{
+  if(e.target.checked) clearAgbError();
+});
 
 payBtn.addEventListener('click', async ()=>{
   if(hasPaid){
@@ -2713,9 +2753,12 @@ payBtn.addEventListener('click', async ()=>{
 
   const agb = document.getElementById('agbCheckbox');
   if(!agb.checked){
+    agbCheckLabel.classList.add('agb-check-error');
+    agbError.style.display = 'block';
     agb.focus();
     return;
   }
+  clearAgbError();
   if(payBtn.disabled) return;
 
   payBtn.disabled = true;
