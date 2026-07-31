@@ -829,7 +829,7 @@ body{
   </label>
 
   <div class="fsg-section" id="fsgSection">
-    <h1>Dein Foto-Set für Alles:</h1>
+    <h1>Dein Biometrie-Foto-Set für Alles:</h1>
     <div class="fsg-grid">
       <!-- 1. Führerschein -->
       <div class="fsg-card">
@@ -1215,7 +1215,7 @@ body{
 
     <div class="price-row-center">
       <span class="price-old">9,90&nbsp;€</span>
-      <span class="price-new">3,90&nbsp;€</span>
+      <span class="price-new">0,00&nbsp;€</span>
     </div>
 
     <button class="pay-btn" id="payBtn" type="button">Sicher bezahlen &amp; Download freischalten</button>
@@ -2257,11 +2257,11 @@ function buildInvoicePDF(){
   doc.setFontSize(10);
   doc.setTextColor(27,32,26);
   doc.text('Biometrisches Foto-Set (35×45mm, 50×50mm & Druckvorlagen)', margin+8, iy);
-  doc.text('3,90 €', pageW-margin-8, iy, {align:'right'});
+  doc.text('0,00 €', pageW-margin-8, iy, {align:'right'});
   iy += 8;
   doc.setFont('helvetica','bold');
   doc.text('Gesamtbetrag (inkl. MwSt.)', margin+8, iy);
-  doc.text('3,90 €', pageW-margin-8, iy, {align:'right'});
+  doc.text('0,00 €', pageW-margin-8, iy, {align:'right'});
 
   y += boxH + 14;
 
