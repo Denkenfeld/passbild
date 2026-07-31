@@ -406,6 +406,33 @@ body{
 .fsg-tip-icon svg{ width:36px; height:36px; }
 .fsg-tip span{ font-size:.66rem; font-weight:600; color:#5C2B1B; line-height:1.2; }
 
+/* ---------------- Häufige Fragen (FAQ) ---------------- */
+.fsg-faq{ margin-top:26px; }
+.fsg-faq h3{
+  font-size:.95rem; font-weight:700; color:var(--ink);
+  text-align:center; margin-bottom:12px;
+}
+.faq-item{
+  background:#fff; border:1px solid #E8DECC; border-radius:12px;
+  margin-bottom:8px; overflow:hidden;
+}
+.faq-item summary{
+  list-style:none; cursor:pointer; padding:12px 40px 12px 14px;
+  font-size:.82rem; font-weight:700; color:#5C2B1B;
+  position:relative; line-height:1.3;
+}
+.faq-item summary::-webkit-details-marker{ display:none; }
+.faq-item summary::after{
+  content:"+";
+  position:absolute; right:14px; top:50%; transform:translateY(-50%);
+  font-size:1.05rem; font-weight:700; color:#A84E32;
+  transition:transform .2s ease;
+}
+.faq-item[open] summary::after{ content:"–"; }
+.faq-answer{
+  padding:0 14px 13px; font-size:.78rem; line-height:1.5; color:var(--sub);
+}
+
 .fsg-cta-btn{
   position:relative;
   margin-top:16px;
@@ -1011,7 +1038,52 @@ body{
         </div>
       </div>
     </div>
+
+    <div class="fsg-faq">
+      <h3>Häufige Fragen</h3>
+
+      <details class="faq-item">
+        <summary>Wird mein Foto gespeichert?</summary>
+        <div class="faq-answer">Nein. Dein Foto wird nirgends dauerhaft gespeichert — weder auf unseren Servern noch sonst wo. Nach dem Schließen der Seite ist es weg.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Wird mein Foto lokal bearbeitet?</summary>
+        <div class="faq-answer">Ja. Die komplette KI-Analyse (Gesichtserkennung, Freistellung, Zuschnitt) läuft direkt in deinem Browser. Dein Foto bleibt zu 100% auf deinem Gerät.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Was, wenn mein Foto nicht akzeptiert wird?</summary>
+        <div class="faq-answer">Du hast eine 100%-Geld-zurück-Garantie: Schick uns einfach eine E‑Mail an unseren Service mit einer Kopie der ablehnenden Stelle (z.B. Amt oder Behörde), und du bekommst dein Geld vollständig zurück.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Wie mache ich das Foto?</summary>
+        <div class="faq-answer">Halte dein Handy gerade vor dein Gesicht, sorge für gutes, helles Licht und einen einfarbigen Hintergrund, schau neutral geradeaus in die Kamera — und lade das Foto einfach hoch. Den Rest übernimmt unsere KI automatisch.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Kann ich auch andere Fotos verwenden?</summary>
+        <div class="faq-answer">Ja. Unser System verarbeitet grundsätzlich jedes Foto, solange darauf ein Gesicht klar erkennbar ist — z.B. auch ein bereits vorhandenes Foto aus deiner Galerie.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Ist mein Foto biometrie-konform?</summary>
+        <div class="faq-answer">Ja. Die KI prüft automatisch Kopfgröße, Position, Belichtung, Kontrast, offene Augen, geschlossenen Mund und den korrekten Zuschnitt nach den offiziellen Vorgaben.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Wie lange dauert die Erstellung?</summary>
+        <div class="faq-answer">Nur wenige Sekunden. Du lädst dein Foto hoch, die KI analysiert und bearbeitet es automatisch, und du erhältst sofort alle fertigen Formate zur Vorschau.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Was kostet es?</summary>
+        <div class="faq-answer">Ein einmaliger, fairer Preis für das komplette Foto-Set (alle Formate & Druckvorlagen) — kein Abo, keine versteckten Kosten.</div>
+      </details>
+    </div>
   </div>
+
 
 
   <div class="preview-section" id="previewSection" style="display:none;">
@@ -1392,7 +1464,14 @@ const STEPS = [
   "Foto wird automatisch ausgerichtet",
   "Hintergrund wird entfernt (KI)",
   "Kopf wird zentriert",
+  "Augen & Mund werden geprüft",
+  "Belichtung wird analysiert",
+  "Kontrast wird optimiert",
+  "Kopfgröße wird berechnet",
   "Maße werden geprüft",
+  "Bildausschnitt wird feinjustiert",
+  "Qualität wird kontrolliert",
+  "Letzte Details werden verfeinert",
   "Foto wird fertiggestellt"
 ];
 let stepToken = null;
