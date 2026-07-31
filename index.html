@@ -498,6 +498,23 @@ body{
   width:100%; height:100%; object-fit:cover;
   transform:scaleX(-1); /* Selfie-Spiegelung */
 }
+.camera-guide{
+  position:absolute; inset:0; z-index:1;
+  width:100%; height:100%;
+  pointer-events:none;
+}
+.camera-guide ellipse{
+  fill:none;
+  stroke:rgba(255,255,255,.85);
+  stroke-width:0.6;
+  stroke-dasharray:2.2 2;
+}
+.camera-shoulder{
+  stroke:rgba(255,255,255,.7);
+  stroke-width:0.6;
+  stroke-dasharray:2.2 2;
+  stroke-linecap:round;
+}
 .camera-close{
   position:absolute; top:10px; right:10px; z-index:2;
   width:36px; height:36px; border-radius:50%;
@@ -506,9 +523,10 @@ body{
   display:flex; align-items:center; justify-content:center;
 }
 .camera-hint{
-  position:absolute; top:10px; left:10px; right:56px; z-index:2;
-  color:#fff; font-size:.72rem; font-weight:600; line-height:1.3;
+  position:absolute; top:52px; left:12px; right:12px; z-index:2;
+  color:#fff; font-size:.72rem; font-weight:600; line-height:1.4;
   text-shadow:0 1px 3px rgba(0,0,0,.6);
+  text-align:center;
 }
 .camera-controls{
   position:absolute; bottom:18px; left:0; right:0; z-index:2;
@@ -1280,7 +1298,12 @@ body{
   <div class="camera-modal-inner">
     <button class="camera-close" id="cameraClose" type="button" aria-label="Schließen">✕</button>
     <video id="cameraVideo" autoplay playsinline muted></video>
-    <div class="camera-hint" id="cameraHint">Positioniere dein Gesicht mittig, gutes Licht, einfarbiger Hintergrund.</div>
+    <svg class="camera-guide" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <ellipse cx="50" cy="38" rx="13.2" ry="16.8" />
+      <line class="camera-shoulder" x1="36" y1="61" x2="16" y2="73" />
+      <line class="camera-shoulder" x1="64" y1="61" x2="84" y2="73" />
+    </svg>
+    <div class="camera-hint" id="cameraHint">Positioniere dein Gesicht mittig, gutes Licht, einfarbiger Hintergrund.<br>Mund zu, bisschen lächeln erlaubt 😉</div>
     <div class="camera-controls">
       <button class="camera-shutter" id="cameraShutter" type="button" aria-label="Foto aufnehmen"></button>
     </div>
@@ -2223,12 +2246,19 @@ async function openCamera(targetInput){
   cameraTargetInput = targetInput;
   try{
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:1280} },
+      video:{ facingMode:'user', width:{ideal:960}, height:{ideal:960} },
       audio:false
     });
     cameraVideo.srcObject = cameraStream;
     cameraModal.classList.add('show');
     cameraModal.setAttribute('aria-hidden','false');
+    // Die schweren KI-Modelle schon jetzt im Hintergrund laden, während der
+    // Nutzer sich vor der Kamera positioniert — nicht erst NACH der Aufnahme.
+    // So überschneidet sich der große Download/Init nicht mit dem Moment,
+    // in dem die Kamera-Hardware gerade erst gestartet/gestoppt wird
+    // (genau diese Überschneidung hat den Tab beim allerersten Versuch
+    // zum Absturz/Neuladen gebracht).
+    initModels().catch(()=>{});
   }catch(err){
     console.error('Kamerazugriff fehlgeschlagen, Fallback auf Dateiauswahl:', err);
     targetInput.click();
@@ -2247,9 +2277,13 @@ function closeCamera(){
 
 cameraClose.addEventListener('click', closeCamera);
 
+let captureBusy = false;
 cameraShutter.addEventListener('click', ()=>{
+  if(captureBusy) return;
   const vw = cameraVideo.videoWidth, vh = cameraVideo.videoHeight;
   if(!vw || !vh) return;
+  captureBusy = true;
+
   cameraCanvas.width = vw;
   cameraCanvas.height = vh;
   const cctx = cameraCanvas.getContext('2d');
@@ -2264,7 +2298,13 @@ cameraShutter.addEventListener('click', ()=>{
   const targetInput = cameraTargetInput || fileInput;
   cameraCanvas.toBlob((blob)=>{
     closeCamera();
-    if(blob) handleFileSelected(blob, targetInput);
+    // Kurze Pause, damit der Browser die Kamera-Hardware/den Video-Stream
+    // vollständig freigibt, BEVOR die rechenintensive KI-Pipeline startet —
+    // verhindert den Speicher-Spitzenwert, der zum Tab-Absturz führte.
+    setTimeout(()=>{
+      captureBusy = false;
+      if(blob) handleFileSelected(blob, targetInput);
+    }, 250);
   }, 'image/jpeg', 0.95);
 });
 
