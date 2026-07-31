@@ -1427,6 +1427,7 @@ body{
 import { FaceLandmarker, FilesetResolver, ImageSegmenter } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 import { removeBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm";
 import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/+esm";
+import JSZip from "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
 
 /* ---------------- Fixed format ----------------
    One-click product: no manual format switching. Default is the German
@@ -2644,27 +2645,57 @@ function buildInvoicePDF(){
   return doc;
 }
 
-function downloadAllFiles(){
-  const files = [
+function canvasToBlob(canvasEl, quality){
+  return new Promise((resolve)=>{
+    if(!canvasEl){ resolve(null); return; }
+    canvasEl.toBlob((blob)=> resolve(blob), 'image/jpeg', quality);
+  });
+}
+
+async function downloadAllFiles(){
+  // Alle Dateien werden in EIN ZIP gepackt und über einen einzigen Klick
+  // heruntergeladen. Grund: Browser blockieren mehrere per JavaScript
+  // ausgelöste Einzel-Downloads (z.B. per setTimeout) als Popup-/Download-
+  // Flut, sodass oft nur der letzte (das PDF) tatsächlich ankam.
+  const zip = new JSZip();
+
+  const imageFiles = [
     [generatedFiles.photo35, 'foto-35x45mm.jpg'],
     [generatedFiles.sheet35, '10x15cm-4x-35x45mm.jpg'],
     [generatedFiles.photo50, 'foto-50x50mm.jpg'],
     [generatedFiles.sheet50, '10x15cm-2x-50x50mm.jpg'],
     [generatedFiles.a4, 'a4-vorlage-35x45mm-50x50mm.jpg']
   ];
-  files.forEach(([canvasEl, name], i)=>{
-    // Leichte Verzögerung zwischen den Downloads, damit der Browser sie
-    // nicht als Popup-Flut blockiert.
-    setTimeout(()=> downloadCanvasAsFile(canvasEl, name), i*350);
-  });
 
-  setTimeout(()=>{
-    try{
-      buildInvoicePDF().save('rechnung-und-infos.pdf');
-    }catch(e){
-      console.error('PDF-Erstellung fehlgeschlagen:', e);
+  for(const [canvasEl, name] of imageFiles){
+    const blob = await canvasToBlob(canvasEl, 0.95);
+    if(blob){
+      zip.file(name, blob);
+    } else {
+      console.warn('Canvas fehlt, wird im ZIP übersprungen:', name);
     }
-  }, files.length*350 + 250);
+  }
+
+  try{
+    const pdfBlob = buildInvoicePDF().output('blob');
+    zip.file('rechnung-und-infos.pdf', pdfBlob);
+  }catch(e){
+    console.error('PDF-Erstellung fehlgeschlagen:', e);
+  }
+
+  try{
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fotoselbermachen-download.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=> URL.revokeObjectURL(url), 5000);
+  }catch(e){
+    console.error('ZIP-Erstellung fehlgeschlagen:', e);
+  }
 }
 
 const payBtn = document.getElementById('payBtn');
@@ -2672,10 +2703,11 @@ const payNote = document.getElementById('payNote');
 const payBtnDefaultText = payBtn.textContent;
 let hasPaid = false;
 
-payBtn.addEventListener('click', ()=>{
+payBtn.addEventListener('click', async ()=>{
   if(hasPaid){
-    downloadAllFiles();
     payNote.textContent = 'Download wird erneut gestartet …';
+    await downloadAllFiles();
+    payNote.textContent = 'Download abgeschlossen.';
     return;
   }
 
@@ -2691,16 +2723,14 @@ payBtn.addEventListener('click', ()=>{
   payNote.style.display = 'block';
   payNote.textContent = 'Zahlung wird verarbeitet …';
 
-  setTimeout(()=>{
-    payNote.textContent = 'Zahlung erfolgreich — Download wird gestartet …';
-    downloadAllFiles();
+  setTimeout(async ()=>{
+    payNote.textContent = 'Zahlung erfolgreich — Download wird vorbereitet (ZIP wird erstellt) …';
+    await downloadAllFiles();
 
-    setTimeout(()=>{
-      hasPaid = true;
-      payBtn.disabled = false;
-      payBtn.textContent = 'Danke! Jetzt Download starten';
-      payNote.textContent = 'Download abgeschlossen. Vielen Dank für deinen Kauf!';
-    }, 1200);
+    hasPaid = true;
+    payBtn.disabled = false;
+    payBtn.textContent = 'Danke! Jetzt Download starten';
+    payNote.textContent = 'Download abgeschlossen. Vielen Dank für deinen Kauf!';
   }, 1500);
 });
 
