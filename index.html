@@ -958,6 +958,65 @@ body{
 
 .legal{ margin:12px 0 0; font-size:.7rem; color:#9aa09a; line-height:1.5; }
 .pay-note{ margin-top:10px; font-size:.78rem; color:var(--sub); text-align:center; }
+
+/* ---------------- Download-Hub (nach erfolgreicher Zahlung) ---------------- */
+.download-hub{
+  background:#fff; border-radius:20px; padding:26px 20px 22px;
+  box-shadow:0 12px 34px -12px rgba(31,36,32,.16);
+}
+.download-hub h2{
+  margin:0 0 4px; font-size:1.1rem; text-align:center;
+}
+.download-hub .hub-sub{
+  margin:0 0 20px; font-size:.83rem; color:var(--sub); text-align:center; line-height:1.5;
+}
+.dl-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:0 0 18px; padding:0; list-style:none;
+}
+.dl-card{
+  background:#fff; border:1px solid #EFE8D8; border-radius:14px; padding:10px;
+  box-shadow:0 3px 12px rgba(31,36,32,.07);
+  display:flex; flex-direction:column; align-items:center; gap:7px;
+}
+.dl-card-thumb{
+  width:100%; aspect-ratio:1/1; border-radius:8px;
+  background:#F7F4EC; display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.dl-card-thumb img{ width:100%; height:100%; object-fit:contain; display:block; }
+.dl-card-thumb.square-photo{ border-radius:2px; }
+.dl-card-thumb.doc-thumb{ flex-direction:column; gap:4px; }
+.dl-card-thumb .doc-icon{ width:38%; opacity:.85; }
+.dl-card-label{ font-size:.74rem; color:var(--ink); font-weight:600; text-align:center; line-height:1.3; }
+.dl-card-actions{ display:flex; gap:6px; width:100%; margin-top:2px; }
+.dl-btn{
+  flex:1; display:flex; align-items:center; justify-content:center; gap:5px;
+  border:none; border-radius:9px; padding:8px 6px; font-size:.72rem; font-weight:700;
+  cursor:pointer; transition:transform .12s ease, background .12s ease;
+}
+.dl-btn:active{ transform:translateY(1px); }
+.dl-btn.dl-primary{ background:var(--accent-dark); color:#fff; }
+.dl-btn.dl-primary:hover{ background:#186b3f; }
+.dl-btn.dl-secondary{ background:#F2ECDC; color:var(--ink); }
+.dl-btn.dl-secondary:hover{ background:#E9E1CB; }
+.dl-btn svg{ width:13px; height:13px; flex:none; }
+.dl-btn.dl-done{ background:#e4f3ea; color:#1f8a52; }
+
+.zip-btn{
+  width:100%; padding:16px; border:none; border-radius:14px; margin-top:4px;
+  background:#d97855; color:#fff; font-size:1rem; font-weight:800;
+  cursor:pointer; box-shadow:0 10px 22px -10px rgba(168,78,50,.45);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:transform .15s ease, background .15s ease;
+}
+.zip-btn:hover{ background:#c96843; transform:translateY(-1px); }
+.zip-btn:active{ transform:translateY(0); }
+
+.leave-warning{
+  margin-top:16px; padding:12px 14px; border-radius:12px;
+  background:#FCEFE9; border:1px solid #F3D5C4; color:#9a4a28;
+  font-size:.78rem; line-height:1.5; text-align:center;
+}
+.leave-warning strong{ color:#7a3a1f; }
 </style>
 </head>
 <body>
@@ -1451,6 +1510,81 @@ body{
     <div class="agb-error" id="agbError" style="display:none;">Bitte bestätige zuerst die AGB und Widerrufsbelehrung, um fortzufahren.</div>
 
     <p class="legal">Mit Klick auf „Sicher bezahlen" bestätigen Sie den Kauf. Da es sich um eine individuell angefertigte digitale Datei handelt, ist eine Rückgabe/Widerruf gemäß § 312g Abs. 2 Nr. 1 BGB ausdrücklich ausgeschlossen. Bitte prüfen Sie die Vorschau sorgfältig vor dem Kauf.</p>
+  </div>
+
+  <div class="download-hub" id="downloadHub" style="display:none;">
+    <h2>Dein Download ist bereit 🎉</h2>
+    <p class="hub-sub">Tippe bei jedem Foto auf <strong>Speichern</strong> oder <strong>Teilen</strong> — oder lade unten alles gesammelt als ZIP herunter.</p>
+
+    <ul class="dl-grid" id="dlGrid">
+      <li class="dl-card" data-file="photo35">
+        <div class="dl-card-thumb"><img id="dlThumbPhoto35" alt="35×45mm Foto"></div>
+        <span class="dl-card-label">35×45&nbsp;mm Foto</span>
+        <div class="dl-card-actions">
+          <button class="dl-btn dl-primary" data-action="save" data-file="photo35">Speichern</button>
+          <button class="dl-btn dl-secondary" data-action="share" data-file="photo35">Teilen</button>
+        </div>
+      </li>
+      <li class="dl-card" data-file="photo50">
+        <div class="dl-card-thumb square-photo"><img id="dlThumbPhoto50" alt="50×50mm Foto"></div>
+        <span class="dl-card-label">50×50&nbsp;mm Foto</span>
+        <div class="dl-card-actions">
+          <button class="dl-btn dl-primary" data-action="save" data-file="photo50">Speichern</button>
+          <button class="dl-btn dl-secondary" data-action="share" data-file="photo50">Teilen</button>
+        </div>
+      </li>
+      <li class="dl-card" data-file="sheet35">
+        <div class="dl-card-thumb"><img id="dlThumbSheet35" alt="Druckvorlage 10×15cm"></div>
+        <span class="dl-card-label">Druckvorlage 10×15&nbsp;cm</span>
+        <div class="dl-card-actions">
+          <button class="dl-btn dl-primary" data-action="save" data-file="sheet35">Speichern</button>
+          <button class="dl-btn dl-secondary" data-action="share" data-file="sheet35">Teilen</button>
+        </div>
+      </li>
+      <li class="dl-card" data-file="sheet50">
+        <div class="dl-card-thumb"><img id="dlThumbSheet50" alt="Druckvorlage 10×15cm"></div>
+        <span class="dl-card-label">Druckvorlage 10×15&nbsp;cm</span>
+        <div class="dl-card-actions">
+          <button class="dl-btn dl-primary" data-action="save" data-file="sheet50">Speichern</button>
+          <button class="dl-btn dl-secondary" data-action="share" data-file="sheet50">Teilen</button>
+        </div>
+      </li>
+      <li class="dl-card" data-file="a4">
+        <div class="dl-card-thumb"><img id="dlThumbA4" alt="Druckvorlage DIN A4"></div>
+        <span class="dl-card-label">Druckvorlage DIN&nbsp;A4</span>
+        <div class="dl-card-actions">
+          <button class="dl-btn dl-primary" data-action="save" data-file="a4">Speichern</button>
+          <button class="dl-btn dl-secondary" data-action="share" data-file="a4">Teilen</button>
+        </div>
+      </li>
+      <li class="dl-card" data-file="pdf">
+        <div class="dl-card-thumb doc-thumb">
+          <svg class="doc-icon" viewBox="0 0 60 76" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 2H40L54 16V74H6V2Z" fill="#fff" stroke="#D8CDB6" stroke-width="2.5"/>
+            <path d="M40 2V16H54" fill="none" stroke="#D8CDB6" stroke-width="2.5"/>
+            <line x1="14" y1="30" x2="46" y2="30" stroke="#d97855" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="14" y1="40" x2="46" y2="40" stroke="#E8DECC" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="14" y1="50" x2="36" y2="50" stroke="#E8DECC" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="dl-card-label">Beschreibung &amp; Anleitung</span>
+        <div class="dl-card-actions">
+          <button class="dl-btn dl-primary" data-action="save" data-file="pdf">Speichern</button>
+          <button class="dl-btn dl-secondary" data-action="share" data-file="pdf">Teilen</button>
+        </div>
+      </li>
+    </ul>
+
+    <button class="zip-btn" id="zipBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;">
+        <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Alle 6 Dateien als ZIP herunterladen
+    </button>
+
+    <div class="leave-warning" id="leaveWarning" style="display:none;">
+      ⚠️ <strong>Noch nicht heruntergeladen!</strong> Sobald du diese Seite verlässt, sind deine Fotos weg. Bitte lade zuerst mindestens eine Datei oder das ZIP herunter.
+    </div>
   </div>
 
 </div>
@@ -2996,6 +3130,132 @@ async function downloadAllFiles(){
   }
 }
 
+// Zentrale Datei-Infos: einmal definiert, für ZIP, Einzeldownload, Teilen
+// und Vorschau im Download-Hub gleichermaßen verwendet.
+function getFileInfo(key){
+  const table = {
+    photo35: { getCanvas: ()=>generatedFiles.photo35, filename:'foto-35x45mm.jpg', mime:'image/jpeg', quality:0.95 },
+    photo50: { getCanvas: ()=>generatedFiles.photo50, filename:'foto-50x50mm.jpg', mime:'image/jpeg', quality:0.95 },
+    sheet35: { getCanvas: ()=>generatedFiles.sheet35, filename:'10x15cm-4x-35x45mm.jpg', mime:'image/jpeg', quality:0.95 },
+    sheet50: { getCanvas: ()=>generatedFiles.sheet50, filename:'10x15cm-2x-50x50mm.jpg', mime:'image/jpeg', quality:0.95 },
+    a4:      { getCanvas: ()=>generatedFiles.a4, filename:'a4-vorlage-35x45mm-50x50mm.jpg', mime:'image/jpeg', quality:0.95 },
+  };
+  return table[key];
+}
+
+async function getFileBlob(key){
+  if(key === 'pdf'){
+    return buildInvoicePDF().output('blob');
+  }
+  const info = getFileInfo(key);
+  if(!info) return null;
+  return canvasToBlob(info.getCanvas(), info.quality);
+}
+
+function getFileName(key){
+  return key === 'pdf' ? 'rechnung-und-infos.pdf' : (getFileInfo(key)?.filename || 'datei');
+}
+
+let anyFileSavedOrShared = false;
+
+function markDownloadHubActivity(){
+  anyFileSavedOrShared = true;
+  const warn = document.getElementById('leaveWarning');
+  if(warn){
+    warn.innerHTML = '✅ <strong>Alles gut.</strong> Deine Dateien wurden gespeichert/geteilt.';
+    warn.style.background = '#E9F5EE';
+    warn.style.borderColor = '#BFE3CC';
+    warn.style.color = '#1f6b45';
+  }
+}
+
+async function saveSingleFile(key, btn){
+  const blob = await getFileBlob(key);
+  if(!blob){ console.warn('Datei nicht verfügbar:', key); return; }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = getFileName(key);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 5000);
+  markDownloadHubActivity();
+  if(btn){
+    const original = btn.textContent;
+    btn.textContent = '✓ Gespeichert';
+    btn.classList.add('dl-done');
+    setTimeout(()=>{ btn.textContent = original; btn.classList.remove('dl-done'); }, 2200);
+  }
+}
+
+async function shareSingleFile(key, btn){
+  const blob = await getFileBlob(key);
+  if(!blob) return;
+  const filename = getFileName(key);
+  const file = new File([blob], filename, { type: blob.type });
+
+  if(navigator.canShare && navigator.canShare({ files:[file] })){
+    try{
+      await navigator.share({ files:[file], title:'Biometrisches Foto Set', text:'Mein Foto von fotoselbermachen.de' });
+      markDownloadHubActivity();
+      return;
+    }catch(err){
+      if(err && err.name === 'AbortError') return; // Nutzer hat Teilen-Dialog abgebrochen
+      console.warn('Teilen fehlgeschlagen, Fallback auf Speichern:', err);
+    }
+  }
+  // Fallback für Browser ohne Web-Share-Dateiunterstützung (z.B. Desktop)
+  await saveSingleFile(key, btn);
+}
+
+function updateDownloadHubThumbnails(){
+  const map = [
+    ['dlThumbPhoto35', generatedFiles.photo35],
+    ['dlThumbPhoto50', generatedFiles.photo50],
+    ['dlThumbSheet35', generatedFiles.sheet35],
+    ['dlThumbSheet50', generatedFiles.sheet50],
+    ['dlThumbA4', generatedFiles.a4],
+  ];
+  map.forEach(([id, canvasEl])=>{
+    if(!canvasEl) return;
+    const img = document.getElementById(id);
+    if(img) img.src = canvasEl.toDataURL('image/jpeg', 0.85);
+  });
+}
+
+function showDownloadHub(){
+  updateDownloadHubThumbnails();
+  document.getElementById('downloadHub').style.display = 'block';
+  document.getElementById('leaveWarning').style.display = 'block';
+
+  document.getElementById('dlGrid').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.dl-btn');
+    if(!btn) return;
+    const key = btn.dataset.file;
+    if(btn.dataset.action === 'share'){
+      shareSingleFile(key, btn);
+    } else {
+      saveSingleFile(key, btn);
+    }
+  });
+
+  document.getElementById('zipBtn').addEventListener('click', async ()=>{
+    await downloadAllFiles();
+    markDownloadHubActivity();
+  });
+}
+
+// Warnt beim Verlassen der Seite (Tab schließen, zurück, neu laden), solange
+// bezahlt wurde aber noch keine einzige Datei gespeichert/geteilt wurde —
+// da nach dem Verlassen alle generierten Fotos futsch sind.
+window.addEventListener('beforeunload', (e)=>{
+  if(hasPaid && !anyFileSavedOrShared){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 const payBtn = document.getElementById('payBtn');
 const payNote = document.getElementById('payNote');
 const payBtnDefaultText = payBtn.textContent;
@@ -3068,13 +3328,14 @@ payBtn.addEventListener('click', async ()=>{
   notifyFormspree();
 
   setTimeout(async ()=>{
-    payNote.textContent = 'Zahlung erfolgreich — Download wird vorbereitet (ZIP wird erstellt) …';
-    await downloadAllFiles();
-
+    payNote.textContent = 'Zahlung erfolgreich!';
     hasPaid = true;
-    payBtn.disabled = false;
-    payBtn.textContent = 'Danke! Jetzt Download starten';
-    payNote.textContent = 'Download abgeschlossen. Vielen Dank für deinen Kauf!';
+
+    // Checkout-Bereich ausblenden, Download-Hub zeigen — der Nutzer wählt
+    // jetzt selbst pro Datei "Speichern"/"Teilen" oder den großen ZIP-Button,
+    // statt dass ein ZIP automatisch (und auf Mobile oft verwirrend) startet.
+    document.getElementById('buySection').style.display = 'none';
+    showDownloadHub();
   }, 1500);
 });
 
