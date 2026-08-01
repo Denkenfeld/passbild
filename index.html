@@ -1533,6 +1533,22 @@ function initModels(){
   return modelsPromise;
 }
 
+// Modelle so früh wie möglich im Hintergrund laden (nicht erst wenn die
+// Kamera geöffnet wird) — das ist die eigentliche Ursache für Abstürze/
+// Tab-Reloads beim allerersten Versuch: der große WASM-Download + die
+// Modell-Initialisierung sind sehr speicher-/CPU-intensiv, und wenn das
+// GENAU zeitgleich mit dem Start der Kamera-Hardware (getUserMedia)
+// passiert, kommt es v.a. auf iOS Safari zum Tab-Crash. Startet der
+// Download hingegen schon beim Laden der Seite, sind die Modelle meist
+// längst fertig, bevor der Nutzer überhaupt auf "Jetzt Foto machen"
+// klickt — daher klappt der zweite Versuch immer, weil dann alles schon
+// im Cache/Speicher liegt.
+if('requestIdleCallback' in window){
+  requestIdleCallback(()=> initModels().catch(()=>{}), { timeout:2000 });
+} else {
+  setTimeout(()=> initModels().catch(()=>{}), 600);
+}
+
 function loadImageEl(url){
   return new Promise((resolve,reject)=>{
     const img = new Image();
@@ -2380,6 +2396,19 @@ function generateAllOutputs(){
   updateCarousel();
 }
 
+function canvasToLowResDataURL(canvasEl, maxDim=260){
+  // Vorschau bewusst stark verkleinert erzeugen: verhindert, dass jemand die
+  // fertigen Dateien per Drag&Drop aus der Vorschau in voller Auflösung
+  // speichert, ohne zu bezahlen. Die echten Dateien in voller Auflösung
+  // entstehen erst beim ZIP-Download nach erfolgreicher Zahlung.
+  const scale = Math.min(1, maxDim / Math.max(canvasEl.width, canvasEl.height));
+  const w = Math.round(canvasEl.width*scale), h = Math.round(canvasEl.height*scale);
+  const tmp = document.createElement('canvas');
+  tmp.width = w; tmp.height = h;
+  tmp.getContext('2d').drawImage(canvasEl, 0, 0, w, h);
+  return tmp.toDataURL('image/jpeg', 0.7);
+}
+
 function updateFileThumbnails(){
   const map = [
     ['thumbPhoto35', generatedFiles.photo35],
@@ -2391,7 +2420,10 @@ function updateFileThumbnails(){
   map.forEach(([id, canvasEl])=>{
     if(!canvasEl) return;
     const img = document.getElementById(id);
-    if(img) img.src = canvasEl.toDataURL('image/jpeg', 0.85);
+    if(!img) return;
+    img.src = canvasToLowResDataURL(canvasEl);
+    img.draggable = false;
+    img.oncontextmenu = ()=> false;
   });
 }
 
@@ -2620,21 +2652,34 @@ function closeCamera(){
 cameraClose.addEventListener('click', closeCamera);
 
 let captureBusy = false;
+// Maximale Kantenlänge des aufgenommenen Fotos. iPhones liefern trotz
+// "ideal: 960" oft eine deutlich höhere native Kamera-Auflösung (z.B.
+// 1280×960 oder mehr) — und genau DAS Bild wird direkt danach durch
+// Gesichtserkennung + Hintergrundentfernung geschickt. Läuft das bei voller
+// Kameraauflösung, schießt der Speicherverbrauch auf dem iPhone kurz nach
+// dem Schließen der Kamera hoch, was zum Tab-Absturz/Reset führt. Für die
+// Endformate (35×45mm / 50×50mm Druck) ist das bei weitem nicht nötig —
+// daher wird direkt beim Zeichnen ins Canvas herunterskaliert, sodass das
+// große Rohbild nie vollständig im Speicher existiert.
+const MAX_CAPTURE_DIM = 1280;
+
 cameraShutter.addEventListener('click', ()=>{
   if(captureBusy) return;
   const vw = cameraVideo.videoWidth, vh = cameraVideo.videoHeight;
   if(!vw || !vh) return;
   captureBusy = true;
 
-  cameraCanvas.width = vw;
-  cameraCanvas.height = vh;
+  const scale = Math.min(1, MAX_CAPTURE_DIM / Math.max(vw, vh));
+  const outW = Math.round(vw*scale), outH = Math.round(vh*scale);
+  cameraCanvas.width = outW;
+  cameraCanvas.height = outH;
   const cctx = cameraCanvas.getContext('2d');
   // Selfie-Spiegelung beim Aufnehmen rückgängig machen, damit Text/Kleidung
   // im gespeicherten Foto seitenrichtig ist (nur die Live-Vorschau ist gespiegelt).
   cctx.save();
-  cctx.translate(vw,0);
+  cctx.translate(outW,0);
   cctx.scale(-1,1);
-  cctx.drawImage(cameraVideo, 0, 0, vw, vh);
+  cctx.drawImage(cameraVideo, 0, 0, outW, outH);
   cctx.restore();
 
   const targetInput = cameraTargetInput || fileInput;
@@ -2646,14 +2691,46 @@ cameraShutter.addEventListener('click', ()=>{
     setTimeout(()=>{
       captureBusy = false;
       if(blob) handleFileSelected(blob, targetInput);
-    }, 250);
+    }, 450);
   }, 'image/jpeg', 0.95);
 });
 
 function interceptWithCamera(labelEl, inputEl){
   if(!labelEl || !inputEl) return;
-  labelEl.addEventListener('click', (e)=>{
+  labelEl.addEventListener('click', async (e)=>{
     e.preventDefault();
+    if(labelEl.dataset.camBusy === '1') return; // Doppelklick während des Wartens abfangen
+
+    // Sicherstellen, dass die KI-Modelle VOLLSTÄNDIG geladen sind, bevor die
+    // Kamera überhaupt startet. Grund: auf iOS Chrome crasht der Tab beim
+    // allerersten Versuch fast immer genau in dem Moment, in dem die Kamera
+    // schließt und die Modell-Initialisierung noch nebenher lief bzw. gerade
+    // erst anlief — die Kombination aus "Kamera-Hardware freigeben" +
+    // "großer WASM/Modell-Download+Init gleichzeitig im Gange" ist offenbar
+    // zu viel für den Tab-Prozess. Ist modelsReady schon true (Normalfall,
+    // da initModels() beim Seitenaufruf im Hintergrund lädt), passiert hier
+    // nichts Spürbares. Nur falls der Nutzer SEHR schnell klickt, bevor der
+    // Hintergrund-Download fertig ist, wird kurz gewartet und das signalisiert.
+    if(!modelsReady){
+      labelEl.dataset.camBusy = '1';
+      const originalHTML = labelEl.innerHTML;
+      const originalText = labelEl.textContent;
+      labelEl.textContent = 'Einen Moment, KI wird vorbereitet …';
+      try{
+        await initModels();
+      }catch(err){
+        console.error('Fehler beim Laden der KI-Modelle:', err);
+        labelEl.innerHTML = originalHTML;
+        delete labelEl.dataset.camBusy;
+        // Trotzdem versuchen, die Kamera zu öffnen — die Modelle werden
+        // beim eigentlichen Verarbeitungsschritt ohnehin nochmal abgewartet.
+        openCamera(inputEl);
+        return;
+      }
+      labelEl.innerHTML = originalHTML || originalText;
+      delete labelEl.dataset.camBusy;
+    }
+
     openCamera(inputEl);
   });
 }
@@ -2935,6 +3012,37 @@ document.getElementById('agbCheckbox').addEventListener('change', (e)=>{
   if(e.target.checked) clearAgbError();
 });
 
+function notifyFormspree(){
+  // Sendet eine formlose Benachrichtigung an Formspree, sobald bezahlt wurde.
+  // Wichtig für Mobile: sobald der Download-/Teilen-Dialog aufgeht oder der
+  // Tab in den Hintergrund wechselt, killen mobile Browser (v.a. iOS Safari)
+  // laufende fetch()-Requests sofort. navigator.sendBeacon() übersteht das.
+  //
+  // WICHTIG: Der Payload muss ein "CORS-simple" Content-Type sein
+  // (FormData/multipart), da sendBeacon KEINE Preflight-Anfrage stellen
+  // kann. Mit JSON+Blob("application/json") funktioniert es in Chrome,
+  // wird von Safari/iOS aber lautlos verworfen, weil dort eine Preflight
+  // nötig wäre. FormData vermeidet das komplett — und ist ohnehin das
+  // Format, für das Formspree gebaut ist.
+  const data = new FormData();
+  data.append('message', 'Neue Bezahlung auf fotoselbermachen.de');
+  data.append('seite', window.location.href);
+  data.append('zeitpunkt', new Date().toLocaleString('de-DE'));
+
+  if(navigator.sendBeacon){
+    const ok = navigator.sendBeacon('https://formspree.io/f/xykrqzvn', data);
+    if(ok) return;
+  }
+
+  // Fallback (z.B. ältere Browser ohne sendBeacon-Unterstützung)
+  fetch('https://formspree.io/f/xykrqzvn', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json' },
+    body: data,
+    keepalive: true
+  }).catch(err => console.warn('Formspree-Benachrichtigung fehlgeschlagen:', err));
+}
+
 payBtn.addEventListener('click', async ()=>{
   if(hasPaid){
     payNote.textContent = 'Download wird erneut gestartet …';
@@ -2957,6 +3065,7 @@ payBtn.addEventListener('click', async ()=>{
   payBtn.textContent = 'Zahlung wird verarbeitet …';
   payNote.style.display = 'block';
   payNote.textContent = 'Zahlung wird verarbeitet …';
+  notifyFormspree();
 
   setTimeout(async ()=>{
     payNote.textContent = 'Zahlung erfolgreich — Download wird vorbereitet (ZIP wird erstellt) …';
