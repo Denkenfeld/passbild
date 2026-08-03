@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fotopause.de – Prototyp</title>
+<style>
+:root{
+  --ink:#12213A;
+  --ink-soft:#3C4B68;
+  --paper:#F6F5F1;
+  --paper-raised:#FFFFFF;
+  --line:#E1DFD6;
+  --film:#E8563C;
+  --film-dark:#C8442E;
+  --seal:#1F7A5C;
+  --seal-soft:#E4F2EC;
+  --gold:#C9A24B;
+  --radius:14px;
+  --shadow: 0 2px 10px rgba(18,33,58,.06), 0 1px 2px rgba(18,33,58,.08);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{
+  font-family: "Fraunces", Georgia, serif;
+  font-weight:600;
+  letter-spacing:-.01em;
+}
+#app{
+  max-width:480px;
+  margin:0 auto;
+  min-height:100vh;
+  background:var(--paper);
+  position:relative;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ---- top bar ---- */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 18px;
+  background:rgba(246,245,241,.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:8px;}
+.brand .mark{
+  width:26px;height:26px;border-radius:7px;
+  background:var(--film);
+  position:relative;
+  display:inline-block;
+}
+.brand .mark::after{
+  content:"";
+  position:absolute; inset:6px;
+  border-radius:4px;
+  background:var(--paper);
+}
+.brand .word{font-family:"Fraunces",serif; font-weight:600; font-size:17px;}
+.brand .word b{color:var(--film);}
+.topbar .action{
+  font-size:13px; color:var(--ink-soft); background:none; border:none;
+  display:flex; align-items:center; gap:6px; cursor:pointer; font-family:inherit;
+}
+
+/* ---- screens ---- */
+.screen{ display:none; flex:1; flex-direction:column; padding-bottom:96px; animation:fade .25s ease; position:relative; }
+.screen.active{display:flex;}
+@keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+
+.section{padding:20px 18px;}
+.eyebrow{
+  font-size:11px; text-transform:uppercase; letter-spacing:.12em;
+  color:var(--film-dark); font-weight:700; margin-bottom:8px;
+}
+.lede{color:var(--ink-soft); font-size:14.5px; line-height:1.5;}
+
+/* ---- buttons / inputs ---- */
+.btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:14px 18px; border-radius:11px;
+  font-size:15px; font-weight:600; border:none; cursor:pointer;
+  font-family:inherit;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.btn:active{transform:scale(.98);}
+.btn-primary{background:var(--film); color:#fff; box-shadow:0 6px 16px rgba(232,86,60,.28);}
+.btn-secondary{background:var(--paper-raised); color:var(--ink); border:1px solid var(--line);}
+.btn-ghost{background:transparent; color:var(--ink-soft); font-weight:500;}
+.btn-seal{background:var(--seal); color:#fff;}
+.btn-danger{background:#fff; color:var(--film-dark); border:1px solid #F1C9C0;}
+.btn-sm{width:auto; padding:9px 16px; font-size:13.5px;}
+
+input[type=text], input[type=password], input[type=email], select, textarea{
+  width:100%; padding:13px 14px; border-radius:10px;
+  border:1.5px solid var(--line); background:var(--paper-raised);
+  font-size:15px; font-family:inherit; color:var(--ink);
+}
+input:focus, select:focus, textarea:focus{outline:2px solid var(--film); outline-offset:1px; border-color:var(--film);}
+label{font-size:12.5px; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:6px;}
+.field{margin-bottom:14px;}
+
+.card{
+  background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:16px;
+}
+
+/* ---- code entry (signature element: perforated ticket stub) ---- */
+.stub{
+  background:var(--paper-raised);
+  border:1px solid var(--line);
+  border-radius:16px;
+  position:relative;
+  padding:22px 20px 20px;
+  box-shadow:var(--shadow);
+  overflow:visible;
+}
+.stub::before, .stub::after{
+  content:""; position:absolute; width:22px; height:22px; background:var(--paper);
+  border:1px solid var(--line); border-radius:50%; top:50%; transform:translateY(-50%);
+}
+.stub::before{left:-11px;}
+.stub::after{right:-11px;}
+.stub .perf{
+  border-top:2px dashed var(--line); margin:16px -20px 16px; height:0;
+}
+.code-input{
+  letter-spacing:.3em; text-align:center; font-family:"Fraunces",serif; font-size:20px;
+  text-transform:uppercase;
+}
+
+/* ---- tab toggle (login mode / role switches) ---- */
+.tabbar-role{
+  display:flex; margin:0 0 14px; border:1px solid var(--line); border-radius:99px; padding:3px; background:var(--paper-raised);
+}
+.tabbar-role button{
+  flex:1; border:none; background:none; padding:9px 4px; border-radius:99px; font-size:12px; font-weight:700; color:var(--ink-soft); cursor:pointer; font-family:inherit;
+}
+.tabbar-role button.active{background:var(--ink); color:#fff;}
+
+/* ---- bottom nav ---- */
+.bottomnav{
+  position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:480px;
+  display:none; justify-content:space-around;
+  background:rgba(255,255,255,.94); backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);
+  padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  z-index:30;
+}
+.navitem{
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  font-size:10.5px; color:#9BA3B4; background:none; border:none; cursor:pointer;
+  padding:6px 10px; font-family:inherit; font-weight:600;
+}
+.navitem.active{color:var(--film);}
+.navitem svg{width:21px; height:21px;}
+.navcount{
+  position:absolute; top:-4px; right:-8px; background:var(--film); color:#fff;
+  font-size:9px; font-weight:800; min-width:15px; height:15px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; padding:0 3px; border:1.5px solid #fff;
+}
+
+/* ---- gallery ---- */
+.gallery-grid{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:3px;
+  padding:0 3px;
+}
+.photo{
+  aspect-ratio:1; position:relative; overflow:hidden; cursor:pointer;
+}
+.photo img{width:100%; height:100%; object-fit:cover; display:block;}
+.photo .chk{
+  position:absolute; top:6px; right:6px; width:20px; height:20px; border-radius:50%;
+  background:rgba(18,33,58,.45); border:1.5px solid #fff; display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:#fff;
+}
+.photo.selected .chk{background:var(--film); border-color:var(--film);}
+.photo.selected::after{content:""; position:absolute; inset:0; border:3px solid var(--film); pointer-events:none;}
+.photo.hidden-mod::after{
+  content:"Ausgeblendet"; position:absolute; inset:0; background:rgba(18,33,58,.72); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; text-align:center; padding:8px;
+}
+.photo.hidden-mod img{filter:grayscale(1) brightness(.7);}
+.photo .tag{
+  position:absolute; bottom:4px; left:4px; font-size:9px; font-weight:700;
+  background:rgba(18,33,58,.65); color:#fff; padding:2px 6px; border-radius:6px;
+  max-width:calc(100% - 8px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+.chip-row{display:flex; gap:8px; overflow-x:auto; padding:0 18px 12px; scrollbar-width:none;}
+.chip-row::-webkit-scrollbar{display:none;}
+.chip{
+  flex:0 0 auto; padding:8px 14px; border-radius:999px; font-size:12.5px; font-weight:600;
+  background:var(--paper-raised); border:1px solid var(--line); color:var(--ink-soft); white-space:nowrap; cursor:pointer;
+}
+.chip.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+
+.search-row{display:flex; gap:8px; padding:0 18px 12px;}
+.search-row input{flex:1;}
+.search-row select{flex:0 0 132px; font-size:12.5px; padding:10px 8px;}
+
+/* ---- header banner ---- */
+.hero{
+  padding:26px 18px 20px; background:var(--ink); color:#fff; position:relative; overflow:hidden;
+}
+.hero::before{
+  content:""; position:absolute; right:-40px; top:-40px; width:160px; height:160px;
+  border-radius:50%; background:var(--film); opacity:.18;
+}
+.hero .toprow{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; position:relative; z-index:1;}
+.hero .school{font-size:12px; opacity:.65; letter-spacing:.05em; text-transform:uppercase;}
+.hero h2{color:#fff; margin:0 0 4px; font-size:22px; position:relative; z-index:1;}
+.hero .meta{font-size:12.5px; opacity:.75; position:relative; z-index:1;}
+
+.avatar-chip{
+  display:inline-flex; align-items:center; gap:7px; padding:5px 12px 5px 5px; border-radius:99px;
+  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); color:#fff; font-size:12px; font-weight:600; cursor:pointer;
+  font-family:inherit;
+}
+.avatar-chip .circ{width:22px; height:22px; border-radius:50%; background:var(--film); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex:0 0 auto;}
+
+/* push banner */
+.push-banner{
+  position:absolute; top:14px; left:12px; right:12px; z-index:15;
+  background:var(--ink); color:#fff; border-radius:12px; padding:12px 14px;
+  display:flex; align-items:center; gap:10px; box-shadow:0 8px 20px rgba(18,33,58,.3);
+  transform:translateY(-160%); transition:transform .4s cubic-bezier(.2,.9,.3,1);
+}
+.push-banner.show{transform:translateY(0);}
+.push-banner .txt{flex:1; font-size:12.5px; line-height:1.4;}
+.push-banner button{background:rgba(255,255,255,.15); border:none; color:#fff; width:26px; height:26px; border-radius:50%; flex:0 0 auto; cursor:pointer;}
+
+/* teacher list */
+.list-row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 18px; border-bottom:1px solid var(--line); background:var(--paper-raised); cursor:pointer;
+}
+.list-row:first-child{border-top:1px solid var(--line);}
+.thumb-row{display:flex; align-items:center; gap:12px;}
+.thumb{width:44px; height:44px; border-radius:8px; object-fit:cover; flex:0 0 auto;}
+.rowtext .t{font-weight:600; font-size:14px;}
+.rowtext .s{font-size:12px; color:var(--ink-soft);}
+.badge{
+  font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:999px;
+  background:var(--seal-soft); color:var(--seal); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap;
+}
+.badge.warn{background:#FDECE8; color:var(--film-dark);}
+
+/* stat strip */
+.stat-strip{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px;}
+.stat-box{background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+.stat-box .n{font-family:"Fraunces",serif; font-size:19px; font-weight:600;}
+.stat-box .l{font-size:11px; color:var(--ink-soft); margin-top:2px; line-height:1.3;}
+
+/* onboarding step cards */
+.step-card{display:flex; gap:12px; padding:14px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper-raised); margin-bottom:10px; align-items:flex-start; cursor:pointer;}
+.step-card .num{width:30px; height:30px; border-radius:50%; background:var(--seal-soft); color:var(--seal); display:flex; align-items:center; justify-content:center; font-weight:700; flex:0 0 auto; font-family:"Fraunces",serif;}
+.step-card .stitle{font-weight:700; font-size:14.5px; margin-bottom:2px;}
+.step-card .stext{font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
+
+/* upload zone */
+.dropzone{
+  border:2px dashed var(--line); border-radius:var(--radius); padding:34px 16px;
+  text-align:center; background:var(--paper-raised); cursor:pointer;
+}
+.dropzone .icon{
+  width:52px; height:52px; border-radius:50%; background:var(--seal-soft); color:var(--seal);
+  display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:20px;
+}
+.progress-track{height:6px; background:var(--line); border-radius:99px; overflow:hidden; margin-top:10px;}
+.progress-fill{height:100%; background:var(--film); border-radius:99px; transition:width .4s ease;}
+
+/* switch toggle */
+.switch{position:relative; width:42px; height:24px; flex:0 0 auto; display:inline-block;}
+.switch input{opacity:0; width:0; height:0; position:absolute;}
+.switch .track{position:absolute; inset:0; background:var(--line); border-radius:99px; transition:.2s; cursor:pointer; display:block;}
+.switch .track::after{content:""; position:absolute; width:18px; height:18px; background:#fff; border-radius:50%; top:3px; left:3px; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.switch input:checked + .track{background:var(--seal);}
+.switch input:checked + .track::after{transform:translateX(18px);}
+
+.status-dot{width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; flex:0 0 auto;}
+.status-dot.ok{background:var(--seal);}
+.status-dot.warn{background:var(--gold);}
+.status-dot.off{background:#C4CAD6;}
+
+/* shop */
+.product-card{
+  display:flex; gap:12px; padding:14px; border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--paper-raised); margin-bottom:12px; align-items:center;
+}
+.product-card img{width:60px; height:60px; border-radius:8px; object-fit:cover; flex:0 0 auto;}
+.qty-stepper{display:flex; align-items:center; gap:10px;}
+.qty-stepper button{
+  width:28px; height:28px; border-radius:50%; border:1px solid var(--line); background:#fff;
+  font-size:16px; cursor:pointer; color:var(--ink); font-family:inherit;
+}
+.price{font-weight:700; color:var(--ink); font-size:14px; white-space:nowrap;}
+.remove-link{font-size:11.5px; color:var(--film-dark); font-weight:700; background:none; border:none; cursor:pointer; font-family:inherit; padding:0; margin-top:4px;}
+
+.section-title-row{display:flex; align-items:center; justify-content:space-between; padding:0 18px; margin-bottom:8px;}
+.link-btn{background:none; border:none; color:var(--film-dark); font-weight:700; font-size:12.5px; cursor:pointer; font-family:inherit; padding:0;}
+
+.empty-state{text-align:center; padding:50px 24px;}
+.empty-state .ico{font-size:38px; margin-bottom:10px;}
+.empty-state h3{margin:0 0 6px;}
+
+/* fab cart */
+.fab-cart{
+  position:fixed; bottom:78px; left:50%; transform:translateX(-50%);
+  max-width:448px; width:calc(100% - 36px);
+  background:var(--ink); color:#fff; border-radius:14px; padding:12px 16px;
+  display:none; align-items:center; justify-content:space-between; gap:10px;
+  box-shadow:0 10px 24px rgba(18,33,58,.3); z-index:25; border:none; font-family:inherit; cursor:pointer;
+}
+.fab-cart.show{display:flex;}
+.fab-cart .l{font-size:12.5px; font-weight:600; text-align:left;}
+.fab-cart .r{font-size:13px; font-weight:700; display:flex; align-items:center; gap:6px; white-space:nowrap;}
+
+/* timeline (orders) */
+.timeline{position:relative; padding-left:22px; margin-top:10px;}
+.tl-item{position:relative; padding-bottom:22px;}
+.tl-item:last-child{padding-bottom:0;}
+.tl-item::before{content:""; position:absolute; left:-22px; top:2px; width:12px; height:12px; border-radius:50%; background:var(--line); border:2px solid var(--paper-raised); z-index:1;}
+.tl-item.done::before{background:var(--seal);}
+.tl-item.current::before{background:var(--film); box-shadow:0 0 0 4px rgba(232,86,60,.18);}
+.tl-item::after{content:""; position:absolute; left:-17px; top:14px; bottom:-8px; width:2px; background:var(--line);}
+.tl-item:last-child::after{display:none;}
+.tl-item.done::after{background:var(--seal);}
+.tl-title{font-weight:700; font-size:13.5px;}
+.tl-date{font-size:11.5px; color:var(--ink-soft); margin-top:1px;}
+
+.order-card{padding:14px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper-raised); margin-bottom:12px; cursor:pointer;}
+.order-card .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.order-card .id{font-weight:700; font-size:13.5px;}
+.order-card .meta{font-size:12px; color:var(--ink-soft);}
+.order-thumbs{display:flex; gap:6px; margin-top:8px;}
+.order-thumbs img{width:36px; height:36px; border-radius:6px; object-fit:cover;}
+
+/* account */
+.profile-card{display:flex; align-items:center; gap:14px; padding:16px;}
+.profile-avatar{width:52px; height:52px; border-radius:50%; background:var(--film); color:#fff; display:flex; align-items:center; justify-content:center; font-family:"Fraunces",serif; font-size:19px; font-weight:600; flex:0 0 auto;}
+.child-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--line); gap:10px;}
+.child-row:last-child{border-bottom:none;}
+.pay-icons{display:flex; gap:8px; margin-top:10px;}
+.pay-icons span{padding:7px 12px; border:1px solid var(--line); border-radius:8px; font-size:12px; font-weight:700; color:var(--ink-soft); background:#fff;}
+
+.gdpr-strip{
+  display:flex; gap:8px; align-items:flex-start; padding:12px 14px; background:var(--seal-soft);
+  border-radius:10px; font-size:12px; color:#1F5B45; line-height:1.4;
+}
+
+/* ---- overlay / sheet / lightbox ---- */
+.overlay{
+  position:fixed; inset:0; background:rgba(18,33,58,.75); z-index:100;
+  display:none; align-items:flex-end; justify-content:center;
+}
+.overlay.active{display:flex;}
+.sheet{
+  width:100%; max-width:480px; background:var(--paper); border-radius:20px 20px 0 0;
+  padding:6px 18px 24px; max-height:88vh; overflow-y:auto; animation:up .25s ease;
+}
+@keyframes up{from{transform:translateY(30px); opacity:.4} to{transform:none; opacity:1}}
+.sheet-handle{width:38px; height:4px; background:var(--line); border-radius:99px; margin:10px auto 16px;}
+.lightbox{
+  position:fixed; inset:0; background:#0b0f16; z-index:110; display:none; flex-direction:column;
+}
+.lightbox.active{display:flex;}
+.lb-top{padding:14px 16px; display:flex; justify-content:space-between; align-items:center; flex:0 0 auto;}
+.lb-icon-btn{background:rgba(255,255,255,.12); border:none; color:#fff; width:38px; height:38px; border-radius:50%; cursor:pointer; font-size:15px; flex:0 0 auto;}
+.lb-counter{font-family:'Fraunces',serif; color:#fff; font-size:14px; letter-spacing:.03em; opacity:.85;}
+.lb-stage{position:relative; flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:pan-y;}
+.lb-stage img{max-width:100%; max-height:100%; object-fit:contain; user-select:none; -webkit-user-drag:none; display:block;}
+@keyframes lbSlideIn{from{opacity:0; transform:translateX(10px);} to{opacity:1; transform:translateX(0);}}
+.lb-stage img.lb-anim{animation:lbSlideIn .18s ease;}
+.lb-nav{position:absolute; top:50%; transform:translateY(-50%); background:rgba(18,33,58,.5); border:1px solid rgba(255,255,255,.25); color:#fff; width:38px; height:38px; border-radius:50%; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:0; z-index:2; padding:0; transition:opacity .15s;}
+.lb-nav-prev{left:10px;}
+.lb-nav-next{right:10px;}
+.lb-nav:disabled{opacity:0; pointer-events:none;}
+.lb-caption{text-align:center; color:rgba(255,255,255,.75); font-size:12.5px; padding:2px 16px 10px; flex:0 0 auto;}
+.lb-filmstrip{display:flex; gap:6px; overflow-x:auto; padding:0 14px 12px; scrollbar-width:none; flex:0 0 auto;}
+.lb-filmstrip::-webkit-scrollbar{display:none;}
+.lb-filmstrip .fthumb{width:52px; height:52px; border-radius:8px; overflow:hidden; flex:0 0 auto; border:2px solid transparent; opacity:.5; cursor:pointer; transition:opacity .15s, border-color .15s, transform .15s;}
+.lb-filmstrip .fthumb img{width:100%; height:100%; object-fit:cover; display:block;}
+.lb-filmstrip .fthumb.active{opacity:1; border-color:var(--film); transform:scale(1.08);}
+.lightbox .actions{padding:14px 18px calc(20px + env(safe-area-inset-bottom)); display:flex; gap:10px; flex:0 0 auto;}
+
+.toast{
+  position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+  background:var(--ink); color:#fff; padding:11px 18px; border-radius:99px; font-size:13.5px;
+  font-weight:600; z-index:200; opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+  display:flex; align-items:center; gap:8px; white-space:nowrap; max-width:88%;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+.toast .dot{width:7px; height:7px; border-radius:50%; background:var(--seal); flex:0 0 auto;}
+
+.divider{height:1px; background:var(--line); margin:16px 0;}
+.rowline{display:flex; justify-content:space-between; font-size:13.5px; padding:5px 0; color:var(--ink-soft);}
+.rowline.total{color:var(--ink); font-weight:700; font-size:15px; padding-top:10px; border-top:1px solid var(--line); margin-top:6px;}
+
+.option-btn{display:block; width:100%; text-align:left; padding:12px 14px; border:1.5px solid var(--line); border-radius:11px; background:#fff; margin-bottom:8px; cursor:pointer; font-family:inherit;}
+.option-btn .t{font-weight:700; font-size:14px;}
+.option-btn .p{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+.option-btn.picked{border-color:var(--film); background:#FFF3F0;}
+
+/* ---- camera capture ---- */
+.camerabar{display:flex; justify-content:space-between; align-items:center; padding:14px 18px; color:#fff; background:var(--ink);}
+.camerabar button{background:rgba(255,255,255,.15); border:none; color:#fff; padding:8px 12px; border-radius:99px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer;}
+.camerabar .target{font-size:12.5px; font-weight:600; text-align:center; flex:1; padding:0 8px;}
+.viewfinder-wrap{position:relative; background:#000; aspect-ratio:3/4; width:100%; overflow:hidden; display:flex; align-items:center; justify-content:center;}
+.viewfinder-wrap video{width:100%; height:100%; object-fit:cover;}
+.camera-fallback{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; background:linear-gradient(160deg,#1a2c4a,#0b1526); text-align:center;}
+.shutter-flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none;}
+.shutter-flash.flash{animation:flashpop .35s ease;}
+@keyframes flashpop{0%{opacity:.85;} 100%{opacity:0;}}
+.camera-controls{display:flex; justify-content:center; align-items:center; padding:18px;}
+.shutter-btn{width:70px; height:70px; border-radius:50%; background:#fff; border:4px solid var(--film); cursor:pointer;}
+.shutter-btn:active{transform:scale(.92);}
+.camera-progress{padding:0 18px 8px; font-size:12px; color:var(--ink-soft); text-align:center;}
+.cam-chip{display:flex; flex-direction:column; align-items:center; gap:4px; flex:0 0 auto; cursor:pointer;}
+.cam-chip .circ{width:46px; height:46px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--ink-soft); position:relative;}
+.cam-chip.armed .circ{border-color:var(--film); background:#FFF3F0; color:var(--film-dark);}
+.cam-chip.done .circ{border-color:var(--seal); background:var(--seal-soft); color:var(--seal);}
+.cam-chip .circ .check{position:absolute; bottom:-3px; right:-3px; width:16px; height:16px; background:var(--seal); border-radius:50%; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; border:2px solid var(--paper);}
+.cam-chip .lbl{font-size:10px; color:var(--ink-soft); max-width:52px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
+/* ---- QR cards ---- */
+.qrcard{margin-bottom:16px;}
+
+/* ---- print ---- */
+@media print{
+  body{background:#fff;}
+  .topbar, .bottomnav, .fab-cart, .push-banner, .no-print{display:none !important;}
+  #app{max-width:100%;}
+  .screen{padding-bottom:0;}
+  .qrcard{box-shadow:none; border:1.5px dashed var(--line); break-inside:avoid;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ TOP BAR ============ -->
+  <div class="topbar">
+    <div class="brand"><span class="mark"></span><span class="word">Foto<b>pause</b>.de</span></div>
+    <button class="action" id="topbarAction" onclick="logout()" style="display:none;">↦ Abmelden</button>
+  </div>
+
+  <!-- ============ SCREEN: LOGIN ============ -->
+  <div class="screen active" id="screen-login">
+    <div class="section" style="padding-top:8px;">
+      <div class="eyebrow">Willkommen</div>
+      <h1 style="margin:0 0 6px; font-size:26px;">Eure Klassenfotos, sicher an einem Ort.</h1>
+      <p class="lede">Kein WhatsApp-Chaos mehr. Klassencode für gemeinsame Ausflugsfotos, Foto-Code für das private Portrait eures Kindes.</p>
+    </div>
+
+    <div class="section" style="padding-top:4px;">
+      <div class="tabbar-role">
+        <button class="active" id="loginTabClass" onclick="setLoginMode('class')">Klassen-Zugang</button>
+        <button id="loginTabIndividual" onclick="setLoginMode('individual')">Foto-Code (Portrait)</button>
+      </div>
+      <div class="stub">
+        <div class="eyebrow" style="margin-bottom:12px;">Zugangscode einlösen</div>
+        <div class="field">
+          <label for="codeInput" id="codeLabel">Klassencode</label>
+          <input type="text" id="codeInput" class="code-input" placeholder="SYLT-4B" maxlength="12" value="SYLT-4B">
+        </div>
+        <div class="perf"></div>
+        <div class="field" style="margin-bottom:8px;">
+          <label for="pwInput">Passwort</label>
+          <input type="password" id="pwInput" placeholder="••••••••" value="wattwurm26">
+        </div>
+        <p id="loginHint" style="font-size:11.5px; color:var(--ink-soft); margin:0 0 14px;">Zeigt alle gemeinsamen Klassen- und Ausflugsfotos.</p>
+        <button class="btn btn-primary" onclick="loginParent()">Galerie öffnen</button>
+      </div>
+
+      <div style="text-align:center; margin:18px 0 10px; font-size:12px; color:var(--ink-soft);">— oder —</div>
+
+      <button class="btn btn-secondary" onclick="loginTeacher()">🧑‍🏫 Als Lehrkraft / Fotograf anmelden</button>
+
+      <div class="gdpr-strip" style="margin-top:22px;">
+        <span>🔒</span>
+        <span>Server in Deutschland · Galerien werden automatisch nach Projektende gelöscht · keine Nutzung eurer Fotos für Werbung.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN: PARENT GALLERY ============ -->
+  <div class="screen" id="screen-gallery">
+    <div class="hero">
+      <div class="push-banner" id="pushBanner">
+        <span style="font-size:18px;">🔔</span>
+        <span class="txt" id="pushBannerText">12 neue Fotos von Frau Nissen hochgeladen</span>
+        <button onclick="dismissBanner()">✕</button>
+      </div>
+      <div class="toprow">
+        <div>
+          <div class="school">Grundschule Am Wattenmeer</div>
+          <h2 id="galleryTitle">Klasse 4b · Klassenfahrt Sylt</h2>
+        </div>
+        <button class="avatar-chip" onclick="openOverlay('overlayChildSwitch')">
+          <span class="circ" id="childInitial">M</span><span id="childFirstName">Mika</span> ▾
+        </button>
+      </div>
+      <div class="meta" id="galleryMeta">📅 12.–16. Mai 2026 · Galerie aktiv bis 30.06.2026</div>
+    </div>
+
+    <div class="chip-row" style="padding-top:14px;">
+      <div class="chip active" onclick="filterChip(this)">Alle</div>
+      <div class="chip" onclick="filterChip(this)">Anreise</div>
+      <div class="chip" onclick="filterChip(this)">Wattwanderung</div>
+      <div class="chip" onclick="filterChip(this)">Leuchtturm</div>
+      <div class="chip" onclick="filterChip(this)">Strandspiele</div>
+      <div class="chip" onclick="filterChip(this)">Abschlussfeier</div>
+    </div>
+
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Suche, z. B. „Leuchtturm“" oninput="onSearch(this.value)">
+      <select id="sortSelect" onchange="onSort(this.value)">
+        <option value="new">Neueste zuerst</option>
+        <option value="old">Älteste zuerst</option>
+      </select>
+    </div>
+
+    <div style="padding:0 18px 10px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <span style="font-size:12.5px; color:var(--ink-soft);"><span id="selCount">0</span> ausgewählt</span>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-sm btn-primary" id="addCartBtn" style="display:none;" onclick="openAddToCart()">In Warenkorb</button>
+        <button class="btn btn-sm btn-secondary" onclick="toggleSelectMode()" id="selectModeBtn">Auswählen</button>
+      </div>
+    </div>
+
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+
+  <!-- ============ SCREEN: SHOP / WARENKORB ============ -->
+  <div class="screen" id="screen-shop">
+    <div class="section" style="padding-bottom:8px;">
+      <div class="eyebrow">Print-on-Demand</div>
+      <h2 style="margin:0 0 4px;">Warenkorb</h2>
+      <p class="lede">Professioneller Fotolabor-Druck, versendet direkt nach Hause.</p>
+    </div>
+    <div id="shopContent" class="section" style="padding-top:0;"></div>
+  </div>
+
+  <!-- ============ SCREEN: ORDERS ============ -->
+  <div class="screen" id="screen-orders">
+    <div class="section" style="padding-bottom:8px;">
+      <div class="eyebrow">Verlauf</div>
+      <h2 style="margin:0;">Meine Bestellungen</h2>
+    </div>
+    <div class="section" style="padding-top:0;" id="ordersContent"></div>
+  </div>
+
+  <!-- ============ SCREEN: ACCOUNT (Eltern) ============ -->
+  <div class="screen" id="screen-account">
+    <div class="section" style="padding-bottom:6px;">
+      <div class="eyebrow">Konto</div>
+      <h2 style="margin:0;">Meine Angaben</h2>
+    </div>
+    <div class="section" style="padding-top:4px;">
+      <div class="card profile-card">
+        <div class="profile-avatar">SP</div>
+        <div style="flex:1;">
+          <div style="font-weight:700; font-size:15px;">Sina Petersen</div>
+          <div style="font-size:12.5px; color:var(--ink-soft);">sina.petersen@web.de</div>
+        </div>
+        <button class="link-btn" onclick="toast('Profil bearbeiten (Demo)')">Bearbeiten</button>
+      </div>
+    </div>
+    <div class="section-title-row"><h3 style="margin:0; font-size:14.5px;">Verknüpfte Kinder</h3></div>
+    <div class="section" style="padding-top:0;">
+      <div class="card" id="accountChildren"></div>
+    </div>
+    <div class="section-title-row"><h3 style="margin:0; font-size:14.5px;">Lieferadresse</h3></div>
+    <div class="section" style="padding-top:0;">
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:13.5px; line-height:1.5;">Sina Petersen<br>Wattstraße 12<br>25980 Sylt</div>
+        <button class="link-btn" onclick="toast('Adresse bearbeiten (Demo)')">Ändern</button>
+      </div>
+    </div>
+    <div class="section-title-row"><h3 style="margin:0; font-size:14.5px;">Zahlungsmethoden</h3></div>
+    <div class="section" style="padding-top:0;">
+      <div class="card">
+        <div style="font-size:13px; color:var(--ink-soft);">Hinterlegt für schnellen Checkout</div>
+        <div class="pay-icons"><span>PayPal</span><span>Kreditkarte</span><span>SEPA</span></div>
+        <button class="link-btn" style="margin-top:10px;" onclick="toast('Zahlungsmethode hinzufügen (Demo)')">+ Neue Methode</button>
+      </div>
+    </div>
+    <div class="section-title-row"><h3 style="margin:0; font-size:14.5px;">Datenschutz (DSGVO)</h3></div>
+    <div class="section" style="padding-top:0;">
+      <div class="card">
+        <p style="margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); line-height:1.5;">Du hast jederzeit Anspruch auf Auskunft, Übertragbarkeit und Löschung deiner Daten gemäß Art. 15 &amp; 17 DSGVO.</p>
+        <button class="btn btn-secondary btn-sm" style="width:100%; margin-bottom:8px;" onclick="toast('Datenauskunft wird als PDF vorbereitet und per E-Mail versendet')">📄 Meine Daten herunterladen</button>
+        <button class="btn btn-danger btn-sm" style="width:100%;" onclick="openOverlay('overlayDeleteAccount')">Konto &amp; alle Daten löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN: TEACHER HOME (Startseite / Onboarding) ============ -->
+  <div class="screen" id="screen-teacherhome">
+    <div class="section" style="padding-bottom:6px;">
+      <div class="eyebrow">Willkommen</div>
+      <h1 style="margin:0 0 6px; font-size:24px;">Hallo, Frau Nissen 👋</h1>
+      <p class="lede">So funktioniert Fotopause in drei Schritten – und du kannst sofort loslegen.</p>
+    </div>
+
+    <div class="section" style="padding-top:4px; padding-bottom:6px;">
+      <div class="step-card" onclick="openQrCards()">
+        <div class="num">1</div>
+        <div>
+          <div class="stitle">📇 QR-Fotokarten verteilen</div>
+          <div class="stext">Jedes Kind bekommt eine eigene Karte mit QR-Code. Damit loggen sich die Eltern später sicher für das individuelle Portrait ein.</div>
+        </div>
+      </div>
+      <div class="step-card" onclick="startCameraForCurrentRoom()">
+        <div class="num">2</div>
+        <div>
+          <div class="stitle">📷 Fotos aufnehmen</div>
+          <div class="stext">Karte scannen oder Kind antippen – jedes Foto wird automatisch richtig zugeordnet. Gruppenfotos einfach ohne Zuordnung schießen.</div>
+        </div>
+      </div>
+      <div class="step-card" style="cursor:default;">
+        <div class="num">3</div>
+        <div>
+          <div class="stitle">🖼️ Fertig – Eltern sehen automatisch das Richtige</div>
+          <div class="stext">Klassencode zeigt die gemeinsamen Fotos, der Foto-Code zusätzlich das private Portrait. Bestellung läuft direkt in der App.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="padding-top:4px;">
+      <button class="btn btn-primary" onclick="startCameraForCurrentRoom()">📷 Jetzt Fotos aufnehmen</button>
+      <button class="btn btn-secondary" style="margin-top:10px;" onclick="tabToTeacher('teacher')">🗂️ Meine Klassenräume verwalten</button>
+      <div class="gdpr-strip" style="margin-top:18px;">
+        <span>🔒</span><span>DSGVO-konform · Server in Deutschland · automatische Löschung nach Projektende.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN: TEACHER DASHBOARD ============ -->
+  <div class="screen" id="screen-teacher">
+    <div class="section" style="padding-bottom:6px;">
+      <div class="eyebrow">Organisator-Ansicht</div>
+      <h2 style="margin:0 0 4px;">Meine Klassenräume</h2>
+      <p class="lede">Erstelle Event-Räume, lade Fotos hoch und verwalte Einladungen.</p>
+      <div class="stat-strip">
+        <div class="stat-box"><div class="n">3</div><div class="l">Aktive Klassenräume</div></div>
+        <div class="stat-box"><div class="n">166</div><div class="l">Hochgeladene Fotos</div></div>
+        <div class="stat-box"><div class="n">61</div><div class="l">Eltern erreicht</div></div>
+        <div class="stat-box"><div class="n">612 €</div><div class="l">Umsatz aus Bestellungen</div></div>
+      </div>
+    </div>
+    <div class="section" style="padding-top:0; padding-bottom:8px;">
+      <button class="btn btn-seal" onclick="openNewRoom()">+ Neuen Klassenraum erstellen</button>
+    </div>
+    <div id="teacherRoomsList"></div>
+    <div class="section">
+      <div class="gdpr-strip">
+        <span>🗑️</span>
+        <span>Galerien werden gemäß DSGVO automatisch nach Ablauf der Aufbewahrungsfrist gelöscht. Widerrufe zu Bildrechten setzt du sofort um.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN: TEACHER ROOM DETAIL ============ -->
+  <div class="screen" id="screen-upload">
+    <div class="hero">
+      <div class="school">Grundschule Am Wattenmeer</div>
+      <h2 id="uploadHeroTitle">Klasse 4b · Klassenfahrt Sylt</h2>
+      <div class="meta" id="uploadHeroMeta">👪 22 Eltern verbunden · 84 Fotos</div>
+    </div>
+
+    <div class="section">
+      <button class="btn btn-primary" onclick="openCamera()">📷 Fotos aufnehmen</button>
+      <div style="text-align:center; margin:14px 0 10px; font-size:12px; color:var(--ink-soft);">— oder —</div>
+      <div class="dropzone" onclick="simulateUpload()">
+        <div class="icon">⬆</div>
+        <div style="font-weight:600; margin-bottom:4px;">Dateien hochladen</div>
+        <div style="font-size:12.5px; color:var(--ink-soft);">Bestehende Fotos von der Kamerarolle hinzufügen</div>
+        <div class="progress-track" id="uploadTrack" style="display:none;"><div class="progress-fill" id="uploadFill" style="width:0%;"></div></div>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="openInvite()">🔗 Code</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="openQrCards()">🪪 QR-Karten</button>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="openInviteManage()">👪 Eltern verwalten</button>
+        <button class="btn btn-sm" id="modBtn" style="flex:1; background:var(--paper-raised); border:1px solid var(--line);" onclick="toggleModeration()">🛡️ Moderation: Aus</button>
+      </div>
+    </div>
+
+    <div class="section-title-row"><h3 style="margin:0; font-size:14.5px;">Bildrechte-Verwaltung</h3></div>
+    <div class="section" style="padding-top:0; padding-bottom:8px;">
+      <p class="lede" style="margin-top:0;">Widerruft ein Erziehungsberechtigter die Einwilligung, blendest du das Portrait hier sofort für alle aus.</p>
+      <div class="card" style="padding:6px 16px;" id="studentsList"></div>
+    </div>
+
+    <div class="section-title-row"><h3 style="margin:0; font-size:14.5px;">Hochgeladene Fotos</h3><span style="font-size:11.5px; color:var(--ink-soft);" id="modHint">Tippen zum Ansehen</span></div>
+    <div class="gallery-grid" id="teacherGrid"></div>
+  </div>
+
+  <!-- ============ SCREEN: KAMERA-AUFNAHME ============ -->
+  <div class="screen" id="screen-camera">
+    <div class="camerabar">
+      <button onclick="exitCamera()">✕ Fertig</button>
+      <span class="target" id="cameraTargetLabel">🎯 Gruppenfoto</span>
+      <span style="width:52px;"></span>
+    </div>
+    <div class="viewfinder-wrap">
+      <video id="cameraVideo" autoplay playsinline muted style="display:none;"></video>
+      <div class="camera-fallback" id="cameraFallback">
+        <div style="font-size:40px;">📷</div>
+        <div style="font-weight:600; margin-top:8px;">Kamera-Vorschau</div>
+        <div style="font-size:12px; color:rgba(255,255,255,.7); margin-top:4px; padding:0 30px;">Kein Kamerazugriff in dieser Vorschau – der Auslöser erzeugt trotzdem ein Demo-Foto.</div>
+      </div>
+      <div class="shutter-flash" id="shutterFlash"></div>
+    </div>
+    <div class="camera-controls">
+      <button class="shutter-btn" onclick="capturePhoto()" aria-label="Foto aufnehmen"></button>
+    </div>
+    <div class="camera-progress" id="cameraProgress">0 von 8 Kindern fotografiert</div>
+    <div class="chip-row" id="cameraChips" style="padding:10px 18px 4px;"></div>
+    <div class="section" style="padding-top:6px;">
+      <button class="btn btn-secondary btn-sm" style="width:100%;" onclick="openQrScanSim()">🔍 QR-Karte scannen (Demo)</button>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN: QR-FOTOKARTEN ============ -->
+  <div class="screen" id="screen-qrcards">
+    <div class="section" style="padding-bottom:6px;">
+      <div class="eyebrow">Fototag-Vorbereitung</div>
+      <h2 style="margin:0 0 4px;" id="qrRoomTitle">QR-Fotokarten · Klasse 4b</h2>
+      <p class="lede">Vor dem Fototag an die Kinder austeilen. Beim Fotografieren einfach das Kind antippen oder die Karte scannen – Eltern loggen sich später mit demselben Code ein.</p>
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button class="btn btn-secondary btn-sm no-print" style="flex:1;" onclick="exitQrCards()">← Zurück</button>
+        <button class="btn btn-seal btn-sm no-print" style="flex:1;" onclick="window.print()">🖨️ Karten drucken</button>
+      </div>
+    </div>
+    <div class="section" style="padding-top:0;" id="qrCardsGrid"></div>
+  </div>
+
+  <!-- ============ BOTTOM NAV: ELTERN ============ -->
+  <div class="bottomnav" id="bottomnav">
+    <button class="navitem active" data-target="gallery" onclick="tabTo('gallery')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Galerie
+    </button>
+    <button class="navitem" data-target="shop" onclick="tabTo('shop')">
+      <div style="position:relative;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2l1.5 5M18 2l-1.5 5M3.5 7h17l-1.6 10.5a2 2 0 01-2 1.5H7.1a2 2 0 01-2-1.5L3.5 7z"/></svg>
+        <span class="navcount" id="cartBadge" style="display:none;">0</span>
+      </div>
+      Warenkorb
+    </button>
+    <button class="navitem" data-target="orders" onclick="tabTo('orders')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Bestellungen
+    </button>
+    <button class="navitem" data-target="account" onclick="tabTo('account')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      Konto
+    </button>
+  </div>
+
+  <!-- ============ BOTTOM NAV: LEHRKRAFT ============ -->
+  <div class="bottomnav" id="bottomnav-teacher">
+    <button class="navitem active" data-target="home" onclick="tabToTeacher('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      Start
+    </button>
+    <button class="navitem" data-target="teacher" onclick="tabToTeacher('teacher')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6-9 6-9-6z"/><path d="M3 9v6l9 6 9-6V9"/></svg>
+      Klassenräume
+    </button>
+    <button class="navitem" data-target="account" onclick="tabToTeacher('account')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      Konto
+    </button>
+  </div>
+
+  <!-- ============ FLOATING CART BUTTON ============ -->
+  <button class="fab-cart" id="fabCart" onclick="tabTo('shop')">
+    <span class="l" id="fabCartText">3 Artikel im Warenkorb</span>
+    <span class="r">Ansehen <span id="fabCartTotal">37,05 €</span> →</span>
+  </button>
+
+</div>
+
+<!-- ============ LIGHTBOX ============ -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-top">
+    <button class="lb-icon-btn" onclick="closeLightbox()">✕</button>
+    <div class="lb-counter" id="lbCounter">1 / 1</div>
+    <span style="width:38px;"></span>
+  </div>
+  <div class="lb-stage" id="lbStage">
+    <button class="lb-nav lb-nav-prev" id="lbPrevBtn" onclick="lightboxPrev()">‹</button>
+    <img id="lbImg" src="">
+    <button class="lb-nav lb-nav-next" id="lbNextBtn" onclick="lightboxNext()">›</button>
+  </div>
+  <div class="lb-caption" id="lbCaption"></div>
+  <div class="lb-filmstrip" id="lbFilmstrip"></div>
+  <div class="actions" id="lbActions">
+    <button class="btn btn-secondary" onclick="closeLightbox()">Schließen</button>
+    <button class="btn btn-primary" onclick="addSinglePhotoToCart()">In Warenkorb</button>
+  </div>
+</div>
+
+<!-- ============ SHEETS ============ -->
+<div class="overlay" id="overlayInvite">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin:0 0 4px;">Einladungscode teilen</h3>
+    <p class="lede" style="margin-top:0;">Diesen Code über den Elternbrief verteilen. Kein öffentlicher Link, kein Auffindbarkeitsrisiko.</p>
+    <div class="stub" style="margin:16px 0;">
+      <div style="text-align:center;">
+        <div style="font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.1em;">Klassencode</div>
+        <div class="code-input" id="inviteCodeText" style="margin-top:6px;">SYLT-4B</div>
+      </div>
+      <div class="perf"></div>
+      <div style="text-align:center;">
+        <div style="font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.1em;">Passwort</div>
+        <div style="font-family:'Fraunces',serif; font-size:18px; margin-top:4px;" id="invitePwText">wattwurm26</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="toast('In Zwischenablage kopiert'); closeOverlay('overlayInvite')">Code kopieren</button>
+    <button class="btn btn-ghost" onclick="closeOverlay('overlayInvite')">Schließen</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayInviteManage">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin:0 0 4px;">Eltern verwalten</h3>
+    <p class="lede" style="margin-top:0;">Wer ist der Galerie bereits beigetreten?</p>
+    <div class="card" style="padding:6px 16px; margin-top:12px;" id="parentsListEl"></div>
+    <button class="btn btn-ghost" onclick="closeOverlay('overlayInviteManage')">Schließen</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayNewRoom">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin:0 0 12px;">Neuer Klassenraum</h3>
+    <div class="field"><label>Klassenbezeichnung</label><input type="text" id="newRoomClass" placeholder="z. B. Klasse 3c"></div>
+    <div class="field"><label>Anlass</label><input type="text" id="newRoomEvent" placeholder="z. B. Projekttag Bauernhof"></div>
+    <div class="field"><label>Automatische Löschung nach</label>
+      <select id="newRoomRetention"><option>30 Tage nach Projektende</option><option>45 Tage nach Projektende</option><option>90 Tage nach Projektende</option></select>
+    </div>
+    <button class="btn btn-primary" onclick="submitNewRoom()">Raum erstellen &amp; Code generieren</button>
+    <button class="btn btn-ghost" onclick="closeOverlay('overlayNewRoom')">Abbrechen</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayChildSwitch">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin:0 0 4px;">Kind wechseln</h3>
+    <p class="lede" style="margin-top:0;">Ein Zugang, alle verknüpften Klassenräume deiner Kinder.</p>
+    <div id="childSwitchList" style="margin-top:10px;"></div>
+    <button class="btn btn-ghost" onclick="closeOverlay('overlayChildSwitch')">Schließen</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayAddToCart">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin:0 0 4px;">Zu Warenkorb hinzufügen</h3>
+    <p class="lede" style="margin-top:0;"><span id="atcCount">2</span> Foto(s) ausgewählt – Produkt wählen:</p>
+    <div id="atcOptions" style="margin-top:12px;"></div>
+    <button class="btn btn-ghost" onclick="closeOverlay('overlayAddToCart')">Abbrechen</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayCheckout">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin:0 0 4px;">Bezahlung</h3>
+    <p class="lede" style="margin-top:0; margin-bottom:14px;">Gesamt: <b id="coTotal" style="color:var(--ink);">37,05 €</b></p>
+    <div class="field">
+      <label>Zahlungsart</label>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="selectPay(this)">PayPal</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="selectPay(this)">Kreditkarte</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="selectPay(this)">SEPA</button>
+      </div>
+    </div>
+    <div class="field"><label>Lieferadresse</label><input type="text" placeholder="Straße, Hausnummer" value="Wattstraße 12"></div>
+    <div class="field"><label>PLZ / Ort</label><input type="text" placeholder="PLZ, Ort" value="25980 Sylt"></div>
+    <button class="btn btn-primary" onclick="placeOrder()">Jetzt bezahlen</button>
+    <p style="text-align:center; font-size:11px; color:var(--ink-soft); margin-top:8px;">Druck &amp; Versand durch unser Partner-Fotolabor (White-Label)</p>
+  </div>
+</div>
+
+<div class="overlay" id="overlayOrderDone">
+  <div class="sheet" style="text-align:center;">
+    <div class="sheet-handle"></div>
+    <div style="font-size:44px; margin:6px 0 10px;">✅</div>
+    <h3 style="margin:0 0 6px;">Bestellung bestätigt</h3>
+    <p class="lede">Deine Fotoprodukte werden jetzt an unser Partnerlabor übermittelt und in 3–5 Werktagen an deine Adresse versendet.</p>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="closeOverlay('overlayOrderDone'); tabTo('orders')">Zu meinen Bestellungen</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayOrderDetail">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin:0 0 2px;" id="odTitle">Bestellung FP-10321</h3>
+    <p class="lede" style="margin-top:0;" id="odMeta">18.05.2026 · 24,80 €</p>
+    <div class="timeline" id="odTimeline"></div>
+    <div class="divider"></div>
+    <div id="odItems"></div>
+    <button class="btn btn-ghost" onclick="closeOverlay('overlayOrderDetail')">Schließen</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayDeleteAccount">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin:0 0 6px;">Konto wirklich löschen?</h3>
+    <p class="lede" style="margin-top:0;">Alle Profildaten, gespeicherten Adressen und Bestellhistorien werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+    <button class="btn btn-danger" onclick="confirmDeleteAccount()">Ja, endgültig löschen</button>
+    <button class="btn btn-ghost" onclick="closeOverlay('overlayDeleteAccount')">Abbrechen</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayQrScan">
+  <div class="sheet" style="text-align:center; padding-top:10px;">
+    <div class="sheet-handle"></div>
+    <div style="font-size:44px; margin:10px 0;" id="qrScanIcon">🔲</div>
+    <div style="font-weight:700;" id="qrScanText">Scanne QR-Code der Fotokarte …</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastText"></span></div>
+
+<script>
+/* =========================================================
+   DEMO-DATENMODELL
+   ========================================================= */
+const students = [
+  {name:'Finn Andresen', ok:true,  code:'FINN-7XQ2',  pw:'seestern41'},
+  {name:'Mia Boysen',    ok:true,  code:'MIA-4KRP',   pw:'muschel08'},
+  {name:'Nis Clausen',   ok:false, code:'NIS-9TZM',   pw:'krabbe77'},
+  {name:'Ida Feddersen', ok:true,  code:'IDA-2LWQ',   pw:'seepferd23'},
+  {name:'Lasse Hansen',  ok:true,  code:'LASSE-6BXV', pw:'anker55'},
+  {name:'Greta Jessen',  ok:true,  code:'GRETA-3NDF', pw:'moewe19'},
+  {name:'Tjark Momsen',  ok:true,  code:'TJARK-8QYH', pw:'sturmflut2'},
+  {name:'Mika Petersen', ok:true,  code:'MIKA-5MRC',  pw:'wattwurm07'}
+];
+
+// photos[].owner: Index in students[] = privates Portrait, null = Gruppenfoto (für die ganze Klasse)
+const photos = [
+  {id:0,  src:'https://picsum.photos/seed/fp-portrait-0/400/400', caption:'Portrait', owner:0},
+  {id:1,  src:'https://picsum.photos/seed/fp-portrait-1/400/400', caption:'Portrait', owner:1},
+  {id:2,  src:'https://picsum.photos/seed/fp-portrait-2/400/400', caption:'Portrait', owner:2},
+  {id:3,  src:'https://picsum.photos/seed/fp-portrait-3/400/400', caption:'Portrait', owner:3},
+  {id:4,  src:'https://picsum.photos/seed/fp-portrait-4/400/400', caption:'Portrait', owner:4},
+  {id:5,  src:'https://picsum.photos/seed/fp-portrait-5/400/400', caption:'Portrait', owner:5},
+  {id:6,  src:'https://picsum.photos/seed/fp-portrait-6/400/400', caption:'Portrait', owner:6},
+  {id:7,  src:'https://picsum.photos/seed/fp-portrait-7/400/400', caption:'Portrait', owner:7},
+  {id:8,  src:'https://picsum.photos/seed/fp-group-8/400/400',  caption:'Anreise', owner:null},
+  {id:9,  src:'https://picsum.photos/seed/fp-group-9/400/400',  caption:'Wattwanderung', owner:null},
+  {id:10, src:'https://picsum.photos/seed/fp-group-10/400/400', caption:'Wattwanderung', owner:null},
+  {id:11, src:'https://picsum.photos/seed/fp-group-11/400/400', caption:'Leuchtturm', owner:null},
+  {id:12, src:'https://picsum.photos/seed/fp-group-12/400/400', caption:'Leuchtturm', owner:null},
+  {id:13, src:'https://picsum.photos/seed/fp-group-13/400/400', caption:'Strandspiele', owner:null},
+  {id:14, src:'https://picsum.photos/seed/fp-group-14/400/400', caption:'Gruppenfoto Klasse', owner:null},
+  {id:15, src:'https://picsum.photos/seed/fp-group-15/400/400', caption:'Abschlussfeier', owner:null}
+];
+
+const parentsList = [
+  {name:'Familie Andresen', joined:true},
+  {name:'Familie Boysen', joined:true},
+  {name:'Familie Clausen', joined:true},
+  {name:'Familie Feddersen', joined:false},
+  {name:'Familie Hansen', joined:true},
+  {name:'Familie Jessen', joined:false},
+  {name:'Familie Momsen', joined:true},
+  {name:'Familie Petersen', joined:true}
+];
+
+const children = [
+  {name:'Mika Petersen', klass:'Klasse 4b', event:'Klassenfahrt Sylt', dates:'📅 12.–16. Mai 2026'},
+  {name:'Lotta Petersen', klass:'Klasse 2a', event:'Zoo-Projekttag', dates:'📅 03. Juni 2026'}
+];
+let activeChildIdx = 0;
+
+let teacherRooms = [
+  {title:'Klasse 4b · Sylt 2026', subtitle:'84 Fotos · 22 Eltern verbunden', badgeText:'Aktiv', badgeType:'ok', thumb:'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=100&h=100&fit=crop', code:'SYLT-4B', pw:'wattwurm26'},
+  {title:'Klasse 2a · Zoo-Projekttag', subtitle:'41 Fotos · 19 Eltern verbunden', badgeText:'Aktiv', badgeType:'ok', thumb:'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=100&h=100&fit=crop', code:'ZOO-2A', pw:'giraffe19'},
+  {title:'Klasse 4a · Winterwandertag', subtitle:'Löschung in 4 Tagen', badgeText:'Läuft ab', badgeType:'warn', thumb:'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=100&h=100&fit=crop', code:'WINTER-4A', pw:'schneeball4'}
+];
+let currentRoomIdx = 0;
+
+let cart = [
+  {id:'p1', group:'catalog', title:'Fotoabzug 10×15', variant:'Seidenmatt · Set von 3 Fotos', qty:3, unitPrice:1.50, thumb:'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=200&h=200&fit=crop'},
+  {id:'p2', group:'catalog', title:'Fotobuch Softcover A5', variant:'24 Seiten · automatisches Layout', qty:1, unitPrice:19.90, thumb:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200&h=200&fit=crop'},
+  {id:'p3', group:'catalog', title:'Poster A3', variant:'Gruppenfoto Leuchtturm', qty:0, unitPrice:14.90, thumb:'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=200&h=200&fit=crop'}
+];
+
+let orders = [
+  {id:'FP-10318', date:'22.04.2026', current:3, total:'24,80 €', items:[
+    {title:'Fotoabzug 10×15', variant:'Set von 6 Fotos', thumb:'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=100&h=100&fit=crop'}
+  ]}
+];
+
+const statusSteps = ['Zahlung erhalten','In Produktion beim Partnerlabor','Versendet','Zugestellt'];
+const atcOptionsData = [
+  {key:'abzug10', title:'Fotoabzug 10×15', price:0.90},
+  {key:'abzug13', title:'Fotoabzug 13×18', price:1.90},
+  {key:'buchseite', title:'Fotobuch-Seite hinzufügen', price:2.50}
+];
+let pickedOption = null;
+
+let selectMode = false;
+let selected = new Set();
+let moderationMode = false;
+let moderationHidden = new Set();
+let searchTerm = '';
+let currentSort = 'new';
+let currentPhotoList = [];
+let currentPhotoIndex = 0;
+let lightboxReadonly = false;
+let lbTouchStartX = 0, lbTouchStartY = 0, lbTouchActive = false;
+let bannerShown = false;
+
+let selectedLoginTab = 'class';   // Toggle-Zustand auf dem Login-Screen
+let loginMode = 'class';          // aktiver Zugang nach dem Einloggen: 'class' | 'individual'
+let individualStudentIdx = null;
+
+let mediaStream = null;
+let armedTarget = {type:'group'}; // Kamera-Ziel: {type:'group'} oder {type:'child', idx}
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+function fmt(n){ return n.toFixed(2).replace('.',',')+' €'; }
+function getHiddenIds(){
+  const s = new Set(moderationHidden);
+  photos.forEach(p=>{
+    if(p.owner!=null && students[p.owner] && !students[p.owner].ok) s.add(p.id);
+  });
+  return s;
+}
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  document.getElementById('toastText').textContent=msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2400);
+}
+function openOverlay(id){
+  if(id==='overlayChildSwitch') renderChildSwitch();
+  if(id==='overlayInviteManage') renderParentsList();
+  document.getElementById(id).classList.add('active');
+}
+function closeOverlay(id){ document.getElementById(id).classList.remove('active'); }
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+function setLoginMode(mode){
+  selectedLoginTab=mode;
+  document.getElementById('loginTabClass').classList.toggle('active', mode==='class');
+  document.getElementById('loginTabIndividual').classList.toggle('active', mode==='individual');
+  const codeLabel=document.getElementById('codeLabel');
+  const codeInput=document.getElementById('codeInput');
+  const pwInput=document.getElementById('pwInput');
+  const hint=document.getElementById('loginHint');
+  if(mode==='class'){
+    codeLabel.textContent='Klassencode';
+    codeInput.placeholder='SYLT-4B'; codeInput.value='SYLT-4B';
+    pwInput.value='wattwurm26';
+    hint.textContent='Zeigt alle gemeinsamen Klassen- und Ausflugsfotos.';
+  } else {
+    codeLabel.textContent='Foto-Code (von der Fotokarte)';
+    codeInput.placeholder='MIKA-5MRC'; codeInput.value='MIKA-5MRC';
+    pwInput.value='wattwurm07';
+    hint.textContent='Zeigt nur das private Portrait deines Kindes plus die gemeinsamen Klassenfotos.';
+  }
+}
+function loginParent(){
+  const codeVal = document.getElementById('codeInput').value.trim().toUpperCase();
+  if(selectedLoginTab==='individual'){
+    const idx = students.findIndex(s=>s.code===codeVal);
+    if(idx===-1){
+      toast('Foto-Code nicht gefunden – im Demo bitte MIKA-5MRC verwenden');
+      return;
+    }
+    loginMode='individual';
+    individualStudentIdx=idx;
+  } else {
+    loginMode='class';
+    individualStudentIdx=null;
+  }
+  go('gallery');
+  document.getElementById('bottomnav').style.display='flex';
+  document.getElementById('bottomnav-teacher').style.display='none';
+  document.getElementById('topbarAction').style.display='flex';
+  updateGalleryHero();
+  renderGalleryGrid();
+  updateCartUI();
+  toast(loginMode==='individual'
+    ? 'Willkommen! Hier ist das Portrait von '+students[individualStudentIdx].name.split(' ')[0]+' 👋'
+    : 'Willkommen, Familie Petersen 👋');
+  if(loginMode==='class' && !bannerShown){
+    setTimeout(()=>{ document.getElementById('pushBanner').classList.add('show'); bannerShown=true; }, 2200);
+  }
+}
+function loginTeacher(){
+  loadRoomContext(currentRoomIdx);
+  go('teacherhome');
+  document.getElementById('bottomnav').style.display='none';
+  document.getElementById('bottomnav-teacher').style.display='flex';
+  document.getElementById('topbarAction').style.display='flex';
+  document.querySelectorAll('#bottomnav-teacher .navitem').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#bottomnav-teacher .navitem[data-target="home"]').classList.add('active');
+  renderTeacherRooms();
+  toast('Angemeldet als Frau Nissen');
+}
+function logout(){
+  closeCameraStream();
+  go('login');
+  document.getElementById('bottomnav').style.display='none';
+  document.getElementById('bottomnav-teacher').style.display='none';
+  document.getElementById('topbarAction').style.display='none';
+  document.getElementById('fabCart').classList.remove('show');
+  setLoginMode('class');
+}
+function tabTo(target){
+  document.querySelectorAll('#bottomnav .navitem').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`#bottomnav .navitem[data-target="${target}"]`).classList.add('active');
+  if(target==='gallery') go('gallery');
+  else if(target==='shop'){ renderShop(); go('shop'); }
+  else if(target==='orders'){ renderOrders(); go('orders'); }
+  else if(target==='account'){ renderAccount(); go('account'); }
+  updateCartUI();
+}
+function tabToTeacher(target){
+  document.querySelectorAll('#bottomnav-teacher .navitem').forEach(b=>b.classList.remove('active'));
+  const btn=document.querySelector(`#bottomnav-teacher .navitem[data-target="${target}"]`);
+  if(btn) btn.classList.add('active');
+  if(target==='home') go('teacherhome');
+  else if(target==='teacher'){ renderTeacherRooms(); go('teacher'); }
+  else if(target==='account'){ toast('Kontoeinstellungen für Lehrkräfte (Demo)'); }
+}
+
+/* =========================================================
+   ELTERN: KIND-WECHSEL (Klassen-Zugang, mehrere Kinder)
+   ========================================================= */
+function updateGalleryHero(){
+  const chip=document.querySelector('.avatar-chip');
+  const chipRow=document.querySelector('#screen-gallery .chip-row');
+  const searchRow=document.querySelector('#screen-gallery .search-row');
+  if(loginMode==='individual'){
+    const s=students[individualStudentIdx];
+    document.getElementById('galleryTitle').textContent=s.name+' · Portrait';
+    document.getElementById('galleryMeta').textContent='🔒 Individueller Zugang · nur für deine Familie sichtbar';
+    if(chip) chip.style.display='none';
+    if(chipRow) chipRow.style.display='none';
+    if(searchRow) searchRow.style.display='none';
+  } else {
+    const c=children[activeChildIdx];
+    document.getElementById('galleryTitle').textContent=c.klass+' · '+c.event;
+    document.getElementById('galleryMeta').textContent=c.dates+' · Galerie aktiv bis 30.06.2026';
+    if(chip) chip.style.display='inline-flex';
+    if(chipRow) chipRow.style.display='flex';
+    if(searchRow) searchRow.style.display='flex';
+  }
+}
+function renderChildSwitch(){
+  const el = document.getElementById('childSwitchList');
+  el.innerHTML='';
+  children.forEach((c,i)=>{
+    const row=document.createElement('div');
+    row.className='list-row';
+    row.style.cssText='border-radius:11px; margin-bottom:8px; border:1px solid var(--line);';
+    row.innerHTML=`<div class="thumb-row"><span class="status-dot ${i===activeChildIdx?'ok':'off'}"></span><div class="rowtext"><div class="t">${c.name}</div><div class="s">${c.klass} · ${c.event}</div></div></div>${i===activeChildIdx?'<span class="badge">Aktiv</span>':''}`;
+    row.onclick=()=>switchChild(i);
+    el.appendChild(row);
+  });
+}
+function switchChild(i){
+  activeChildIdx=i;
+  updateGalleryHero();
+  closeOverlay('overlayChildSwitch');
+  selected.clear(); selectMode=false;
+  document.getElementById('selectModeBtn').textContent='Auswählen';
+  renderGalleryGrid();
+  toast('Gewechselt zu '+children[i].name);
+}
+
+/* =========================================================
+   ELTERN: GALERIE
+   ========================================================= */
+function buildPhotoTile(p, tagText, list){
+  const div=document.createElement('div');
+  div.className='photo'+(selected.has(p.id)?' selected':'');
+  div.innerHTML=`<img src="${p.src}" loading="lazy" alt="${p.caption}"><div class="chk">${selected.has(p.id)?'✓':''}</div>${tagText?`<div class="tag">${tagText}</div>`:''}`;
+  div.onclick=()=>{
+    if(selectMode){
+      if(selected.has(p.id)){selected.delete(p.id); div.classList.remove('selected');}
+      else{selected.add(p.id); div.classList.add('selected');}
+      div.querySelector('.chk').textContent = selected.has(p.id)?'✓':'';
+      document.getElementById('selCount').textContent=selected.size;
+      document.getElementById('addCartBtn').style.display = selected.size>0 ? 'block':'none';
+    } else {
+      openLightbox(list, list.findIndex(x=>x.id===p.id), false);
+    }
+  };
+  return div;
+}
+function renderGalleryGrid(){
+  const grid=document.getElementById('galleryGrid');
+  const hidden=getHiddenIds();
+
+  if(loginMode==='individual'){
+    grid.style.display='block';
+    grid.innerHTML='';
+    const own = photos.filter(p=>p.owner===individualStudentIdx && !hidden.has(p.id));
+    const group = photos.filter(p=>p.owner===null && !hidden.has(p.id));
+    const combined = own.concat(group);
+
+    const h1=document.createElement('div');
+    h1.className='eyebrow'; h1.style.padding='0 18px'; h1.textContent='Dein Portrait 🔒';
+    grid.appendChild(h1);
+    if(own.length===0){
+      const es=document.createElement('div'); es.className='empty-state'; es.style.padding='20px 24px 10px';
+      es.innerHTML='<p class="lede" style="margin:0;">Noch kein Portrait vorhanden.</p>';
+      grid.appendChild(es);
+    } else {
+      const g1=document.createElement('div'); g1.className='gallery-grid';
+      own.forEach(p=>g1.appendChild(buildPhotoTile(p,'🔒 Privat',combined)));
+      grid.appendChild(g1);
+    }
+
+    const h2=document.createElement('div');
+    h2.className='eyebrow'; h2.style.cssText='padding:0 18px; margin-top:18px;'; h2.textContent='Gemeinsame Klassenfotos';
+    grid.appendChild(h2);
+    const g2=document.createElement('div'); g2.className='gallery-grid';
+    group.forEach(p=>g2.appendChild(buildPhotoTile(p,null,combined)));
+    grid.appendChild(g2);
+    return;
+  }
+
+  let list = photos.filter(p=>p.owner===null && !hidden.has(p.id));
+  if(searchTerm) list = list.filter(p=>p.caption.toLowerCase().includes(searchTerm.toLowerCase()));
+  if(currentSort==='old') list=[...list].reverse();
+
+  if(list.length===0){
+    grid.style.display='block';
+    grid.innerHTML='<div class="empty-state"><div class="ico">🔍</div><h3>Keine Fotos gefunden</h3><p class="lede">Versuch einen anderen Suchbegriff.</p></div>';
+    return;
+  }
+  grid.style.display='grid';
+  grid.innerHTML='';
+  list.forEach(p=>grid.appendChild(buildPhotoTile(p,null,list)));
+}
+function onSearch(v){ searchTerm=v; renderGalleryGrid(); }
+function onSort(v){ currentSort=v; renderGalleryGrid(); }
+function toggleSelectMode(){
+  selectMode=!selectMode;
+  document.getElementById('selectModeBtn').textContent = selectMode ? 'Fertig' : 'Auswählen';
+  if(!selectMode){ selected.clear(); document.getElementById('selCount').textContent=0; document.getElementById('addCartBtn').style.display='none'; }
+  renderGalleryGrid();
+}
+function filterChip(el){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const label = el.textContent.trim();
+  searchTerm = label==='Alle' ? '' : label;
+  document.getElementById('searchInput').value = searchTerm;
+  renderGalleryGrid();
+}
+
+/* =========================================================
+   FOTO-VIEWER (Pfeile, Wischen, Filmstreifen, Tastatur)
+   ========================================================= */
+function openLightbox(list, index, readonly){
+  if(!list || list.length===0) return;
+  currentPhotoList = list;
+  currentPhotoIndex = Math.max(0, Math.min(index, list.length-1));
+  lightboxReadonly = !!readonly;
+  renderLightboxPhoto();
+  document.getElementById('lightbox').classList.add('active');
+}
+function closeLightbox(){ document.getElementById('lightbox').classList.remove('active'); }
+function renderLightboxPhoto(){
+  const p = currentPhotoList[currentPhotoIndex];
+  if(!p) return;
+  const img=document.getElementById('lbImg');
+  img.classList.remove('lb-anim');
+  void img.offsetWidth;
+  img.src=p.src;
+  img.alt=p.caption;
+  img.classList.add('lb-anim');
+  document.getElementById('lbCaption').textContent=p.caption;
+  document.getElementById('lbCounter').textContent=(currentPhotoIndex+1)+' / '+currentPhotoList.length;
+  document.getElementById('lbPrevBtn').disabled = currentPhotoIndex===0;
+  document.getElementById('lbNextBtn').disabled = currentPhotoIndex===currentPhotoList.length-1;
+  document.getElementById('lbActions').style.display = lightboxReadonly ? 'none' : 'flex';
+  renderFilmstrip();
+}
+function renderFilmstrip(){
+  const wrap=document.getElementById('lbFilmstrip');
+  wrap.innerHTML='';
+  currentPhotoList.forEach((p,i)=>{
+    const t=document.createElement('div');
+    t.className='fthumb'+(i===currentPhotoIndex?' active':'');
+    t.innerHTML=`<img src="${p.src}" loading="lazy" alt="">`;
+    t.onclick=()=>{ currentPhotoIndex=i; renderLightboxPhoto(); };
+    wrap.appendChild(t);
+  });
+  const activeEl = wrap.querySelector('.fthumb.active');
+  if(activeEl){
+    try{ activeEl.scrollIntoView({inline:'center', block:'nearest'}); }catch(e){}
+  }
+}
+function lightboxPrev(){ if(currentPhotoIndex>0){ currentPhotoIndex--; renderLightboxPhoto(); } }
+function lightboxNext(){ if(currentPhotoIndex<currentPhotoList.length-1){ currentPhotoIndex++; renderLightboxPhoto(); } }
+function addSinglePhotoToCart(){
+  const p = currentPhotoList[currentPhotoIndex];
+  if(!p) return;
+  selected = new Set([p.id]);
+  closeLightbox();
+  openAddToCart();
+}
+function lbTouchStart(e){
+  const t=e.changedTouches && e.changedTouches[0];
+  if(!t) return;
+  lbTouchStartX=t.clientX; lbTouchStartY=t.clientY; lbTouchActive=true;
+}
+function lbTouchEnd(e){
+  if(!lbTouchActive) return;
+  lbTouchActive=false;
+  const t=e.changedTouches && e.changedTouches[0];
+  if(!t) return;
+  const dx=t.clientX-lbTouchStartX, dy=t.clientY-lbTouchStartY;
+  if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)*1.5){
+    if(dx<0) lightboxNext(); else lightboxPrev();
+  }
+}
+
+/* =========================================================
+   WARENKORB HINZUFÜGEN (aus Auswahl)
+   ========================================================= */
+function openAddToCart(){
+  document.getElementById('atcCount').textContent = selected.size;
+  const wrap = document.getElementById('atcOptions');
+  wrap.innerHTML='';
+  pickedOption=null;
+  atcOptionsData.forEach(opt=>{
+    const b=document.createElement('button');
+    b.className='option-btn';
+    b.innerHTML=`<div class="t">${opt.title}</div><div class="p">${fmt(opt.price)} pro Foto</div>`;
+    b.onclick=()=>{
+      document.querySelectorAll('#atcOptions .option-btn').forEach(x=>x.classList.remove('picked'));
+      b.classList.add('picked');
+      pickedOption=opt;
+    };
+    wrap.appendChild(b);
+  });
+  const confirmBtn=document.createElement('button');
+  confirmBtn.className='btn btn-primary'; confirmBtn.style.marginTop='6px';
+  confirmBtn.textContent='Hinzufügen';
+  confirmBtn.onclick=confirmAddToCart;
+  wrap.appendChild(confirmBtn);
+  openOverlay('overlayAddToCart');
+}
+function confirmAddToCart(){
+  if(!pickedOption){ toast('Bitte ein Produkt wählen'); return; }
+  const firstId = [...selected][0];
+  const thumb = photos.find(p=>p.id===firstId).src;
+  cart.push({
+    id:'sel-'+Date.now(),
+    group:'selection',
+    title:pickedOption.title,
+    variant:`${selected.size} ausgewählte Foto${selected.size>1?'s':''}`,
+    qty:selected.size,
+    unitPrice:pickedOption.price,
+    thumb
+  });
+  closeOverlay('overlayAddToCart');
+  selected.clear(); selectMode=false;
+  document.getElementById('selectModeBtn').textContent='Auswählen';
+  document.getElementById('addCartBtn').style.display='none';
+  document.getElementById('selCount').textContent=0;
+  renderGalleryGrid();
+  updateCartUI();
+  toast('In den Warenkorb gelegt 🛒');
+}
+
+/* =========================================================
+   SHOP / WARENKORB
+   ========================================================= */
+function cartSubtotal(){ return cart.reduce((s,i)=>s+i.qty*i.unitPrice,0); }
+function renderShop(){
+  const el = document.getElementById('shopContent');
+  el.innerHTML='';
+  const activeItems = cart.filter(i=>i.group==='selection');
+  const catalogItems = cart.filter(i=>i.group==='catalog');
+
+  if(cart.every(i=>i.qty===0) && activeItems.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="ico">🛒</div><h3>Noch nichts im Warenkorb</h3><p class="lede">Wähle Fotos in der Galerie aus und lege sie als Abzug, Poster oder Fotobuch-Seite ab.</p><button class="btn btn-primary" style="margin-top:14px;" onclick="tabTo('gallery')">Zur Galerie</button></div>`;
+    return;
+  }
+
+  if(activeItems.length){
+    const h=document.createElement('div');
+    h.className='eyebrow'; h.style.marginBottom='10px'; h.textContent='Aus deiner Auswahl';
+    el.appendChild(h);
+    activeItems.forEach(item=>el.appendChild(buildProductCard(item, true)));
+  }
+
+  const h2=document.createElement('div');
+  h2.className='eyebrow'; h2.style.margin = activeItems.length? '18px 0 10px' : '0 0 10px';
+  h2.textContent='Weitere Produkte';
+  el.appendChild(h2);
+  catalogItems.forEach(item=>el.appendChild(buildProductCard(item, false)));
+
+  const sub = cartSubtotal();
+  const shipping = sub>0 ? 3.95 : 0;
+  const totals=document.createElement('div');
+  totals.className='card'; totals.style.marginTop='6px';
+  totals.innerHTML=`
+    <div class="rowline"><span>Zwischensumme</span><span>${fmt(sub)}</span></div>
+    <div class="rowline"><span>Versand</span><span>${fmt(shipping)}</span></div>
+    <div class="rowline total"><span>Gesamt</span><span>${fmt(sub+shipping)}</span></div>`;
+  el.appendChild(totals);
+
+  const payBtn=document.createElement('button');
+  payBtn.className='btn btn-primary'; payBtn.style.marginTop='16px';
+  payBtn.textContent='Sicher bezahlen';
+  payBtn.onclick=openCheckout;
+  el.appendChild(payBtn);
+
+  const note=document.createElement('p');
+  note.style.cssText='text-align:center; font-size:11.5px; color:var(--ink-soft); margin-top:10px;';
+  note.textContent='PayPal · Kreditkarte · SEPA-Lastschrift';
+  el.appendChild(note);
+}
+function buildProductCard(item, removable){
+  const card=document.createElement('div');
+  card.className='product-card';
+  card.innerHTML=`
+    <img src="${item.thumb}" alt="">
+    <div style="flex:1;">
+      <div class="rowtext"><div class="t">${item.title}</div><div class="s">${item.variant}</div></div>
+      <div class="qty-stepper" style="margin-top:8px;">
+        <button onclick="qtyChange('${item.id}',-1)">–</button><span>${item.qty}</span><button onclick="qtyChange('${item.id}',1)">+</button>
+        <span class="price" style="margin-left:auto;">${fmt(item.qty*item.unitPrice)}</span>
+      </div>
+      ${removable?`<button class="remove-link" onclick="removeCartItem('${item.id}')">Entfernen</button>`:''}
+    </div>`;
+  return card;
+}
+function qtyChange(id, delta){
+  const item = cart.find(i=>i.id===id);
+  if(!item) return;
+  item.qty = Math.max(0, item.qty+delta);
+  renderShop();
+  updateCartUI();
+}
+function removeCartItem(id){
+  cart = cart.filter(i=>i.id!==id);
+  renderShop();
+  updateCartUI();
+  toast('Aus Warenkorb entfernt');
+}
+function updateCartUI(){
+  const totalQty = cart.reduce((s,i)=>s+i.qty,0);
+  const sub = cartSubtotal();
+  const badge=document.getElementById('cartBadge');
+  if(totalQty>0){ badge.style.display='flex'; badge.textContent=totalQty; }
+  else{ badge.style.display='none'; }
+  const fab=document.getElementById('fabCart');
+  const shopVisible = document.getElementById('screen-shop').classList.contains('active');
+  if(totalQty>0 && !shopVisible){
+    fab.classList.add('show');
+    document.getElementById('fabCartText').textContent = totalQty+' Artikel im Warenkorb';
+    document.getElementById('fabCartTotal').textContent = fmt(sub + (sub>0?3.95:0));
+  } else {
+    fab.classList.remove('show');
+  }
+}
+
+/* =========================================================
+   CHECKOUT
+   ========================================================= */
+function openCheckout(){
+  const sub = cartSubtotal();
+  const total = sub + (sub>0?3.95:0);
+  document.getElementById('coTotal').textContent = fmt(total);
+  openOverlay('overlayCheckout');
+}
+function selectPay(el){
+  document.querySelectorAll('#overlayCheckout button.btn-secondary').forEach(b=>b.style.background='');
+  el.style.background='var(--seal-soft)';
+}
+function placeOrder(){
+  const activeItems = cart.filter(i=>i.qty>0);
+  const sub = cartSubtotal();
+  const total = sub + (sub>0?3.95:0);
+  const id = 'FP-'+Math.floor(10000+Math.random()*89999);
+  orders.unshift({
+    id, date:'02.08.2026', current:0, total:fmt(total),
+    items: activeItems.map(i=>({title:i.title, variant:i.variant, thumb:i.thumb}))
+  });
+  cart = cart.map(i=>({...i, qty:0})).filter(i=>i.group==='catalog');
+  updateCartUI();
+  closeOverlay('overlayCheckout');
+  openOverlay('overlayOrderDone');
+}
+
+/* =========================================================
+   BESTELLUNGEN
+   ========================================================= */
+function renderOrders(){
+  const el=document.getElementById('ordersContent');
+  el.innerHTML='';
+  if(orders.length===0){
+    el.innerHTML=`<div class="empty-state"><div class="ico">📦</div><h3>Noch keine Bestellungen</h3><p class="lede">Deine bestellten Fotoprodukte erscheinen hier mit Live-Status.</p></div>`;
+    return;
+  }
+  orders.forEach(o=>{
+    const card=document.createElement('div');
+    card.className='order-card';
+    const statusLabel = statusSteps[o.current];
+    card.innerHTML=`
+      <div class="top"><span class="id">${o.id}</span><span class="badge">${statusLabel}</span></div>
+      <div class="meta">${o.date} · ${o.total}</div>
+      <div class="order-thumbs">${o.items.map(i=>`<img src="${i.thumb}">`).join('')}</div>`;
+    card.onclick=()=>openOrderDetail(o);
+    el.appendChild(card);
+  });
+}
+function openOrderDetail(o){
+  document.getElementById('odTitle').textContent='Bestellung '+o.id;
+  document.getElementById('odMeta').textContent=o.date+' · '+o.total;
+  const tl=document.getElementById('odTimeline');
+  tl.innerHTML='';
+  statusSteps.forEach((s,i)=>{
+    const div=document.createElement('div');
+    div.className='tl-item '+(i<o.current?'done':(i===o.current?'current':''));
+    div.innerHTML=`<div class="tl-title">${s}</div><div class="tl-date">${i<=o.current?'erledigt':'ausstehend'}</div>`;
+    tl.appendChild(div);
+  });
+  const items=document.getElementById('odItems');
+  items.innerHTML = o.items.map(i=>`
+    <div class="product-card" style="margin-bottom:8px;">
+      <img src="${i.thumb}"><div><div class="rowtext"><div class="t">${i.title}</div><div class="s">${i.variant}</div></div></div>
+    </div>`).join('');
+  openOverlay('overlayOrderDetail');
+}
+
+/* =========================================================
+   KONTO (ELTERN)
+   ========================================================= */
+function renderAccount(){
+  const el=document.getElementById('accountChildren');
+  el.innerHTML = children.map((c,i)=>`
+    <div class="child-row">
+      <div class="rowtext"><div class="t">${c.name}</div><div class="s">${c.klass} · ${c.event}</div></div>
+      <button class="link-btn" onclick="accountViewChild(${i})">Ansehen</button>
+    </div>`).join('');
+}
+function accountViewChild(i){
+  loginMode='class';
+  switchChild(i);
+  tabTo('gallery');
+}
+function confirmDeleteAccount(){
+  closeOverlay('overlayDeleteAccount');
+  toast('Löschanfrage gesendet – Bestätigung per E-Mail innerhalb von 30 Tagen');
+}
+
+/* =========================================================
+   LEHRKRAFT: KLASSENRÄUME
+   ========================================================= */
+function loadRoomContext(i){
+  currentRoomIdx=i;
+  const r=teacherRooms[i];
+  document.getElementById('uploadHeroTitle').textContent=r.title;
+  document.getElementById('uploadHeroMeta').textContent='👪 '+r.subtitle;
+  document.getElementById('inviteCodeText').textContent=r.code;
+  document.getElementById('invitePwText').textContent=r.pw;
+  renderStudents();
+  renderTeacherGrid();
+}
+function renderTeacherRooms(){
+  const el=document.getElementById('teacherRoomsList');
+  el.innerHTML='';
+  teacherRooms.forEach((r,i)=>{
+    const row=document.createElement('div');
+    row.className='list-row';
+    row.innerHTML=`
+      <div class="thumb-row">
+        <img class="thumb" src="${r.thumb}">
+        <div class="rowtext"><div class="t">${r.title}</div><div class="s">${r.subtitle}</div></div>
+      </div>
+      <span class="badge ${r.badgeType==='warn'?'warn':''}">${r.badgeText}</span>`;
+    row.onclick=()=>openTeacherRoom(i);
+    el.appendChild(row);
+  });
+}
+function openTeacherRoom(i){
+  loadRoomContext(i);
+  moderationMode=false;
+  document.getElementById('modBtn').textContent='🛡️ Moderation: Aus';
+  document.getElementById('modHint').textContent='Tippen zum Ansehen';
+  go('upload');
+}
+function submitNewRoom(){
+  const cls = document.getElementById('newRoomClass').value.trim() || 'Neue Klasse';
+  const evt = document.getElementById('newRoomEvent').value.trim() || 'Ausflug';
+  const code = (cls+'-'+evt).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10) || 'NEUERRAUM';
+  const room = {
+    title:cls+' · '+evt,
+    subtitle:'0 Fotos · 0 Eltern verbunden',
+    badgeText:'Aktiv', badgeType:'ok',
+    thumb:'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=100&h=100&fit=crop',
+    code, pw:'start'+Math.floor(Math.random()*900+100)
+  };
+  teacherRooms.unshift(room);
+  currentRoomIdx=0;
+  loadRoomContext(0);
+  renderTeacherRooms();
+  closeOverlay('overlayNewRoom');
+  toast('Klassenraum erstellt – Code generiert');
+  openOverlay('overlayInvite');
+}
+function openNewRoom(){
+  document.getElementById('newRoomClass').value='';
+  document.getElementById('newRoomEvent').value='';
+  openOverlay('overlayNewRoom');
+}
+function openInvite(){ openOverlay('overlayInvite'); }
+function openInviteManage(){ openOverlay('overlayInviteManage'); }
+function renderParentsList(){
+  const el=document.getElementById('parentsListEl');
+  el.innerHTML = parentsList.map((p,i)=>`
+    <div class="child-row">
+      <div class="thumb-row"><span class="status-dot ${p.joined?'ok':'warn'}"></span><div class="rowtext"><div class="t">${p.name}</div><div class="s">${p.joined?'Beigetreten':'Eingeladen, noch nicht beigetreten'}</div></div></div>
+      ${p.joined?'':`<button class="link-btn" onclick="remindParent(${i})">Erinnern</button>`}
+    </div>`).join('');
+}
+function remindParent(i){
+  toast('Erinnerung gesendet an '+parentsList[i].name);
+}
+
+/* =========================================================
+   LEHRKRAFT: BILDRECHTE
+   ========================================================= */
+function renderStudents(){
+  const el=document.getElementById('studentsList');
+  el.innerHTML = students.map((s,i)=>`
+    <div class="child-row">
+      <div class="rowtext"><div class="t">${s.name}</div><div class="s">${s.ok?'Bildrechte erteilt':'Bildrechte widerrufen · Portrait ausgeblendet'}</div></div>
+      <label class="switch"><input type="checkbox" ${s.ok?'checked':''} onchange="toggleStudent(${i})"><span class="track"></span></label>
+    </div>`).join('');
+}
+function toggleStudent(i){
+  students[i].ok = !students[i].ok;
+  renderStudents();
+  renderTeacherGrid();
+  renderGalleryGrid();
+  if(!students[i].ok){
+    toast('Bildrechte widerrufen – Portrait von '+students[i].name+' ist jetzt für alle ausgeblendet');
+  } else {
+    toast('Bildrechte erteilt – Portrait von '+students[i].name+' ist wieder sichtbar');
+  }
+}
+
+/* =========================================================
+   LEHRKRAFT: GALERIE / MODERATION
+   ========================================================= */
+function renderTeacherGrid(){
+  const grid=document.getElementById('teacherGrid');
+  grid.innerHTML='';
+  const hidden = getHiddenIds();
+  photos.forEach(p=>{
+    const isHidden = hidden.has(p.id);
+    const tagText = p.owner!=null ? (students[p.owner]?students[p.owner].name.split(' ')[0]:'Kind') : 'Gruppe';
+    const div=document.createElement('div');
+    div.className='photo'+(isHidden?' hidden-mod':'');
+    div.innerHTML=`<img src="${p.src}" loading="lazy" alt="${p.caption}"><div class="tag">${tagText}</div>`;
+    div.onclick=()=>{
+      if(moderationMode){
+        if(moderationHidden.has(p.id)) moderationHidden.delete(p.id);
+        else moderationHidden.add(p.id);
+        renderTeacherGrid();
+        renderGalleryGrid();
+      } else {
+        openLightbox(photos, photos.findIndex(x=>x.id===p.id), true);
+      }
+    };
+    grid.appendChild(div);
+  });
+}
+function toggleModeration(){
+  moderationMode=!moderationMode;
+  document.getElementById('modBtn').textContent = moderationMode ? '🛡️ Moderation: An' : '🛡️ Moderation: Aus';
+  document.getElementById('modHint').textContent = moderationMode ? 'Tippen zum Ausblenden/Einblenden' : 'Tippen zum Ansehen';
+  toast(moderationMode ? 'Moderationsmodus aktiv – tippe Fotos zum Ausblenden' : 'Moderationsmodus beendet');
+}
+function simulateUpload(){
+  const track=document.getElementById('uploadTrack');
+  const fill=document.getElementById('uploadFill');
+  track.style.display='block';
+  fill.style.width='0%';
+  let p=0;
+  const t=setInterval(()=>{
+    p+=Math.random()*25;
+    if(p>=100){p=100; clearInterval(t); setTimeout(()=>{track.style.display='none'; toast('Fotos erfolgreich hochgeladen');},400);}
+    fill.style.width=p+'%';
+  },220);
+}
+function dismissBanner(){ document.getElementById('pushBanner').classList.remove('show'); }
+
+/* =========================================================
+   LEHRKRAFT: QR-FOTOKARTEN
+   ========================================================= */
+function openQrCards(){
+  loadRoomContext(currentRoomIdx);
+  renderQrCards();
+  go('qrcards');
+}
+function exitQrCards(){ go('upload'); }
+function renderQrCards(){
+  const room=teacherRooms[currentRoomIdx];
+  const roomLabel = room.title.split(' · ')[0];
+  document.getElementById('qrRoomTitle').textContent='QR-Fotokarten · '+roomLabel;
+  const wrap=document.getElementById('qrCardsGrid');
+  wrap.innerHTML='';
+  students.forEach(s=>{
+    const data = encodeURIComponent(`https://fotopause.de/login?code=${s.code}&pw=${s.pw}`);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${data}`;
+    const card=document.createElement('div');
+    card.className='stub qrcard';
+    card.innerHTML=`
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:700; font-size:12px; color:var(--film-dark);">📸 Fotopause.de</span>
+        <span class="badge ${s.ok?'':'warn'}">${s.ok?'Aktiv':'Widerrufen'}</span>
+      </div>
+      <div style="text-align:center; margin-top:10px;">
+        <div class="display" style="font-size:19px;">${s.name}</div>
+        <div style="font-size:11.5px; color:var(--ink-soft);">${roomLabel}</div>
+      </div>
+      <div class="perf"></div>
+      <div style="text-align:center;">
+        <img src="${qrUrl}" width="150" height="150" style="border-radius:8px; background:#fff;" alt="QR-Code für ${s.name}">
+        <div style="margin-top:10px; font-family:'Fraunces',serif; font-size:16px; letter-spacing:.05em;">${s.code}</div>
+        <div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">Passwort: ${s.pw}</div>
+      </div>`;
+    wrap.appendChild(card);
+  });
+}
+
+/* =========================================================
+   LEHRKRAFT: KAMERA-AUFNAHME
+   ========================================================= */
+function firstUnphotographedChildOrGroup(){
+  const idx = students.findIndex((s,i)=>!photos.some(p=>p.owner===i));
+  if(idx>=0) return {type:'child', idx};
+  return {type:'group'};
+}
+function startCameraForCurrentRoom(){
+  loadRoomContext(currentRoomIdx);
+  openCamera();
+}
+async function openCamera(){
+  closeCameraStream();
+  armedTarget = firstUnphotographedChildOrGroup();
+  renderCameraChips();
+  updateCameraTargetLabel();
+  go('camera');
+  const video=document.getElementById('cameraVideo');
+  const fallback=document.getElementById('cameraFallback');
+  video.style.display='none';
+  fallback.style.display='flex';
+  try{
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+      mediaStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false});
+      video.srcObject=mediaStream;
+      video.style.display='block';
+      fallback.style.display='none';
+    }
+  }catch(err){
+    video.style.display='none';
+    fallback.style.display='flex';
+  }
+}
+function closeCameraStream(){
+  if(mediaStream){
+    try{ mediaStream.getTracks().forEach(t=>t.stop()); }catch(e){}
+    mediaStream=null;
+  }
+}
+function exitCamera(){
+  closeCameraStream();
+  loadRoomContext(currentRoomIdx);
+  go('upload');
+}
+function renderCameraChips(){
+  const wrap=document.getElementById('cameraChips');
+  wrap.innerHTML='';
+  const groupChip=document.createElement('div');
+  groupChip.className='cam-chip'+(armedTarget.type==='group'?' armed':'');
+  groupChip.innerHTML=`<div class="circ">👥</div><div class="lbl">Gruppe</div>`;
+  groupChip.onclick=()=>{ armedTarget={type:'group'}; renderCameraChips(); updateCameraTargetLabel(); };
+  wrap.appendChild(groupChip);
+
+  students.forEach((s,idx)=>{
+    const done = photos.some(p=>p.owner===idx);
+    const chip=document.createElement('div');
+    chip.className='cam-chip'+(armedTarget.type==='child'&&armedTarget.idx===idx?' armed':'')+(done?' done':'');
+    const initials = s.name.split(' ').map(w=>w[0]).join('');
+    chip.innerHTML=`<div class="circ">${initials}${done?'<span class="check">✓</span>':''}</div><div class="lbl">${s.name.split(' ')[0]}</div>`;
+    chip.onclick=()=>{ armedTarget={type:'child', idx}; renderCameraChips(); updateCameraTargetLabel(); };
+    wrap.appendChild(chip);
+  });
+
+  const doneCount = students.filter((s,idx)=>photos.some(p=>p.owner===idx)).length;
+  document.getElementById('cameraProgress').textContent = `${doneCount} von ${students.length} Kindern fotografiert`;
+}
+function updateCameraTargetLabel(){
+  const lbl=document.getElementById('cameraTargetLabel');
+  if(armedTarget.type==='group') lbl.textContent='🎯 Gruppenfoto (für alle Eltern sichtbar)';
+  else lbl.textContent='🎯 Portrait: '+students[armedTarget.idx].name;
+}
+function flashShutter(){
+  const el=document.getElementById('shutterFlash');
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+}
+function capturePhoto(){
+  const label = armedTarget.type==='child' ? students[armedTarget.idx].name : 'Gruppenfoto';
+  const initials = armedTarget.type==='child' ? students[armedTarget.idx].name.split(' ').map(w=>w[0]).join('') : '👥';
+  const hue = armedTarget.type==='child' ? (armedTarget.idx*47)%360 : 205;
+  let dataUrl=null, usedLiveFrame=false;
+
+  try{
+    const video=document.getElementById('cameraVideo');
+    if(mediaStream && video && video.readyState>=2 && video.videoWidth>0){
+      const canvas=document.createElement('canvas');
+      canvas.width=480; canvas.height=480;
+      const ctx=canvas.getContext('2d');
+      if(ctx){
+        const vw=video.videoWidth, vh=video.videoHeight, size=Math.min(vw,vh);
+        ctx.drawImage(video,(vw-size)/2,(vh-size)/2,size,size,0,0,480,480);
+        dataUrl=canvas.toDataURL('image/jpeg',.85);
+        usedLiveFrame=true;
+      }
+    }
+  }catch(e){ /* fällt auf Platzhalter zurück */ }
+
+  if(!dataUrl){
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${hue},55%,42%)"/><stop offset="100%" stop-color="hsl(${(hue+40)%360},55%,26%)"/></linearGradient></defs><rect width="480" height="480" fill="url(#g)"/><text x="50%" y="46%" fill="rgba(255,255,255,.92)" font-size="110" text-anchor="middle" dominant-baseline="middle" font-family="Georgia, serif" font-weight="700">${initials}</text><text x="50%" y="70%" fill="rgba(255,255,255,.85)" font-size="26" text-anchor="middle" font-family="sans-serif">${label}</text></svg>`;
+    dataUrl = 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+  }
+
+  const newId = photos.length ? Math.max(...photos.map(p=>p.id))+1 : 0;
+  photos.push({
+    id:newId, src:dataUrl,
+    caption: armedTarget.type==='child' ? 'Portrait' : 'Gruppenfoto',
+    owner: armedTarget.type==='child' ? armedTarget.idx : null
+  });
+  flashShutter();
+  renderCameraChips();
+  toast((usedLiveFrame?'Foto aufgenommen':'Demo-Foto erzeugt')+' – '+label+' ✅');
+}
+function openQrScanSim(){
+  document.getElementById('qrScanIcon').textContent='🔲';
+  document.getElementById('qrScanText').textContent='Scanne QR-Code der Fotokarte …';
+  openOverlay('overlayQrScan');
+  setTimeout(()=>{
+    const next = firstUnphotographedChildOrGroup();
+    armedTarget = next;
+    renderCameraChips();
+    updateCameraTargetLabel();
+    if(next.type==='child'){
+      document.getElementById('qrScanIcon').textContent='✅';
+      document.getElementById('qrScanText').textContent='Erkannt: '+students[next.idx].name;
+    } else {
+      document.getElementById('qrScanIcon').textContent='👥';
+      document.getElementById('qrScanText').textContent='Alle Kinder fotografiert – Gruppenmodus aktiv';
+    }
+    setTimeout(()=>closeOverlay('overlayQrScan'), 900);
+  }, 1100);
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+renderGalleryGrid();
+renderTeacherGrid();
+renderStudents();
+
+document.getElementById('lbStage').addEventListener('touchstart', lbTouchStart, {passive:true});
+document.getElementById('lbStage').addEventListener('touchend', lbTouchEnd, {passive:true});
+document.addEventListener('keydown', (e)=>{
+  if(!document.getElementById('lightbox').classList.contains('active')) return;
+  if(e.key==='ArrowLeft') lightboxPrev();
+  else if(e.key==='ArrowRight') lightboxNext();
+  else if(e.key==='Escape') closeLightbox();
+});
+</script>
+</body>
+</html>
