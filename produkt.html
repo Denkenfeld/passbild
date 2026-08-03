@@ -808,10 +808,30 @@ const PLAN_PRICES = { pro:'4,99 €/Monat', ultimate:'12,99 €/Monat' };
    und führt es direkt im Browser aus (WebGPU, sonst WASM). Kein Server,
    kein Upload. Beim ersten Foto wird das Modell einmalig geladen und
    danach vom Browser zwischengespeichert. ---------- */
-const AI_MODEL_ID = 'onnx-community/BEN2-ONNX'; // bei Bedarf z.B. gegen 'onnx-community/ormbg-ONNX' tauschen (kleiner/schneller)
+const AI_MODEL_ID = 'onnx-community/ormbg-ONNX'; // leichteres Modell (isnet-basiert) für bessere Handy-Stabilität; bei Bedarf z.B. gegen 'onnx-community/BEN2-ONNX' tauschen (größer, evtl. präziser)
 let transformersLib = null;
 let segmenterPromise = null;
 let aiEverLoaded = false;
+
+// Sicherheitsgrenzen gegen Handy-Abstürze: Handyfotos sind oft riesig (12–48MP),
+// und iOS Safari hat ein hartes Canvas-Größenlimit (~4096px pro Seite). Deshalb
+// wird für die eigentliche KI-Berechnung stark verkleinert, und auch die finale
+// Ausgabe auf eine sichere Obergrenze gedeckelt.
+const AI_INFERENCE_MAX_SIDE = isMobileDevice() ? 768 : 1280;
+const MAX_OUTPUT_SIDE = 3500;
+
+function isMobileDevice(){
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+function loadImageElement(url){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=> resolve(img);
+    img.onerror = ()=> reject(new Error('Bild konnte nicht geladen werden'));
+    img.src = url;
+  });
+}
 
 async function loadTransformers(){
   if (!transformersLib){
@@ -871,10 +891,50 @@ async function processItem(item){
   item.status = 'processing';
   item.errorMsg = '';
   renderThumbs();
+  let aiUrl = null;
   try{
-    const canvas = await runAI(item.sourceUrl, updateAIStatus);
-    item.cutout = canvas;
-    item.originalCanvas = await buildOriginalCanvas(item.sourceUrl, canvas.width, canvas.height);
+    const original = await loadImageElement(item.sourceUrl);
+    const srcW = original.naturalWidth, srcH = original.naturalHeight;
+
+    // 1) Für die KI stark verkleinern — das ist der Hauptgrund für Handy-Abstürze:
+    //    Handyfotos sind riesig, und die KI auf voller Auflösung laufen zu lassen
+    //    kann den Speicher sprengen.
+    const aiScale = Math.min(1, AI_INFERENCE_MAX_SIDE / Math.max(srcW, srcH));
+    const aiW = Math.max(1, Math.round(srcW * aiScale));
+    const aiH = Math.max(1, Math.round(srcH * aiScale));
+    const aiCanvas = document.createElement('canvas');
+    aiCanvas.width = aiW; aiCanvas.height = aiH;
+    aiCanvas.getContext('2d').drawImage(original, 0, 0, aiW, aiH);
+    const aiBlob = await new Promise(resolve => aiCanvas.toBlob(resolve, 'image/jpeg', 0.9));
+    aiUrl = URL.createObjectURL(aiBlob);
+
+    const lowResCutout = await runAI(aiUrl, updateAIStatus);
+
+    // 2) Zielauflösung sicher deckeln (auch iOS-Canvas-Limits berücksichtigen),
+    //    dann die Alpha-Maske aus der KI hochskaliert auf das Originalbild legen.
+    const outScale = Math.min(1, MAX_OUTPUT_SIDE / Math.max(srcW, srcH));
+    const outW = Math.max(1, Math.round(srcW * outScale));
+    const outH = Math.max(1, Math.round(srcH * outScale));
+
+    const fullCanvas = document.createElement('canvas');
+    fullCanvas.width = outW; fullCanvas.height = outH;
+    const fctx = fullCanvas.getContext('2d');
+    fctx.drawImage(original, 0, 0, outW, outH);
+    const fullData = fctx.getImageData(0, 0, outW, outH);
+
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = outW; maskCanvas.height = outH;
+    const mctx = maskCanvas.getContext('2d');
+    mctx.drawImage(lowResCutout, 0, 0, outW, outH);
+    const maskData = mctx.getImageData(0, 0, outW, outH);
+
+    for (let i = 3; i < fullData.data.length; i += 4){
+      fullData.data[i] = maskData.data[i];
+    }
+    fctx.putImageData(fullData, 0, 0);
+
+    item.cutout = fullCanvas;
+    item.originalCanvas = await buildOriginalCanvas(item.sourceUrl, outW, outH);
     item.status = 'done';
     hideAIStatus();
   }catch(err){
@@ -882,6 +942,8 @@ async function processItem(item){
     item.status = 'error';
     item.errorMsg = 'Freistellen fehlgeschlagen';
     showAIErrorBanner();
+  } finally {
+    if (aiUrl) URL.revokeObjectURL(aiUrl);
   }
   renderThumbs();
 }

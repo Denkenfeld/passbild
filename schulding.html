@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>schulding.de</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFFFF; --bg-soft:#F7F9FC; --ink:#161B22; --ink-soft:#5B6472; --line:#EBEFF3;
+    --yellow:#FFB627; --yellow-ink:#7A4E00; --yellow-soft:#FFF1DA;
+    --blue:#2B9AE8; --blue-soft:#EAF6FF; --blue-ink:#1E6FA8;
+    --green:#3FAE7C; --green-soft:#E7F7EF; --green-ink:#2C7C58;
+    --purple:#8B6BFF; --purple-soft:#F1EDFF; --purple-ink:#5F45C0;
+    --pink:#F0507A;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; background:var(--bg-soft); color:var(--ink);
+    font-family:'Plus Jakarta Sans',-apple-system,sans-serif; -webkit-font-smoothing:antialiased; }
+  body{ display:flex; justify-content:center; }
+  .app{ width:100%; max-width:460px; min-height:100vh; background:var(--bg);
+    position:relative; display:flex; flex-direction:column; }
+
+  .view{ display:none; flex-direction:column; flex:1; }
+  .view.active{ display:flex; }
+
+  /* HEADER (shared) */
+  header{ position:sticky; top:0; z-index:30; background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .header-top{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px 4px; }
+  .brand{ display:flex; align-items:center; gap:8px; }
+  .brand-logo{ font-family:'Quicksand',sans-serif; font-weight:700; font-size:19px; letter-spacing:-.2px; }
+  .brand-logo .bracket, .brand-logo .ding{ color:var(--yellow); }
+  .brand-logo .black-part{ color:#111827; }
+  .avatar-btn{ width:30px; height:30px; flex-shrink:0; }
+  .avatar-btn .avatar{ border-radius:50%; transform:none; }
+  .avatar{ width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    font-family:'Baloo 2'; font-weight:800; color:#fff; font-size:13px;
+    border-radius:30%; transform:rotate(-4deg); }
+  .header-title{ padding:12px 16px 14px; font-family:'Baloo 2'; font-weight:700; font-size:21px; }
+  .header-title span{ display:block; font-family:'Plus Jakarta Sans'; font-weight:600; font-size:12.5px;
+    color:var(--ink-soft); margin-top:2px; }
+
+  .tabs{ display:flex; padding:0 4px; }
+  .tab{ flex:1; text-align:center; padding:12px 6px; font-size:14.5px; font-weight:700;
+    color:var(--ink-soft); position:relative; background:none; border:none; font-family:inherit; }
+  .tab.active{ color:var(--ink); }
+  .tab.active::after{ content:""; position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+    width:34px; height:3px; border-radius:3px; background:var(--yellow); }
+
+  /* MAIN TOP NAV (Feed / Deck / Chat) */
+  .main-tabs{ display:flex; padding:2px 8px 0; gap:4px; }
+  .main-tab{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:11px 6px; font-size:13.5px; font-weight:800; color:var(--ink-soft);
+    background:none; border:none; font-family:inherit; position:relative; border-radius:12px 12px 0 0; }
+  .main-tab svg{ width:18px; height:18px; stroke:var(--ink-soft); fill:none; stroke-width:2; }
+  .main-tab.active{ color:var(--ink); }
+  .main-tab.active svg{ stroke:var(--ink); }
+  .main-tab.active::after{ content:""; position:absolute; bottom:0; left:18%; right:18%;
+    height:3px; border-radius:3px; background:var(--yellow); }
+  .main-tab .nav-dot{ position:absolute; top:6px; right:22%; width:7px; height:7px; }
+
+  /* ---------- FEED ---------- */
+  .composer{ display:flex; gap:10px; padding:14px 16px; border-bottom:8px solid var(--bg-soft); }
+  .composer .avatar{ width:40px; height:40px; font-size:14px; flex-shrink:0; }
+  .composer-body{ flex:1; min-width:0; }
+  .composer-text{ font-size:16px; color:var(--ink-soft); padding:8px 0 12px; border-bottom:1px solid var(--line); }
+  .composer-photos{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:10px 0; }
+  .photo-add{ aspect-ratio:1; border-radius:14px; border:1.5px dashed #D7DEE7; background:var(--bg-soft);
+    display:flex; align-items:center; justify-content:center; color:var(--ink-soft); }
+  .photo-add svg{ width:22px; height:22px; stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .composer-row{ display:flex; align-items:center; justify-content:space-between; padding-top:10px; }
+  .composer-tools{ display:flex; gap:2px; }
+  .tool-icon{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .tool-icon svg{ width:19px; height:19px; stroke-width:2; fill:none; }
+  .tool-icon.foto svg{ stroke:var(--blue); }
+  .tool-icon.umfrage svg{ stroke:var(--green); }
+  .tool-icon.pin svg{ stroke:var(--yellow-ink); }
+  .post-submit{ background:var(--yellow); color:var(--ink); border:none; font-family:'Baloo 2';
+    font-weight:700; font-size:13px; padding:8px 18px; border-radius:999px; }
+
+  .feed-note{ display:flex; align-items:center; gap:6px; padding:10px 16px; font-size:12px;
+    color:var(--ink-soft); font-weight:600; }
+  .feed-note svg{ width:13px; height:13px; stroke:var(--ink-soft); fill:none; stroke-width:2; }
+
+  .feed{ padding-bottom:100px; }
+  .post{ display:flex; gap:10px; padding:14px 16px; border-bottom:1px solid var(--line); }
+  .post .avatar{ width:42px; height:42px; font-size:14px; flex-shrink:0; }
+  .post-main{ flex:1; min-width:0; }
+  .post-head{ display:flex; align-items:baseline; gap:5px; flex-wrap:wrap; }
+  .name{ font-weight:800; font-size:14.5px; }
+  .handle{ font-size:13px; color:var(--ink-soft); }
+  .role-badge{ font-size:10px; font-weight:800; padding:1.5px 7px; border-radius:999px; margin-left:2px; }
+  .role-badge.schueler{ background:var(--blue-soft); color:var(--blue-ink); }
+  .role-badge.lehrer{ background:var(--green-soft); color:var(--green-ink); }
+  .role-badge.schule{ background:var(--yellow-soft); color:var(--yellow-ink); }
+  .time{ font-size:13px; color:var(--ink-soft); }
+  .time::before{ content:"·"; margin:0 4px; }
+  .pinned-row{ display:flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700;
+    color:var(--yellow-ink); margin-bottom:4px; }
+  .pinned-row svg{ width:12px; height:12px; }
+  .post-text{ font-size:14.5px; line-height:1.45; margin-top:2px; }
+  .photo-grid{ margin-top:10px; border-radius:16px; overflow:hidden; border:1px solid var(--line); }
+  .photo-grid.single svg{ width:100%; display:block; aspect-ratio:16/11; }
+  .photo-grid.two{ display:grid; grid-template-columns:1fr 1fr; gap:2px; }
+  .photo-grid.two svg{ width:100%; height:100%; aspect-ratio:1/1.05; display:block; }
+  .post-actions{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; max-width:340px; }
+  .action{ display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--ink-soft);
+    font-size:12.5px; font-weight:700; padding:6px; border-radius:8px; }
+  .action svg{ width:17px; height:17px; stroke:var(--ink-soft); fill:none; stroke-width:2; }
+  .action.liked{ color:var(--pink); }
+  .action.liked svg{ stroke:var(--pink); fill:var(--pink); }
+  .action.reposted{ color:var(--green); }
+  .action.reposted svg{ stroke:var(--green); }
+  .action.share svg{ stroke:var(--blue); }
+  .post{ cursor:pointer; }
+  .role-badge.eltern{ background:var(--purple-soft); color:var(--purple-ink); }
+
+  /* ---------- POST DETAIL OVERLAY ---------- */
+  .detail-overlay{ display:none; flex-direction:column; position:fixed; inset:0; z-index:60;
+    background:var(--bg); }
+  .detail-overlay.open{ display:flex; }
+  .detail-overlay-inner{ width:100%; max-width:460px; margin:0 auto; height:100%; display:flex; flex-direction:column; }
+  .detail-scroll{ flex:1; overflow-y:auto; padding-bottom:90px; }
+  .detail-original{ padding:14px 16px 16px; border-bottom:8px solid var(--bg-soft); }
+  .detail-original .post-text{ font-size:17px; margin-top:10px; }
+  .detail-original .post-head{ margin-top:2px; }
+  .detail-original .avatar{ width:46px; height:46px; font-size:15px; }
+  .replies-label{ padding:14px 16px 4px; font-size:12.5px; font-weight:800; color:var(--ink-soft); }
+  .reply{ display:flex; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); }
+  .reply .avatar{ width:36px; height:36px; font-size:12.5px; flex-shrink:0; }
+  .reply-body{ flex:1; min-width:0; }
+  .reply-head{ display:flex; align-items:baseline; gap:5px; flex-wrap:wrap; }
+  .reply-name{ font-weight:800; font-size:13.5px; }
+  .reply-text{ font-size:13.5px; line-height:1.45; margin-top:2px; }
+  .reply-input-bar{ position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:460px;
+    background:rgba(255,255,255,0.97); backdrop-filter:blur(10px); border-top:1px solid var(--line);
+    display:flex; align-items:center; gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); z-index:65; }
+  .reply-input{ flex:1; background:var(--bg-soft); border:1px solid var(--line); border-radius:999px;
+    padding:10px 15px; font-size:14px; color:var(--ink-soft); }
+
+  /* ---------- COMPOSE SHEET ---------- */
+  .sheet-overlay{ display:none; position:fixed; inset:0; z-index:80; background:rgba(17,20,27,0);
+    align-items:flex-end; justify-content:center; transition:background .25s; }
+  .sheet-overlay.open{ display:flex; background:rgba(17,20,27,0.42); }
+  .sheet{ width:100%; max-width:460px; background:var(--bg); border-radius:24px 24px 0 0;
+    max-height:82vh; display:flex; flex-direction:column; transform:translateY(100%);
+    transition:transform .3s cubic-bezier(.32,.72,0,1); box-shadow:0 -8px 30px rgba(0,0,0,0.15); }
+  .sheet-overlay.open .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:3px; background:#DCE3EC; margin:10px auto 4px; }
+  .sheet-header{ display:flex; align-items:center; justify-content:space-between; padding:8px 16px 12px;
+    border-bottom:1px solid var(--line); }
+  .sheet-cancel{ background:none; border:none; font-size:14px; font-weight:700; color:var(--ink-soft); font-family:inherit; }
+  .sheet-title{ font-family:'Baloo 2'; font-weight:700; font-size:15px; }
+  .sheet-body{ padding:14px 16px 20px; overflow-y:auto; }
+  .sheet-compose-row{ display:flex; gap:10px; }
+  .sheet-compose-row .avatar{ width:38px; height:38px; font-size:13px; flex-shrink:0; }
+  .sheet-textarea{ flex:1; border:none; outline:none; resize:none; font-family:inherit; font-size:15.5px;
+    color:var(--ink); min-height:90px; background:none; }
+  .sheet-photo-preview{ display:none; grid-template-columns:1fr 1fr; gap:6px; margin:10px 0 4px; }
+  .sheet-photo-preview.show{ display:grid; }
+  .sheet-photo-tile{ position:relative; aspect-ratio:1; border-radius:14px; overflow:hidden; }
+  .sheet-photo-tile svg{ width:100%; height:100%; display:block; }
+  .sheet-photo-remove{ position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%;
+    background:rgba(17,20,27,0.55); display:flex; align-items:center; justify-content:center; border:none; }
+  .sheet-photo-remove svg{ width:13px; height:13px; stroke:#fff; stroke-width:2.4; fill:none; }
+  .sheet-tools-row{ display:flex; align-items:center; justify-content:space-between; padding-top:12px;
+    border-top:1px solid var(--line); margin-top:10px; }
+  .sheet-tools{ display:flex; gap:2px; }
+  .sheet-submit{ background:var(--yellow); color:var(--ink); border:none; font-family:'Baloo 2';
+    font-weight:700; font-size:13.5px; padding:9px 20px; border-radius:999px; }
+  .sheet-submit:disabled{ opacity:.4; }
+
+  /* ---------- DECK ---------- */
+  .deck-chips{ display:flex; gap:8px; padding:2px 16px 14px; overflow-x:auto; }
+  .chip{ flex-shrink:0; padding:8px 14px; border-radius:999px; font-size:13px; font-weight:700;
+    background:var(--bg-soft); color:var(--ink-soft); border:1px solid var(--line); white-space:nowrap; }
+  .chip.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  .deck-section{ padding:4px 16px 6px; }
+  .deck-section-title{ font-family:'Baloo 2'; font-weight:700; font-size:15px; margin:14px 0 10px;
+    display:flex; align-items:center; gap:7px; }
+  .deck-section-title .count{ font-family:'Plus Jakarta Sans'; font-weight:700; font-size:12px;
+    color:var(--ink-soft); background:var(--bg-soft); padding:2px 8px; border-radius:999px; }
+
+  .deck-card{ display:flex; gap:12px; background:var(--bg); border:1px solid var(--line); border-radius:16px;
+    padding:13px 14px; margin-bottom:10px; align-items:flex-start; }
+  .deck-icon{ width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .deck-icon svg{ width:19px; height:19px; stroke-width:2; fill:none; }
+  .deck-icon.hw{ background:var(--blue-soft); } .deck-icon.hw svg{ stroke:var(--blue-ink); }
+  .deck-icon.trip{ background:var(--green-soft); } .deck-icon.trip svg{ stroke:var(--green-ink); }
+  .deck-icon.info{ background:var(--yellow-soft); } .deck-icon.info svg{ stroke:var(--yellow-ink); }
+  .deck-body{ flex:1; min-width:0; }
+  .deck-top-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .deck-title{ font-weight:800; font-size:14px; }
+  .deck-title.done{ text-decoration:line-through; color:var(--ink-soft); }
+  .deck-sub{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .deck-meta{ display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .due-pill{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; }
+  .due-pill.soon{ background:#FFE7EA; color:#D5304A; }
+  .due-pill.normal{ background:var(--bg-soft); color:var(--ink-soft); }
+  .due-pill.done{ background:var(--green-soft); color:var(--green-ink); }
+  .from-tag{ font-size:11px; color:var(--ink-soft); font-weight:600; }
+  .checkbox{ width:22px; height:22px; border-radius:7px; border:2px solid #D7DEE7; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; }
+  .checkbox.checked{ background:var(--green); border-color:var(--green); }
+  .checkbox svg{ width:13px; height:13px; stroke:#fff; stroke-width:3; fill:none; opacity:0; }
+  .checkbox.checked svg{ opacity:1; }
+
+  /* ---------- CHAT ---------- */
+  .chat-list{ padding-bottom:90px; }
+  .chat-row{ display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line); }
+  .chat-row .avatar{ width:46px; height:46px; font-size:15px; flex-shrink:0; }
+  .avatar.group{ border-radius:26%; }
+  .chat-info{ flex:1; min-width:0; }
+  .chat-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .chat-name{ font-weight:800; font-size:14.5px; display:flex; align-items:center; gap:6px; }
+  .chat-time{ font-size:12px; color:var(--ink-soft); flex-shrink:0; }
+  .chat-preview{ font-size:13px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; }
+  .chat-row.unread .chat-preview{ color:var(--ink); font-weight:600; }
+  .unread-dot{ width:9px; height:9px; border-radius:50%; background:var(--yellow); flex-shrink:0; }
+  .group-tag{ font-size:9.5px; font-weight:800; background:var(--purple-soft); color:var(--purple-ink);
+    padding:1.5px 6px; border-radius:999px; }
+
+  /* chat thread */
+  .thread-header{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); z-index:20; }
+  .back-btn{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .back-btn svg{ width:19px; height:19px; stroke:var(--ink); stroke-width:2.3; fill:none; }
+  .thread-header .avatar{ width:36px; height:36px; font-size:13px; }
+  .thread-title{ font-weight:800; font-size:14.5px; }
+  .thread-sub{ font-size:11.5px; color:var(--ink-soft); }
+  .thread-body{ flex:1; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; padding-bottom:100px; }
+  .bubble-row{ display:flex; flex-direction:column; max-width:78%; }
+  .bubble-row.me{ align-self:flex-end; align-items:flex-end; }
+  .bubble-sender{ font-size:11px; font-weight:700; color:var(--ink-soft); margin:0 4px 3px; }
+  .bubble{ padding:10px 13px; border-radius:16px; font-size:14px; line-height:1.4; }
+  .bubble-row:not(.me) .bubble{ background:var(--bg-soft); border-bottom-left-radius:5px; }
+  .bubble-row.me .bubble{ background:var(--yellow); color:var(--ink); border-bottom-right-radius:5px; }
+  .bubble-time{ font-size:10.5px; color:var(--ink-soft); margin:3px 6px 0; }
+  .thread-input-bar{ position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:460px;
+    background:rgba(255,255,255,0.97); backdrop-filter:blur(10px); border-top:1px solid var(--line);
+    display:flex; align-items:center; gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); z-index:40; }
+  .thread-input{ flex:1; background:var(--bg-soft); border:1px solid var(--line); border-radius:999px;
+    padding:10px 15px; font-size:14px; color:var(--ink-soft); }
+  .send-btn{ width:38px; height:38px; border-radius:50%; background:var(--yellow); display:flex; align-items:center;
+    justify-content:center; flex-shrink:0; border:none; }
+  .send-btn svg{ width:17px; height:17px; stroke:var(--ink); stroke-width:2.3; fill:none; }
+
+  /* FAB */
+  .fab{ position:fixed; bottom:24px; left:50%; transform:translateX(calc(-50% + 168px));
+    width:54px; height:54px; border-radius:50%; background:var(--yellow); border:none;
+    box-shadow:0 6px 16px rgba(255,182,39,0.45); display:flex; align-items:center; justify-content:center; z-index:35; }
+  .fab svg{ width:24px; height:24px; stroke:var(--ink); stroke-width:2.4; fill:none; }
+
+  .nav-dot{ position:absolute; top:2px; right:12px; width:8px; height:8px; border-radius:50%; background:var(--pink);
+    border:2px solid #fff; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= FEED VIEW ================= -->
+  <section class="view active" id="view-feed">
+    <header>
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-logo"><span class="bracket">{</span><span class="black-part">schul</span><span class="ding">ding</span><span class="black-part">.de</span></div>
+        </div>
+        <div class="avatar-btn"><div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div></div>
+      </div>
+      <div class="main-tabs">
+        <button class="main-tab active" data-view="feed">
+          <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>
+          Feed
+        </button>
+        <button class="main-tab" data-view="deck">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+          Deck
+        </button>
+        <button class="main-tab" data-view="chat">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Chat
+          <span class="nav-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="feed-note">
+      <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3M12 3a9 9 0 100 18 9 9 0 000-18z"/></svg>
+      Chronologisch &middot; kein Algorithmus, keine Werbung
+    </div>
+
+    <main class="feed" id="feed-list">
+      <article class="post">
+        <div class="avatar" style="background:linear-gradient(135deg,#8FC5FF,#3DA9FC)">TH</div>
+        <div class="post-main">
+          <div class="post-head">
+            <span class="name">Theater-AG</span>
+            <span class="role-badge schueler">AG</span>
+            <span class="handle">@theater_talblick</span>
+            <span class="time">14 Min.</span>
+          </div>
+          <div class="post-text">Kulissenbau für "Der zerbrochne Krug" läuft auf Hochtouren 🎭 Premiere in 3 Wochen!</div>
+          <div class="photo-grid two">
+            <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><rect width="200" height="200" fill="#FFE3AC"/><rect x="30" y="70" width="140" height="110" rx="8" fill="#FF9F43"/><circle cx="100" cy="45" r="34" fill="#FFCB70"/></svg>
+            <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><rect width="200" height="200" fill="#DCEBFF"/><circle cx="140" cy="45" r="45" fill="#8FC5FF"/><rect x="15" y="80" width="120" height="70" rx="8" fill="#3DA9FC"/></svg>
+          </div>
+          <div class="post-actions">
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>8</button>
+            <button class="action reposted"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>3</button>
+            <button class="action liked"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.6 2 5 5.5 5c2 0 3.5 1.3 4.5 3 1-1.7 2.5-3 4.5-3 3.5 0 4.7 3.6 3 7-2.5 4.5-9.5 9-9.5 9z"/></svg>92</button>
+            <button class="action share"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="post">
+        <div class="avatar" style="background:linear-gradient(135deg,#8FD3B6,#3FAE7C)">GT</div>
+        <div class="post-main">
+          <div class="post-head">
+            <span class="name">Gesamtschule Talblick</span>
+            <span class="role-badge schule">SCHULE</span>
+            <span class="handle">@talblick</span>
+            <span class="time">2 Std.</span>
+          </div>
+          <div class="pinned-row">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.5 5.5L19 9l-4 3.5L16 18l-4-3-4 3 1-5.5L5 9l5.5-1.5z"/></svg>
+            Angepinnt
+          </div>
+          <div class="post-text">Die Mathe-Arbeit (Klasse 9) wird auf <strong>Donnerstag, 6. Stunde</strong> verschoben. Stoff bleibt gleich.</div>
+          <div class="post-actions">
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>12</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>6</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.6 2 5 5.5 5c2 0 3.5 1.3 4.5 3 1-1.7 2.5-3 4.5-3 3.5 0 4.7 3.6 3 7-2.5 4.5-9.5 9-9.5 9z"/></svg>84</button>
+            <button class="action share"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="post">
+        <div class="avatar">JK</div>
+        <div class="post-main">
+          <div class="post-head">
+            <span class="name">Jonas Keller</span>
+            <span class="role-badge schueler">10b</span>
+            <span class="handle">@jonas_k</span>
+            <span class="time">4 Std.</span>
+          </div>
+          <div class="post-text">Bezirksfinale gewonnen! 🏐 Danke an alle Fans auf der Tribüne 💛</div>
+          <div class="photo-grid single">
+            <svg viewBox="0 0 400 275" preserveAspectRatio="xMidYMid slice">
+              <rect width="400" height="275" fill="#FFE3AC"/>
+              <circle cx="80" cy="220" r="60" fill="#FFD27E"/>
+              <circle cx="340" cy="50" r="90" fill="#FFCB70"/>
+              <rect x="150" y="110" width="100" height="140" rx="10" fill="#FF9F43"/>
+              <circle cx="200" cy="100" r="34" fill="#fff" opacity=".85"/>
+            </svg>
+          </div>
+          <div class="post-actions">
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>23</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>14</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.6 2 5 5.5 5c2 0 3.5 1.3 4.5 3 1-1.7 2.5-3 4.5-3 3.5 0 4.7 3.6 3 7-2.5 4.5-9.5 9-9.5 9z"/></svg>156</button>
+            <button class="action share"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
+          </div>
+        </div>
+      </article>
+
+      <div style="text-align:center; padding:24px 24px 10px; color:var(--ink-soft); font-size:13px; line-height:1.6;">
+        <strong style="display:block; color:var(--ink); font-family:'Baloo 2'; font-size:15px; margin-bottom:4px;">Das war's für heute ☀️</strong>
+        Du bist auf dem neuesten Stand.
+      </div>
+    </main>
+
+    <button class="fab" id="fab-feed"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  </section>
+
+  <!-- ================= DECK VIEW ================= -->
+  <section class="view" id="view-deck">
+    <header>
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-logo"><span class="bracket">{</span><span class="black-part">schul</span><span class="ding">ding</span><span class="black-part">.de</span></div>
+        </div>
+        <div class="avatar-btn"><div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div></div>
+      </div>
+      <div class="main-tabs">
+        <button class="main-tab" data-view="feed">
+          <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>
+          Feed
+        </button>
+        <button class="main-tab active" data-view="deck">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+          Deck
+        </button>
+        <button class="main-tab" data-view="chat">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Chat
+          <span class="nav-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="deck-chips">
+      <button class="chip active" data-filter="alle">Alle</button>
+      <button class="chip" data-filter="hw">📘 Hausaufgaben</button>
+      <button class="chip" data-filter="trip">🚌 Ausflüge</button>
+      <button class="chip" data-filter="info">📌 Infos</button>
+    </div>
+
+    <div style="padding-bottom:100px;">
+      <div class="deck-section" data-cat="hw">
+        <div class="deck-section-title">Hausaufgaben <span class="count">3 offen</span></div>
+
+        <div class="deck-card">
+          <div class="checkbox"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+          <div class="deck-body">
+            <div class="deck-top-row"><div class="deck-title">Mathe: S.42, Nr. 3–8</div></div>
+            <div class="deck-sub">Frau Sommer · Klasse 9</div>
+            <div class="deck-meta"><span class="due-pill soon">Morgen fällig</span></div>
+          </div>
+        </div>
+
+        <div class="deck-card">
+          <div class="checkbox"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+          <div class="deck-body">
+            <div class="deck-top-row"><div class="deck-title">Englisch: Vokabeln Unit 5</div></div>
+            <div class="deck-sub">Herr Bauer · Klasse 9</div>
+            <div class="deck-meta"><span class="due-pill normal">Fr, 7. Aug.</span></div>
+          </div>
+        </div>
+
+        <div class="deck-card">
+          <div class="checkbox checked"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+          <div class="deck-body">
+            <div class="deck-top-row"><div class="deck-title done">Deutsch: Lesetagebuch Kap. 4</div></div>
+            <div class="deck-sub">Frau Vogt · Klasse 9</div>
+            <div class="deck-meta"><span class="due-pill done">Erledigt</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="deck-section" data-cat="trip">
+        <div class="deck-section-title">Ausflüge <span class="count">2</span></div>
+
+        <div class="deck-card">
+          <div class="deck-icon trip"><svg viewBox="0 0 24 24"><path d="M3 17h18M5 17V9a2 2 0 012-2h10a2 2 0 012 2v8M7 21v-2M17 21v-2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/></svg></div>
+          <div class="deck-body">
+            <div class="deck-top-row"><div class="deck-title">Naturkundemuseum</div></div>
+            <div class="deck-sub">Treffpunkt: Schultor, 8:00 Uhr · Rückkehr ca. 14 Uhr</div>
+            <div class="deck-meta"><span class="due-pill normal">Mi, 5. Aug.</span><span class="from-tag">von Frau Sommer</span></div>
+          </div>
+        </div>
+
+        <div class="deck-card">
+          <div class="deck-icon trip"><svg viewBox="0 0 24 24"><path d="M3 17h18M5 17V9a2 2 0 012-2h10a2 2 0 012 2v8M7 21v-2M17 21v-2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/></svg></div>
+          <div class="deck-body">
+            <div class="deck-top-row"><div class="deck-title">Skiausfahrt Klassenstufe 9</div></div>
+            <div class="deck-sub">Anmeldung &amp; Zahlung bis 20.8. über das Sekretariat</div>
+            <div class="deck-meta"><span class="due-pill normal">10.–14. Feb.</span><span class="from-tag">von Schulleitung</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="deck-section" data-cat="info">
+        <div class="deck-section-title">Infos <span class="count">2</span></div>
+
+        <div class="deck-card">
+          <div class="deck-icon info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M12 11v5"/></svg></div>
+          <div class="deck-body">
+            <div class="deck-top-row"><div class="deck-title">Elternabend Klasse 9</div></div>
+            <div class="deck-sub">Raum 204 · Thema: Berufsorientierung</div>
+            <div class="deck-meta"><span class="due-pill normal">Di, 11. Aug., 19 Uhr</span></div>
+          </div>
+        </div>
+
+        <div class="deck-card">
+          <div class="deck-icon info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M12 11v5"/></svg></div>
+          <div class="deck-body">
+            <div class="deck-top-row"><div class="deck-title">Neue Öffnungszeiten Sekretariat</div></div>
+            <div class="deck-sub">Ab sofort Mo–Fr 7:30–13:00 Uhr</div>
+            <div class="deck-meta"><span class="due-pill normal">Ab sofort</span><span class="from-tag">von Schulleitung</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="fab" id="fab-deck"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  </section>
+
+  <!-- ================= CHAT VIEW ================= -->
+  <section class="view" id="view-chat">
+
+    <div id="chat-list-screen">
+      <header>
+        <div class="header-top">
+          <div class="brand">
+            <div class="brand-logo"><span class="bracket">{</span><span class="black-part">schul</span><span class="ding">ding</span><span class="black-part">.de</span></div>
+          </div>
+          <div class="avatar-btn"><div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div></div>
+        </div>
+        <div class="main-tabs">
+          <button class="main-tab" data-view="feed">
+            <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>
+            Feed
+          </button>
+          <button class="main-tab" data-view="deck">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+            Deck
+          </button>
+          <button class="main-tab active" data-view="chat">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Chat
+            <span class="nav-dot"></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="chat-list">
+        <div class="chat-row unread" data-thread="sommer">
+          <div class="avatar" style="background:linear-gradient(135deg,#8FC5FF,#3DA9FC)">FS</div>
+          <div class="chat-info">
+            <div class="chat-top">
+              <div class="chat-name">Frau Sommer</div>
+              <div class="chat-time">10:42</div>
+            </div>
+            <div class="chat-preview">Klar, kein Problem — bringen Sie die Mappe einfach am Montag mit 😊</div>
+          </div>
+          <div class="unread-dot"></div>
+        </div>
+
+        <div class="chat-row" data-thread="klasse9b">
+          <div class="avatar group" style="background:linear-gradient(135deg,#C9A6FF,#8B6BFF)">9b</div>
+          <div class="chat-info">
+            <div class="chat-top">
+              <div class="chat-name">Elterngruppe 9b <span class="group-tag">GRUPPE · 24</span></div>
+              <div class="chat-time">Gestern</div>
+            </div>
+            <div class="chat-preview">Herr Bauer: Vergesst nicht die Anmeldung für die Skifahrt 🎿</div>
+          </div>
+        </div>
+
+        <div class="chat-row unread" data-thread="lehrerteam">
+          <div class="avatar group" style="background:linear-gradient(135deg,#8FD3B6,#3FAE7C)">LT</div>
+          <div class="chat-info">
+            <div class="chat-top">
+              <div class="chat-name">Lehrerteam Talblick <span class="group-tag">GRUPPE · 12</span></div>
+              <div class="chat-time">Gestern</div>
+            </div>
+            <div class="chat-preview">Frau Vogt: Bitte Noten bis Freitag im System eintragen</div>
+          </div>
+          <div class="unread-dot"></div>
+        </div>
+
+        <div class="chat-row" data-thread="bauer">
+          <div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">HB</div>
+          <div class="chat-info">
+            <div class="chat-top">
+              <div class="chat-name">Herr Bauer</div>
+              <div class="chat-time">Mo</div>
+            </div>
+            <div class="chat-preview">Danke für die schnelle Rückmeldung!</div>
+          </div>
+        </div>
+
+        <div class="chat-row" data-thread="adler">
+          <div class="avatar" style="background:linear-gradient(135deg,#FF9FB8,#F0507A)">MA</div>
+          <div class="chat-info">
+            <div class="chat-top">
+              <div class="chat-name">Familie Adler</div>
+              <div class="chat-time">Fr</div>
+            </div>
+            <div class="chat-preview">Können wir kurz wegen der Fahrgemeinschaft telefonieren?</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="fab" id="fab-chat"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+
+    <div id="chat-thread-screen" style="display:none; flex-direction:column; flex:1;">
+      <div class="thread-header">
+        <button class="back-btn" id="thread-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="avatar" style="background:linear-gradient(135deg,#8FC5FF,#3DA9FC)">FS</div>
+        <div>
+          <div class="thread-title">Frau Sommer</div>
+          <div class="thread-sub">Klassenlehrerin 9b</div>
+        </div>
+      </div>
+      <div class="thread-body">
+        <div class="bubble-row">
+          <div class="bubble">Guten Morgen! Kurze Frage: Kann Jonas morgen seine Kunstmappe vergessen, weil er sie noch fertig gestalten muss?</div>
+          <div class="bubble-time">10:31</div>
+        </div>
+        <div class="bubble-row me">
+          <div class="bubble">Guten Morgen Frau Sommer, ja genau — er braucht noch etwas Zeit 🙂</div>
+          <div class="bubble-time">10:35</div>
+        </div>
+        <div class="bubble-row">
+          <div class="bubble">Klar, kein Problem — bringen Sie die Mappe einfach am Montag mit 😊</div>
+          <div class="bubble-time">10:42</div>
+        </div>
+      </div>
+      <div class="thread-input-bar">
+        <div class="thread-input">Nachricht schreiben…</div>
+        <button class="send-btn"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ================= POST DETAIL OVERLAY ================= -->
+  <div class="detail-overlay" id="post-detail">
+    <div class="detail-overlay-inner">
+      <div class="thread-header">
+        <button class="back-btn" id="detail-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="thread-title">Beitrag</div>
+      </div>
+      <div class="detail-scroll">
+        <div class="detail-original" id="detail-original"></div>
+        <div class="replies-label">3 Antworten</div>
+
+        <div class="reply">
+          <div class="avatar" style="background:linear-gradient(135deg,#FF9FB8,#F0507A)">MA</div>
+          <div class="reply-body">
+            <div class="reply-head">
+              <span class="reply-name">Mira Adler</span>
+              <span class="role-badge schueler">9c</span>
+              <span class="time">12 Min.</span>
+            </div>
+            <div class="reply-text">Sieht super aus! Können wir beim Aufbau helfen? 🙌</div>
+          </div>
+        </div>
+
+        <div class="reply">
+          <div class="avatar" style="background:linear-gradient(135deg,#8FD3B6,#3FAE7C)">GT</div>
+          <div class="reply-body">
+            <div class="reply-head">
+              <span class="reply-name">Gesamtschule Talblick</span>
+              <span class="role-badge schule">SCHULE</span>
+              <span class="time">40 Min.</span>
+            </div>
+            <div class="reply-text">Toll, wie viel hier gerade passiert. Danke an alle Engagierten!</div>
+          </div>
+        </div>
+
+        <div class="reply">
+          <div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div>
+          <div class="reply-body">
+            <div class="reply-head">
+              <span class="reply-name">Lena Martin</span>
+              <span class="role-badge eltern">Eltern</span>
+              <span class="time">1 Std.</span>
+            </div>
+            <div class="reply-text">Freuen uns schon sehr darauf 🎉</div>
+          </div>
+        </div>
+      </div>
+      <div class="reply-input-bar">
+        <div class="reply-input">Antworten…</div>
+        <button class="send-btn"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= COMPOSE SHEET ================= -->
+  <div class="sheet-overlay" id="compose-overlay">
+    <div class="sheet" id="compose-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <button class="sheet-cancel" id="compose-cancel">Abbrechen</button>
+        <div class="sheet-title">Neuer Beitrag</div>
+        <button class="sheet-submit" id="compose-submit" disabled>Posten</button>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-compose-row">
+          <div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div>
+          <textarea class="sheet-textarea" id="compose-textarea" placeholder="Was gibt's Neues an deiner Schule?"></textarea>
+        </div>
+        <div class="sheet-photo-preview" id="compose-photo-preview">
+          <div class="sheet-photo-tile">
+            <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><rect width="200" height="200" fill="#FFE3AC"/><circle cx="70" cy="150" r="46" fill="#FFD27E"/><circle cx="150" cy="55" r="60" fill="#FFCB70"/></svg>
+            <button class="sheet-photo-remove" id="compose-photo-remove"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          </div>
+        </div>
+        <div class="sheet-tools-row">
+          <div class="sheet-tools">
+            <div class="tool-icon foto" id="compose-add-photo"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.2"/><path d="M8 5l1.5-2h5L16 5"/></svg></div>
+            <div class="tool-icon umfrage"><svg viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></div>
+            <div class="tool-icon pin"><svg viewBox="0 0 24 24"><path d="M12 2l1.5 5.5L19 9l-4 3.5L16 18l-4-3-4 3 1-5.5L5 9l5.5-1.5z"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // top main-tab switching (Feed / Deck / Chat)
+  document.querySelectorAll('.main-tab').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      const target = item.dataset.view;
+      document.querySelectorAll('.main-tab').forEach(i=>{
+        i.classList.toggle('active', i.dataset.view === target);
+      });
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      document.getElementById('view-'+target).classList.add('active');
+      window.scrollTo(0,0);
+    });
+  });
+
+  // like / repost toggles (deck & chat context posts have none; feed posts bound here)
+  bindLikeRepost(document);
+
+  // deck filter chips
+  document.querySelectorAll('.deck-chips .chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.deck-chips .chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      const f = chip.dataset.filter;
+      document.querySelectorAll('.deck-section').forEach(sec=>{
+        sec.style.display = (f==='alle' || sec.dataset.cat===f) ? '' : 'none';
+      });
+    });
+  });
+
+  // deck checkboxes
+  document.querySelectorAll('.checkbox').forEach(cb=>{
+    cb.addEventListener('click', ()=>{
+      cb.classList.toggle('checked');
+      const title = cb.closest('.deck-card').querySelector('.deck-title');
+      const pill = cb.closest('.deck-card').querySelector('.due-pill');
+      title.classList.toggle('done', cb.classList.contains('checked'));
+      if(pill){
+        if(cb.classList.contains('checked')){
+          pill.textContent='Erledigt'; pill.className='due-pill done';
+        } else {
+          pill.textContent='Fällig'; pill.className='due-pill normal';
+        }
+      }
+    });
+  });
+
+  // chat: open thread
+  document.querySelectorAll('.chat-row').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      document.getElementById('chat-list-screen').style.display='none';
+      document.getElementById('chat-thread-screen').style.display='flex';
+      row.classList.remove('unread');
+      const dot = row.querySelector('.unread-dot');
+      if(dot) dot.remove();
+    });
+  });
+  document.getElementById('thread-back').addEventListener('click', ()=>{
+    document.getElementById('chat-thread-screen').style.display='none';
+    document.getElementById('chat-list-screen').style.display='block';
+  });
+
+  // ---------- POST DETAIL ----------
+  const detailOverlay = document.getElementById('post-detail');
+  const detailOriginal = document.getElementById('detail-original');
+
+  function openPostDetail(postEl){
+    detailOriginal.innerHTML = postEl.innerHTML;
+    detailOverlay.classList.add('open');
+  }
+  function bindPostClicks(container){
+    container.querySelectorAll('.post').forEach(post=>{
+      post.addEventListener('click', (e)=>{
+        if(e.target.closest('.post-actions')) return;
+        openPostDetail(post);
+      });
+    });
+  }
+  bindPostClicks(document.getElementById('feed-list'));
+
+  document.getElementById('detail-back').addEventListener('click', ()=>{
+    detailOverlay.classList.remove('open');
+  });
+
+  // ---------- COMPOSE SHEET ----------
+  const composeOverlay = document.getElementById('compose-overlay');
+  const composeTextarea = document.getElementById('compose-textarea');
+  const composeSubmit = document.getElementById('compose-submit');
+  const composePhotoPreview = document.getElementById('compose-photo-preview');
+  const composeAddPhoto = document.getElementById('compose-add-photo');
+  const composePhotoRemove = document.getElementById('compose-photo-remove');
+  const feedList = document.getElementById('feed-list');
+  let composePhotoAttached = false;
+
+  function openCompose(){
+    composeOverlay.classList.add('open');
+    setTimeout(()=>composeTextarea.focus(), 260);
+  }
+  function closeCompose(){
+    composeOverlay.classList.remove('open');
+    composeTextarea.value = '';
+    composePhotoAttached = false;
+    composePhotoPreview.classList.remove('show');
+    composeSubmit.disabled = true;
+  }
+
+  document.getElementById('fab-feed').addEventListener('click', openCompose);
+  document.getElementById('compose-cancel').addEventListener('click', closeCompose);
+  composeOverlay.addEventListener('click', (e)=>{ if(e.target === composeOverlay) closeCompose(); });
+
+  composeTextarea.addEventListener('input', ()=>{
+    composeSubmit.disabled = composeTextarea.value.trim().length === 0;
+  });
+
+  composeAddPhoto.addEventListener('click', ()=>{
+    composePhotoAttached = !composePhotoAttached;
+    composePhotoPreview.classList.toggle('show', composePhotoAttached);
+  });
+  composePhotoRemove.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    composePhotoAttached = false;
+    composePhotoPreview.classList.remove('show');
+  });
+
+  composeSubmit.addEventListener('click', ()=>{
+    const text = composeTextarea.value.trim();
+    if(!text) return;
+
+    const photoHtml = composePhotoAttached ? `
+          <div class="photo-grid single">
+            <svg viewBox="0 0 400 275" preserveAspectRatio="xMidYMid slice"><rect width="400" height="275" fill="#FFE3AC"/><circle cx="80" cy="220" r="60" fill="#FFD27E"/><circle cx="340" cy="50" r="90" fill="#FFCB70"/></svg>
+          </div>` : '';
+
+    const article = document.createElement('article');
+    article.className = 'post';
+    article.innerHTML = `
+        <div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div>
+        <div class="post-main">
+          <div class="post-head">
+            <span class="name">Lena Martin</span>
+            <span class="role-badge eltern">Eltern</span>
+            <span class="handle">@lena_m</span>
+            <span class="time">Gerade eben</span>
+          </div>
+          <div class="post-text">${text.replace(/</g,'&lt;')}</div>${photoHtml}
+          <div class="post-actions">
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>0</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>0</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.6 2 5 5.5 5c2 0 3.5 1.3 4.5 3 1-1.7 2.5-3 4.5-3 3.5 0 4.7 3.6 3 7-2.5 4.5-9.5 9-9.5 9z"/></svg>0</button>
+            <button class="action share"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
+          </div>
+        </div>`;
+
+    feedList.insertBefore(article, feedList.firstChild);
+    bindLikeRepost(article);
+    bindPostClicks(feedList);
+    closeCompose();
+  });
+
+  function bindLikeRepost(container){
+    container.querySelectorAll('.post-actions .action').forEach(btn=>{
+      if(btn.dataset.bound) return;
+      btn.dataset.bound = '1';
+      const isLike = btn.innerHTML.includes('M12 21s-7');
+      const isRepost = btn.innerHTML.includes('M17 1l4 4');
+      if(isLike || isRepost){
+        btn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          const cls = isLike ? 'liked' : 'reposted';
+          btn.classList.toggle(cls);
+          const svg = btn.querySelector('svg').outerHTML;
+          let count = parseInt(btn.textContent.trim());
+          if(!isNaN(count)){
+            count = btn.classList.contains(cls) ? count+1 : count-1;
+            btn.innerHTML = svg + count;
+          }
+        });
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
