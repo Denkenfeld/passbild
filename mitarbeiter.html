@@ -29,6 +29,9 @@ body{
 }
 
 /* ---------------- Sticky header ---------------- */
+:root{
+  --topbar-h:92px;
+}
 .topbar{
   position:sticky;
   top:0;
@@ -37,6 +40,10 @@ body{
   backdrop-filter:blur(6px);
   border-bottom:1px solid var(--line);
   padding:12px 18px 10px;
+  transition:padding .25s ease;
+}
+.topbar.is-collapsed{
+  padding:8px 18px 7px;
 }
 .topbar .brand{
   font-size:1.15rem;
@@ -73,6 +80,17 @@ body{
   font-size:.72rem;
   font-weight:700;
   letter-spacing:.3px;
+  max-height:24px;
+  opacity:1;
+  overflow:hidden;
+  transition:max-height .25s ease, opacity .2s ease, margin .25s ease, padding .25s ease;
+}
+.topbar.is-collapsed .subpage-badge{
+  max-height:0;
+  opacity:0;
+  margin-top:0;
+  padding-top:0;
+  padding-bottom:0;
 }
 .logo-svg{
   width:100%;
@@ -81,6 +99,10 @@ body{
   vertical-align:middle;
   overflow:visible;
   display:inline-block;
+  transition:max-width .25s ease;
+}
+.topbar.is-collapsed .logo-svg{
+  max-width:210px;
 }
 .brand-text{
   font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -103,11 +125,19 @@ body{
   100%{ stroke-dashoffset:0; }
 }
 .slogan-container{
-  overflow:visible;
+  overflow:hidden;
   margin-top:-4px;
   display:inline-block;
   width:100%;
   max-width:340px;
+  max-height:40px;
+  opacity:1;
+  transition:max-height .25s ease, opacity .2s ease, margin .25s ease;
+}
+.topbar.is-collapsed .slogan-container{
+  max-height:0;
+  opacity:0;
+  margin-top:0;
 }
 .slogan{
   font-size:.72rem;
@@ -1071,7 +1101,7 @@ body{
 }
 .editor-preview-wrap{
   position:sticky;
-  top:10px;
+  top:calc(var(--topbar-h) + 8px);
   z-index:20;
   margin:0 auto 14px;
   max-width:280px;
@@ -1082,6 +1112,7 @@ body{
   border:1px solid var(--line);
   touch-action:none;
   pointer-events:none;
+  transition:top .25s ease;
 }
 .editor-preview-wrap canvas{
   display:block;
@@ -1225,6 +1256,18 @@ body{
   box-shadow:0 10px 24px rgba(47,191,113,.35);
 }
 .generate-btn:active{ transform:translateY(1px); }
+.visually-hidden-input{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+  opacity:0;
+}
 </style>
 </head>
 <body>
@@ -1547,7 +1590,7 @@ body{
             <span>Eigenes Bild</span>
           </button>
         </div>
-        <input type="color" id="ctrlBgColor" value="#e9e0cf" style="display:none;">
+        <input type="color" id="ctrlBgColor" value="#e9e0cf" class="visually-hidden-input">
         <input type="file" id="ctrlBgImageInput" accept="image/*" style="display:none;">
         <p class="editor-hint-text">Ein transparentes PNG wird bei jedem Foto automatisch mit erzeugt.</p>
       </div>
@@ -1570,6 +1613,11 @@ body{
           <span class="editor-row-label">Hautglättung</span>
           <input type="range" id="ctrlSmooth" min="0" max="100" value="0">
         </div>
+        <div class="editor-row">
+          <span class="editor-row-label">Haarkanten</span>
+          <input type="range" id="ctrlHair" min="0" max="100" value="20">
+        </div>
+        <p class="editor-hint-text">„Haarkanten" glättet unruhige Kanten im Haaransatz, falls die Freistellung dort mal nicht perfekt sitzt.</p>
       </div>
 
       <div class="editor-group editor-settings-group">
@@ -1804,7 +1852,8 @@ const editSettings = {
   brightness: 0,     // -40..40
   contrast: 0,        // -40..40
   saturation: 0,       // -40..40
-  smooth: 0            // 0..100
+  smooth: 0,            // 0..100
+  hairSoften: 20        // 0..100 — glättet unruhige Haarkanten der Freistellung
 };
 let editBgImageEl = null; // geladenes <img> für editSettings.bgImageData
 let lastFgCanvas = null;   // freigestelltes Motiv (RGBA, Alpha = Person) im workCanvas-Raster
@@ -1988,6 +2037,48 @@ FaceLandmarker.prototype.detect = function(img){
   }
   return res;
 };
+
+/* ---------------- Header: schrumpft beim Scrollen ----------------
+   Damit auf dem Handy mehr vertikale Fläche für die Bearbeitung bleibt,
+   klappt der Kopfbereich beim Scrollen auf nur noch Wortmarke + Linie
+   zusammen (Badge & Slogan verschwinden). Die tatsächliche Höhe wird laufend
+   in --topbar-h geschrieben, damit sticky positionierte Elemente (z.B. die
+   Editor-Vorschau) niemals darunter verdeckt werden. */
+(function(){
+  const topbarEl = document.querySelector('.topbar');
+  if(!topbarEl) return;
+  let collapsed = false;
+
+  function updateTopbarHeightVar(){
+    document.documentElement.style.setProperty('--topbar-h', topbarEl.offsetHeight + 'px');
+  }
+
+  function onScroll(){
+    const shouldCollapse = window.scrollY > 28;
+    if(shouldCollapse !== collapsed){
+      collapsed = shouldCollapse;
+      topbarEl.classList.toggle('is-collapsed', collapsed);
+    }
+  }
+
+  let ticking = false;
+  window.addEventListener('scroll', ()=>{
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(()=>{
+      onScroll();
+      updateTopbarHeightVar();
+      ticking = false;
+    });
+  }, {passive:true});
+
+  window.addEventListener('resize', updateTopbarHeightVar);
+  // Nach jedem CSS-Transition-Schritt (Höhe ändert sich weich) laufend
+  // nachziehen, damit --topbar-h während der Animation mitwächst/schrumpft.
+  topbarEl.addEventListener('transitionend', updateTopbarHeightVar);
+  requestAnimationFrame(updateTopbarHeightVar);
+  setTimeout(updateTopbarHeightVar, 350);
+})();
 
 /* ---------------- Pipeline ---------------- */
 const canvas = document.getElementById('previewCanvas');
@@ -2282,13 +2373,138 @@ function applyColorAdjust(srcCanvas, brightness, contrast, saturation){
 // Ellipsen (destination-out) scharf. Helligkeit/Kontrast/Sättigung werden
 // danach per Pixel-Loop angewendet. Wird gecacht, da die Berechnung nur
 // bei Regleränderung nötig ist.
+// Manueller Box-Blur (statt ctx.filter='blur()'): läuft auf JEDEM Browser
+// zuverlässig, auch dort, wo die Canvas-Filter-API nicht unterstützt wird
+// (das war der Grund, warum die Hautglättung auf manchen Handys keinen
+// sichtbaren Effekt hatte — der Blur wurde dort schlicht ignoriert).
+// Effizienter Sliding-Window-Blur: Laufzeit ist unabhängig vom Radius.
+function boxBlurRGBA(data, w, h, radius){
+  if(radius<1) return;
+  const norm = 1/(radius*2+1);
+  const tmp = new Float64Array(data.length);
+  for(let y=0;y<h;y++){
+    const rowStart = y*w*4;
+    let rSum=0,gSum=0,bSum=0,aSum=0;
+    for(let x=-radius;x<=radius;x++){
+      const xx = x<0?0:(x>=w?w-1:x);
+      const idx = rowStart+xx*4;
+      rSum+=data[idx]; gSum+=data[idx+1]; bSum+=data[idx+2]; aSum+=data[idx+3];
+    }
+    for(let x=0;x<w;x++){
+      const idx = rowStart+x*4;
+      tmp[idx]=rSum*norm; tmp[idx+1]=gSum*norm; tmp[idx+2]=bSum*norm; tmp[idx+3]=aSum*norm;
+      const addX = x+radius+1>=w?w-1:x+radius+1;
+      const remX = x-radius<0?0:x-radius;
+      const addIdx = rowStart+addX*4, remIdx = rowStart+remX*4;
+      rSum += data[addIdx]-data[remIdx];
+      gSum += data[addIdx+1]-data[remIdx+1];
+      bSum += data[addIdx+2]-data[remIdx+2];
+      aSum += data[addIdx+3]-data[remIdx+3];
+    }
+  }
+  for(let x=0;x<w;x++){
+    let rSum=0,gSum=0,bSum=0,aSum=0;
+    for(let y=-radius;y<=radius;y++){
+      const yy = y<0?0:(y>=h?h-1:y);
+      const idx=(yy*w+x)*4;
+      rSum+=tmp[idx]; gSum+=tmp[idx+1]; bSum+=tmp[idx+2]; aSum+=tmp[idx+3];
+    }
+    for(let y=0;y<h;y++){
+      const idx=(y*w+x)*4;
+      data[idx]=rSum*norm; data[idx+1]=gSum*norm; data[idx+2]=bSum*norm; data[idx+3]=aSum*norm;
+      const addY = y+radius+1>=h?h-1:y+radius+1;
+      const remY = y-radius<0?0:y-radius;
+      const addIdx=(addY*w+x)*4, remIdx=(remY*w+x)*4;
+      rSum+=tmp[addIdx]-tmp[remIdx];
+      gSum+=tmp[addIdx+1]-tmp[remIdx+1];
+      bSum+=tmp[addIdx+2]-tmp[remIdx+2];
+      aSum+=tmp[addIdx+3]-tmp[remIdx+3];
+    }
+  }
+}
+function blurCanvas(srcCanvas, radiusPx){
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const out = document.createElement('canvas');
+  out.width=w; out.height=h;
+  const octx = out.getContext('2d');
+  const id = srcCanvas.getContext('2d').getImageData(0,0,w,h);
+  boxBlurRGBA(id.data, w, h, Math.max(1, Math.round(radiusPx)));
+  octx.putImageData(id,0,0);
+  return out;
+}
+
 function getProcessedFgCanvas(){
-  const { smooth, brightness, contrast, saturation } = editSettings;
-  const key = [smooth, brightness, contrast, saturation, lastFgCanvas ? lastFgCanvas.width+'x'+lastFgCanvas.height : ''].join('|');
+  const { smooth, brightness, contrast, saturation, hairSoften } = editSettings;
+  const key = [smooth, brightness, contrast, saturation, hairSoften, lastFgCanvas ? lastFgCanvas.width+'x'+lastFgCanvas.height : ''].join('|');
   if(!lastFgCanvas) return lastFgCanvas;
   if(smoothCache.key===key) return smoothCache.canvas;
 
   let base = lastFgCanvas;
+
+  // Haarkanten glätten: die KI-Freistellung ist bei feinen Haarsträhnen
+  // (Fliegen, Ansatz) manchmal etwas unruhig/ausgefranst. Statt der Farbe
+  // wird hier gezielt nur der ALPHA-Kanal (also der Rand der Freistellung)
+  // im oberen Kopfbereich (Haaransatz + Umriss) weichgezeichnet — die
+  // Haarfarbe selbst bleibt unangetastet, nur die Kontur wird ruhiger.
+  if(hairSoften>0 && lastLandmarks){
+    const w = base.width, h = base.height;
+    const l = lastLandmarks;
+    const px = (i)=> ({x:l[i].x*w, y:l[i].y*h});
+    const forehead = px(10), chin = px(152);
+    const faceW = Math.hypot(px(454).x-px(234).x, px(454).y-px(234).y);
+    const faceH = Math.hypot(chin.x-forehead.x, chin.y-forehead.y);
+
+    // Alpha-Kanal isoliert in eine eigene (Graustufen-)Canvas kopieren,
+    // dort blurren, und danach nur die Alpha-Werte zurückschreiben — so
+    // bleiben Haarfarbe/-textur unverändert, nur die Kante wird weicher.
+    const alphaSrc = document.createElement('canvas');
+    alphaSrc.width=w; alphaSrc.height=h;
+    const actx = alphaSrc.getContext('2d');
+    const baseData = base.getContext('2d').getImageData(0,0,w,h);
+    const alphaImg = actx.createImageData(w,h);
+    for(let i=0;i<baseData.data.length;i+=4){
+      const a = baseData.data[i+3];
+      alphaImg.data[i]=a; alphaImg.data[i+1]=a; alphaImg.data[i+2]=a; alphaImg.data[i+3]=255;
+    }
+    actx.putImageData(alphaImg,0,0);
+
+    const blurPx = Math.max(1, Math.round(faceW * (0.02 + 0.06*(hairSoften/100))));
+    const alphaBlurred = blurCanvas(alphaSrc, blurPx);
+    const blurredAlphaData = alphaBlurred.getContext('2d').getImageData(0,0,w,h).data;
+
+    // Bereich, in dem geglättet wird: oberer Kopf-/Haarbereich (von deutlich
+    // über der Stirn bis knapp unter die Augenbrauen), etwas breiter als
+    // das Gesicht, mit weichem Verlauf zum Rest des Fotos hin.
+    const regionCx = forehead.x;
+    const regionCy = forehead.y - faceH*0.35;
+    const regionRx = faceW*0.95;
+    const regionRy = faceH*0.85;
+    const regionMaskSharp = document.createElement('canvas');
+    regionMaskSharp.width=w; regionMaskSharp.height=h;
+    const rmsctx = regionMaskSharp.getContext('2d');
+    rmsctx.fillStyle = '#fff';
+    rmsctx.beginPath();
+    rmsctx.ellipse(regionCx, regionCy, regionRx, regionRy, 0, 0, Math.PI*2);
+    rmsctx.fill();
+    const regionMask = blurCanvas(regionMaskSharp, Math.round(faceW*0.12));
+    const regionData = regionMask.getContext('2d').getImageData(0,0,w,h).data;
+
+    const hairOut = document.createElement('canvas');
+    hairOut.width=w; hairOut.height=h;
+    const hctx = hairOut.getContext('2d');
+    const hairData = hctx.createImageData(w,h);
+    const strength = hairSoften/100;
+    for(let i=0;i<baseData.data.length;i+=4){
+      const regionStrength = (regionData[i]/255) * strength;
+      const newAlpha = baseData.data[i+3] + (blurredAlphaData[i]-baseData.data[i+3])*regionStrength;
+      hairData.data[i]   = baseData.data[i];
+      hairData.data[i+1] = baseData.data[i+1];
+      hairData.data[i+2] = baseData.data[i+2];
+      hairData.data[i+3] = newAlpha;
+    }
+    hctx.putImageData(hairData,0,0);
+    base = hairOut;
+  }
 
   if(smooth>0 && lastLandmarks){
     const w = base.width, h = base.height;
@@ -2298,36 +2514,31 @@ function getProcessedFgCanvas(){
     const faceW = Math.hypot(px(454).x-px(234).x, px(454).y-px(234).y);
     const faceH = Math.hypot(chin.x-forehead.x, chin.y-forehead.y);
 
-    // 1) Blur-Version des gesamten Freistellers (nativer Canvas-Blur, schnell & sauber)
-    const blurred = document.createElement('canvas');
-    blurred.width=w; blurred.height=h;
+    // 1) Blur-Version des gesamten Freistellers
+    const blurred = blurCanvas(base, Math.max(2, Math.round(faceW*0.045)));
     const bctx = blurred.getContext('2d');
-    bctx.filter = 'blur(' + Math.max(2, Math.round(faceW*0.045)) + 'px)';
-    bctx.drawImage(base,0,0);
-    bctx.filter = 'none';
 
     // 2) Hautmaske: große weiche Ellipse über das Gesicht, Augen/Brauen/Mund
     //    per destination-out ausgeschnitten, dann selbst nochmal geblurrt
     //    (weiche Kante statt hartem Rand).
-    const mask = document.createElement('canvas');
-    mask.width=w; mask.height=h;
-    const mctx = mask.getContext('2d');
-    mctx.fillStyle = '#fff';
-    mctx.beginPath();
-    mctx.ellipse((leftEye.x+rightEye.x)/2, (forehead.y+chin.y)/2, faceW*0.62, faceH*0.62, 0, 0, Math.PI*2);
-    mctx.fill();
-    mctx.globalCompositeOperation = 'destination-out';
-    function cut(cx,cy,rx,ry){ mctx.beginPath(); mctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); mctx.fill(); }
+    const maskSharp = document.createElement('canvas');
+    maskSharp.width=w; maskSharp.height=h;
+    const msctx = maskSharp.getContext('2d');
+    msctx.fillStyle = '#fff';
+    msctx.beginPath();
+    msctx.ellipse((leftEye.x+rightEye.x)/2, (forehead.y+chin.y)/2, faceW*0.62, faceH*0.62, 0, 0, Math.PI*2);
+    msctx.fill();
+    msctx.globalCompositeOperation = 'destination-out';
+    function cut(cx,cy,rx,ry){ msctx.beginPath(); msctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); msctx.fill(); }
     cut(leftEye.x, leftEye.y, faceW*0.16, faceW*0.10);
     cut(rightEye.x, rightEye.y, faceW*0.16, faceW*0.10);
     const mouthL=px(61), mouthR=px(291), mouthMid={x:(mouthL.x+mouthR.x)/2,y:(mouthL.y+mouthR.y)/2};
     cut(mouthMid.x, mouthMid.y, faceW*0.24, faceW*0.14);
     const noseTip = px(1);
     cut(noseTip.x, noseTip.y, faceW*0.10, faceW*0.14);
-    mctx.globalCompositeOperation = 'source-over';
-    mctx.filter = 'blur(' + Math.max(3, Math.round(faceW*0.05)) + 'px)';
-    mctx.drawImage(mask,0,0);
-    mctx.filter = 'none';
+    msctx.globalCompositeOperation = 'source-over';
+    const mask = blurCanvas(maskSharp, Math.max(3, Math.round(faceW*0.05)));
+    const mctx = mask.getContext('2d');
 
     const maskData = mctx.getImageData(0,0,w,h).data;
     const origData = base.getContext('2d').getImageData(0,0,w,h);
@@ -3026,9 +3237,9 @@ bgImageInput.addEventListener('change', (e)=>{
 });
 
 // Feinabstimmung: Helligkeit / Kontrast / Sättigung / Hautglättung
-['ctrlBrightness','ctrlContrast','ctrlSaturation','ctrlSmooth'].forEach(id=>{
+['ctrlBrightness','ctrlContrast','ctrlSaturation','ctrlSmooth','ctrlHair'].forEach(id=>{
   document.getElementById(id).addEventListener('input', (e)=>{
-    const map = { ctrlBrightness:'brightness', ctrlContrast:'contrast', ctrlSaturation:'saturation', ctrlSmooth:'smooth' };
+    const map = { ctrlBrightness:'brightness', ctrlContrast:'contrast', ctrlSaturation:'saturation', ctrlSmooth:'smooth', ctrlHair:'hairSoften' };
     editSettings[map[id]] = parseFloat(e.target.value);
     scheduleEditRender();
   });
@@ -3058,6 +3269,7 @@ document.getElementById('ctrlLoadSettings').addEventListener('change', (e)=>{
       document.getElementById('ctrlContrast').value = editSettings.contrast;
       document.getElementById('ctrlSaturation').value = editSettings.saturation;
       document.getElementById('ctrlSmooth').value = editSettings.smooth;
+      document.getElementById('ctrlHair').value = editSettings.hairSoften ?? 20;
       bgColorInput.value = editSettings.bgColor;
       document.querySelectorAll('.bg-swatch').forEach(s=> s.removeAttribute('data-active'));
       const activeSwatch = document.querySelector('.bg-swatch[data-bg="'+editSettings.bg+'"]');
