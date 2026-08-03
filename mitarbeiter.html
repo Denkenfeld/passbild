@@ -1081,26 +1081,17 @@ body{
   background:#fff;
   border:1px solid var(--line);
   touch-action:none;
-  cursor:grab;
+  pointer-events:none;
 }
-.editor-preview-wrap:active{ cursor:grabbing; }
 .editor-preview-wrap canvas{
   display:block;
   width:100%;
   height:auto;
   user-select:none;
   -webkit-user-select:none;
-}
-.editor-preview-hint{
-  position:absolute;
-  left:0; right:0; bottom:0;
-  padding:6px 8px;
-  font-size:.68rem;
-  text-align:center;
-  color:#fff;
-  background:linear-gradient(0deg,rgba(0,0,0,.55),transparent);
-  transition:opacity .4s ease;
+  -webkit-touch-callout:none;
   pointer-events:none;
+  touch-action:none;
 }
 .editor-controls{
   display:flex;
@@ -1359,6 +1350,19 @@ body{
             </div>
             <span class="fsg-spec-text">PNG freigestellt<br>transparenter Hintergrund</span>
           </div>
+
+          <div class="fsg-spec-item">
+            <div class="fsg-spec-icon">
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 8H62L82 28V92H24V8Z" stroke="#A84E32" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M62 8V28H82" stroke="#A84E32" stroke-width="3" stroke-linejoin="round"/>
+                <line x1="34" y1="46" x2="72" y2="46" stroke="#A84E32" stroke-width="3" stroke-linecap="round"/>
+                <line x1="34" y1="60" x2="72" y2="60" stroke="#A84E32" stroke-width="3" stroke-linecap="round"/>
+                <line x1="34" y1="74" x2="58" y2="74" stroke="#A84E32" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="fsg-spec-text">Anleitung &amp;<br>Beschreibung</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1504,7 +1508,6 @@ body{
   <div class="editor-section" id="editorSection" style="display:none;">
     <div class="editor-preview-wrap" id="editorPreviewWrap">
       <canvas id="editCanvas"></canvas>
-      <div class="editor-preview-hint" id="editorDragHint">Zum Verschieben ziehen ↔↕</div>
     </div>
 
     <div class="editor-controls">
@@ -1513,7 +1516,7 @@ body{
         <div class="editor-group-title">Ausschnitt</div>
         <div class="editor-row">
           <span class="editor-row-label">Zoom</span>
-          <input type="range" id="ctrlZoom" min="70" max="220" value="100">
+          <input type="range" id="ctrlZoom" min="45" max="220" value="100">
         </div>
         <div class="editor-pos-btns">
           <button type="button" class="pos-btn" data-dx="0" data-dy="-1" aria-label="Nach oben">↑</button>
@@ -1649,6 +1652,7 @@ body{
   <div class="download-hub" id="downloadHub" style="display:none;">
     <h2>Dein Download ist bereit 🎉</h2>
     <p class="hub-sub">Tippe bei jedem Foto auf <strong>Speichern</strong> oder <strong>Teilen</strong> — oder lade unten alles gesammelt als ZIP herunter.</p>
+    <p class="hub-sub" style="margin-top:-6px;">Falls der Download-Button auf deinem Handy nicht reagiert: Finger länger auf dem Vorschaubild gedrückt halten und „Bild sichern" wählen.</p>
 
     <ul class="dl-grid" id="dlGrid">
       <li class="dl-card" data-file="photoFull">
@@ -2245,77 +2249,122 @@ function hexToRgb(hex){
   return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : [255,255,255];
 }
 
-// Weichgezeichnete Variante von lastFgCanvas: Gesichtshaut (Stirn, Wangen,
-// Kinn) wird per weicher Ellipsen-Maske selektiv geglättet, Augen/Brauen/
-// Mund/Nase bleiben über Ausschluss-Ellipsen (destination-out) scharf. Wird
-// gecacht, da die pixelgenaue Berechnung nur bei Regleränderung nötig ist.
+// Manuelle Helligkeit/Kontrast/Sättigung per Pixel-Berechnung (statt
+// ctx.filter/CSS-Filter), damit es auf JEDEM Handy-Browser zuverlässig
+// wirkt, auch dort wo Canvas-Filter nicht unterstützt werden.
+function applyColorAdjust(srcCanvas, brightness, contrast, saturation){
+  if(!brightness && !contrast && !saturation) return srcCanvas;
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const octx = out.getContext('2d');
+  const id = srcCanvas.getContext('2d').getImageData(0,0,w,h);
+  const d = id.data;
+  const bMul = 1 + brightness/100;
+  const cMul = 1 + contrast/100;
+  const sMul = 1 + saturation/100;
+  for(let i=0;i<d.length;i+=4){
+    let r=d[i]*bMul, g=d[i+1]*bMul, b=d[i+2]*bMul;
+    r=(r-128)*cMul+128; g=(g-128)*cMul+128; b=(b-128)*cMul+128;
+    const gray = 0.299*r+0.587*g+0.114*b;
+    r = gray+(r-gray)*sMul; g = gray+(g-gray)*sMul; b = gray+(b-gray)*sMul;
+    d[i]   = r<0?0:(r>255?255:r);
+    d[i+1] = g<0?0:(g>255?255:g);
+    d[i+2] = b<0?0:(b>255?255:b);
+  }
+  octx.putImageData(id,0,0);
+  return out;
+}
+
+// Weichgezeichnete + farblich angepasste Variante von lastFgCanvas:
+// Gesichtshaut (Stirn, Wangen, Kinn) wird per weicher Ellipsen-Maske
+// selektiv geglättet, Augen/Brauen/Mund/Nase bleiben über Ausschluss-
+// Ellipsen (destination-out) scharf. Helligkeit/Kontrast/Sättigung werden
+// danach per Pixel-Loop angewendet. Wird gecacht, da die Berechnung nur
+// bei Regleränderung nötig ist.
 function getProcessedFgCanvas(){
-  const smooth = editSettings.smooth;
-  const key = smooth + '|' + (lastFgCanvas ? lastFgCanvas.width+'x'+lastFgCanvas.height : '');
-  if(smooth<=0 || !lastLandmarks || !lastFgCanvas) return lastFgCanvas;
+  const { smooth, brightness, contrast, saturation } = editSettings;
+  const key = [smooth, brightness, contrast, saturation, lastFgCanvas ? lastFgCanvas.width+'x'+lastFgCanvas.height : ''].join('|');
+  if(!lastFgCanvas) return lastFgCanvas;
   if(smoothCache.key===key) return smoothCache.canvas;
 
-  const w = lastFgCanvas.width, h = lastFgCanvas.height;
-  const l = lastLandmarks;
-  const px = (i)=> ({x:l[i].x*w, y:l[i].y*h});
-  const leftEye=px(33), rightEye=px(263), chin=px(152), forehead=px(10);
-  const faceW = Math.hypot(px(454).x-px(234).x, px(454).y-px(234).y);
-  const faceH = Math.hypot(chin.x-forehead.x, chin.y-forehead.y);
+  let base = lastFgCanvas;
 
-  // 1) Blur-Version des gesamten Freistellers (nativer Canvas-Blur, schnell & sauber)
-  const blurred = document.createElement('canvas');
-  blurred.width=w; blurred.height=h;
-  const bctx = blurred.getContext('2d');
-  bctx.filter = 'blur(' + Math.max(2, Math.round(faceW*0.045)) + 'px)';
-  bctx.drawImage(lastFgCanvas,0,0);
-  bctx.filter = 'none';
+  if(smooth>0 && lastLandmarks){
+    const w = base.width, h = base.height;
+    const l = lastLandmarks;
+    const px = (i)=> ({x:l[i].x*w, y:l[i].y*h});
+    const leftEye=px(33), rightEye=px(263), chin=px(152), forehead=px(10);
+    const faceW = Math.hypot(px(454).x-px(234).x, px(454).y-px(234).y);
+    const faceH = Math.hypot(chin.x-forehead.x, chin.y-forehead.y);
 
-  // 2) Hautmaske: große weiche Ellipse über das Gesicht, Augen/Brauen/Mund
-  //    per destination-out ausgeschnitten, dann selbst nochmal geblurrt
-  //    (weiche Kante statt hartem Rand).
-  const mask = document.createElement('canvas');
-  mask.width=w; mask.height=h;
-  const mctx = mask.getContext('2d');
-  mctx.fillStyle = '#fff';
-  mctx.beginPath();
-  mctx.ellipse((leftEye.x+rightEye.x)/2, (forehead.y+chin.y)/2, faceW*0.62, faceH*0.62, 0, 0, Math.PI*2);
-  mctx.fill();
-  mctx.globalCompositeOperation = 'destination-out';
-  function cut(cx,cy,rx,ry){ mctx.beginPath(); mctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); mctx.fill(); }
-  cut(leftEye.x, leftEye.y, faceW*0.16, faceW*0.10);
-  cut(rightEye.x, rightEye.y, faceW*0.16, faceW*0.10);
-  const mouthL=px(61), mouthR=px(291), mouthMid={x:(mouthL.x+mouthR.x)/2,y:(mouthL.y+mouthR.y)/2};
-  cut(mouthMid.x, mouthMid.y, faceW*0.24, faceW*0.14);
-  const noseTip = px(1);
-  cut(noseTip.x, noseTip.y, faceW*0.10, faceW*0.14);
-  mctx.globalCompositeOperation = 'source-over';
-  mctx.filter = 'blur(' + Math.max(3, Math.round(faceW*0.05)) + 'px)';
-  mctx.drawImage(mask,0,0);
-  mctx.filter = 'none';
+    // 1) Blur-Version des gesamten Freistellers (nativer Canvas-Blur, schnell & sauber)
+    const blurred = document.createElement('canvas');
+    blurred.width=w; blurred.height=h;
+    const bctx = blurred.getContext('2d');
+    bctx.filter = 'blur(' + Math.max(2, Math.round(faceW*0.045)) + 'px)';
+    bctx.drawImage(base,0,0);
+    bctx.filter = 'none';
 
-  const maskData = mctx.getImageData(0,0,w,h).data;
-  const origData = lastFgCanvas.getContext('2d').getImageData(0,0,w,h);
-  const blurData = bctx.getImageData(0,0,w,h);
-  const outCanvas = document.createElement('canvas');
-  outCanvas.width=w; outCanvas.height=h;
-  const octx = outCanvas.getContext('2d');
-  const outData = octx.createImageData(w,h);
-  const strength = smooth/100;
-  for(let i=0;i<origData.data.length;i+=4){
-    const m = (maskData[i]/255) * strength; // 0..1
-    outData.data[i]   = origData.data[i]   + (blurData.data[i]-origData.data[i])*m;
-    outData.data[i+1] = origData.data[i+1] + (blurData.data[i+1]-origData.data[i+1])*m;
-    outData.data[i+2] = origData.data[i+2] + (blurData.data[i+2]-origData.data[i+2])*m;
-    outData.data[i+3] = origData.data[i+3];
+    // 2) Hautmaske: große weiche Ellipse über das Gesicht, Augen/Brauen/Mund
+    //    per destination-out ausgeschnitten, dann selbst nochmal geblurrt
+    //    (weiche Kante statt hartem Rand).
+    const mask = document.createElement('canvas');
+    mask.width=w; mask.height=h;
+    const mctx = mask.getContext('2d');
+    mctx.fillStyle = '#fff';
+    mctx.beginPath();
+    mctx.ellipse((leftEye.x+rightEye.x)/2, (forehead.y+chin.y)/2, faceW*0.62, faceH*0.62, 0, 0, Math.PI*2);
+    mctx.fill();
+    mctx.globalCompositeOperation = 'destination-out';
+    function cut(cx,cy,rx,ry){ mctx.beginPath(); mctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); mctx.fill(); }
+    cut(leftEye.x, leftEye.y, faceW*0.16, faceW*0.10);
+    cut(rightEye.x, rightEye.y, faceW*0.16, faceW*0.10);
+    const mouthL=px(61), mouthR=px(291), mouthMid={x:(mouthL.x+mouthR.x)/2,y:(mouthL.y+mouthR.y)/2};
+    cut(mouthMid.x, mouthMid.y, faceW*0.24, faceW*0.14);
+    const noseTip = px(1);
+    cut(noseTip.x, noseTip.y, faceW*0.10, faceW*0.14);
+    mctx.globalCompositeOperation = 'source-over';
+    mctx.filter = 'blur(' + Math.max(3, Math.round(faceW*0.05)) + 'px)';
+    mctx.drawImage(mask,0,0);
+    mctx.filter = 'none';
+
+    const maskData = mctx.getImageData(0,0,w,h).data;
+    const origData = base.getContext('2d').getImageData(0,0,w,h);
+    const blurData = bctx.getImageData(0,0,w,h);
+    const smoothed = document.createElement('canvas');
+    smoothed.width=w; smoothed.height=h;
+    const sctx2 = smoothed.getContext('2d');
+    const outData = sctx2.createImageData(w,h);
+    const strength = smooth/100;
+    for(let i=0;i<origData.data.length;i+=4){
+      const m = (maskData[i]/255) * strength; // 0..1
+      outData.data[i]   = origData.data[i]   + (blurData.data[i]-origData.data[i])*m;
+      outData.data[i+1] = origData.data[i+1] + (blurData.data[i+1]-origData.data[i+1])*m;
+      outData.data[i+2] = origData.data[i+2] + (blurData.data[i+2]-origData.data[i+2])*m;
+      outData.data[i+3] = origData.data[i+3];
+    }
+    sctx2.putImageData(outData,0,0);
+    base = smoothed;
   }
-  octx.putImageData(outData,0,0);
-  smoothCache = { key, canvas: outCanvas };
-  return outCanvas;
+
+  const finalCanvas = applyColorAdjust(base, brightness, contrast, saturation);
+  smoothCache = { key, canvas: finalCanvas };
+  return finalCanvas;
 }
 
 // Composes the edited photo for a given format into the given (offscreen or
 // onscreen) canvas: Hintergrund (weiß/Farbe/Original/eigenes Bild) + Zoom/
 // Position + Farbkorrektur. Returns context + output size + crop rect.
+let originalAdjustCache = { key:null, canvas:null };
+function getAdjustedWorkCanvas(){
+  const key = [editSettings.brightness, editSettings.contrast, editSettings.saturation, workCanvas.width+'x'+workCanvas.height].join('|');
+  if(originalAdjustCache.key===key) return originalAdjustCache.canvas;
+  const result = applyColorAdjust(workCanvas, editSettings.brightness||0, editSettings.contrast||0, editSettings.saturation||0);
+  originalAdjustCache = { key, canvas: result };
+  return result;
+}
+
 function composeImage(targetCanvas, fmt, opts={}){
   const outScale = opts.outScale || 1; // >1 für Volle-Auflösung-Export
   const tctx = targetCanvas.getContext('2d');
@@ -2358,10 +2407,8 @@ function composeImage(targetCanvas, fmt, opts={}){
   if(fmt.bg === 'transparent'){
     tctx.clearRect(0,0,OUT_W,OUT_H);
   } else if(editSettings.bg==='original'){
-    const b0 = editSettings.brightness||0, c0 = editSettings.contrast||0, s0 = editSettings.saturation||0;
-    tctx.filter = `brightness(${1+b0/100}) contrast(${1+c0/100}) saturate(${1+s0/100})`;
-    tctx.drawImage(workCanvas, sx, sy, cropW, cropH, 0, 0, OUT_W, OUT_H);
-    tctx.filter = 'none';
+    const adjustedWork = getAdjustedWorkCanvas();
+    tctx.drawImage(adjustedWork, sx, sy, cropW, cropH, 0, 0, OUT_W, OUT_H);
   } else if(editSettings.bg==='custom' && editBgImageEl){
     // eigenes Bild als Hintergrund, deckend im Zielformat (cover)
     const bw=editBgImageEl.width, bh=editBgImageEl.height;
@@ -2375,18 +2422,9 @@ function composeImage(targetCanvas, fmt, opts={}){
     tctx.fillRect(0,0,OUT_W,OUT_H);
   }
 
-  if(fmt.bg !== 'transparent' && editSettings.bg !== 'original'){
+  if(editSettings.bg !== 'original'){
     const fg = getProcessedFgCanvas() || lastFgCanvas;
-    const b = editSettings.brightness||0, c = editSettings.contrast||0, s = editSettings.saturation||0;
-    tctx.filter = `brightness(${1+b/100}) contrast(${1+c/100}) saturate(${1+s/100})`;
     if(fg) tctx.drawImage(fg, sx, sy, cropW, cropH, 0, 0, OUT_W, OUT_H);
-    tctx.filter = 'none';
-  } else if(fmt.bg === 'transparent'){
-    const fg = getProcessedFgCanvas() || lastFgCanvas;
-    const b = editSettings.brightness||0, c = editSettings.contrast||0, s = editSettings.saturation||0;
-    tctx.filter = `brightness(${1+b/100}) contrast(${1+c/100}) saturate(${1+s/100})`;
-    if(fg) tctx.drawImage(fg, sx, sy, cropW, cropH, 0, 0, OUT_W, OUT_H);
-    tctx.filter = 'none';
   }
 
   return {ctx:tctx, OUT_W, OUT_H, crop:{sx,sy,cropW,cropH}};
@@ -2853,9 +2891,37 @@ function updateFileThumbnails(){
     const img = document.getElementById(id);
     if(!img) return;
     const keepAlpha = id==='thumbPhotoPng' || id==='dlThumbPhotoPng';
+    const isDownloadHubThumb = id.startsWith('dl');
     img.src = canvasToLowResDataURL(canvasEl, 260, keepAlpha);
-    img.draggable = false;
-    img.oncontextmenu = ()=> false;
+    if(isDownloadHubThumb){
+      // Nach der Bezahlung DARF per Fingertipp-Halten gespeichert werden —
+      // das ist der wichtigste Fallback, falls der Download-Button auf dem
+      // jeweiligen Handy/Browser nicht zuverlässig auslöst.
+      img.draggable = true;
+      img.oncontextmenu = null;
+    } else {
+      // Vor der Bezahlung bewusst gesperrt (Vorschau, low-res, nicht zum
+      // Mitnehmen gedacht).
+      img.draggable = false;
+      img.oncontextmenu = ()=> false;
+    }
+  });
+}
+
+// Sobald die Dateien in voller Auflösung vorab erzeugt wurden, die
+// Download-Hub-Vorschaubilder auf die ECHTEN Dateien umstellen (statt der
+// stark verkleinerten Vorschau) — damit "Bild sichern" per Fingertipp-Halten
+// wirklich die volle Qualität liefert.
+function upgradeDownloadHubThumbsToFullRes(){
+  const map = [
+    ['dlThumbPhotoFull','photoFull'], ['dlThumbPhotoWeb','photoWeb'],
+    ['dlThumbPhotoPng','photoPng'], ['dlThumbPhoto50','photo50'],
+    ['dlThumbSheet35','sheet35'], ['dlThumbA4','a4']
+  ];
+  map.forEach(([imgId, key])=>{
+    const entry = fileBlobCache[key];
+    const img = document.getElementById(imgId);
+    if(entry && img) img.src = entry.url;
   });
 }
 
@@ -2908,35 +2974,10 @@ document.getElementById('ctrlCenter').addEventListener('click', ()=>{
   scheduleEditRender();
 });
 
-// Ziehen direkt im Vorschaubild zum Verschieben (Maus + Touch)
-(function(){
-  let dragging = false, lastX=0, lastY=0;
-  const wrap = document.getElementById('editorPreviewWrap');
-  function toWorkScale(){
-    // editCanvas ist OUT_H_BASE hoch und zeigt einen Ausschnitt der Breite
-    // cropW aus workCanvas — die Umrechnung Bildschirm-Px -> Quellbild-Px
-    // ergibt sich aus dem Verhältnis von Canvas-Anzeigebreite zu cropW.
-    const rect = editCanvas.getBoundingClientRect();
-    const cropW = lastCrop35 ? lastCrop35.cropW : workCanvas.width;
-    return cropW / rect.width;
-  }
-  function start(x,y){ dragging = true; lastX=x; lastY=y; document.getElementById('editorDragHint').style.opacity='0'; }
-  function move(x,y){
-    if(!dragging) return;
-    const scale = toWorkScale();
-    editSettings.offX -= (x-lastX)*scale;
-    editSettings.offY -= (y-lastY)*scale;
-    lastX=x; lastY=y;
-    scheduleEditRender();
-  }
-  function end(){ dragging = false; }
-  wrap.addEventListener('mousedown', e=>{ start(e.clientX, e.clientY); e.preventDefault(); });
-  window.addEventListener('mousemove', e=>{ if(dragging) move(e.clientX, e.clientY); });
-  window.addEventListener('mouseup', end);
-  wrap.addEventListener('touchstart', e=>{ const t=e.touches[0]; start(t.clientX, t.clientY); }, {passive:true});
-  wrap.addEventListener('touchmove', e=>{ const t=e.touches[0]; move(t.clientX, t.clientY); }, {passive:true});
-  wrap.addEventListener('touchend', end);
-})();
+// Hinweis: Das Vorschaubild ist bewusst NICHT per Finger/Maus verschiebbar
+// oder verzerrbar — Positionierung erfolgt ausschließlich über die
+// Pfeil-Buttons und den Zoom-Regler oben, damit auf dem Handy nichts aus
+// Versehen gestaucht oder gestreckt werden kann.
 
 // Hintergrund-Auswahl
 const bgColorInput = document.getElementById('ctrlBgColor');
@@ -3455,11 +3496,7 @@ function canvasToBlob(canvasEl, quality, mime='image/jpeg'){
   });
 }
 
-async function downloadAllFiles(){
-  // Alle Dateien werden in EIN ZIP gepackt und über einen einzigen Klick
-  // heruntergeladen. Grund: Browser blockieren mehrere per JavaScript
-  // ausgelöste Einzel-Downloads (z.B. per setTimeout) als Popup-/Download-
-  // Flut, sodass oft nur der letzte (das PDF) tatsächlich ankam.
+async function buildZipBlob(){
   const zip = new JSZip();
 
   const imageFiles = [
@@ -3487,19 +3524,38 @@ async function downloadAllFiles(){
     console.error('PDF-Erstellung fehlgeschlagen:', e);
   }
 
+  return zip.generateAsync({ type: 'blob' });
+}
+
+// ZIP wird — genau wie die Einzeldateien — im Hintergrund vorbereitet,
+// sobald der Download-Hub angezeigt wird, damit der Klick auf den ZIP-Button
+// synchron bleibt (iOS-Safari-Kompatibilität, siehe precomputeFileBlobs).
+let zipBlobEntry = null;
+async function precomputeZipBlob(){
   try{
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    const url = URL.createObjectURL(zipBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'mitarbeiterfoto-download.zip';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(()=> URL.revokeObjectURL(url), 5000);
+    const blob = await buildZipBlob();
+    zipBlobEntry = { blob, url: URL.createObjectURL(blob) };
   }catch(e){
-    console.error('ZIP-Erstellung fehlgeschlagen:', e);
+    console.error('ZIP-Vorab-Erstellung fehlgeschlagen:', e);
   }
+}
+
+async function downloadAllFiles(){
+  // Alle Dateien werden in EIN ZIP gepackt und über einen einzigen Klick
+  // heruntergeladen. Grund: Browser blockieren mehrere per JavaScript
+  // ausgelöste Einzel-Downloads (z.B. per setTimeout) als Popup-/Download-
+  // Flut, sodass oft nur der letzte (das PDF) tatsächlich ankam.
+  if(!zipBlobEntry){
+    // Falls noch nicht fertig vorbereitet: jetzt erzeugen (kann auf Safari im
+    // Einzelfall den Download-Dialog verzögern/verhindern — daher wird es
+    // normalerweise schon vorher im Hintergrund erledigt).
+    await precomputeZipBlob();
+  }
+  if(!zipBlobEntry){
+    alert('Der ZIP-Download konnte nicht erstellt werden. Bitte nutze stattdessen „Speichern" bei den einzelnen Dateien oben.');
+    return;
+  }
+  triggerDownload(zipBlobEntry.url, 'mitarbeiterfoto-download.zip');
 }
 
 // Zentrale Datei-Infos: einmal definiert, für ZIP, Einzeldownload, Teilen
@@ -3529,6 +3585,26 @@ function getFileName(key){
   return key === 'pdf' ? 'beschreibung-und-rechnung.pdf' : (getFileInfo(key)?.filename || 'datei');
 }
 
+// Alle Dateien VORAB (im Hintergrund) als Blob + Object-URL erzeugen, sobald
+// der Download-Hub angezeigt wird — NICHT erst beim Klick. Grund: Safari/iOS
+// bricht die "Nutzergeste"-Berechtigung ab, sobald vor a.click()/share() noch
+// awaits/Promises liegen (z.B. Canvas-Encoding). Liegt die Datei bereits
+// fertig im Cache, läuft der Klick-Handler komplett synchron durch.
+const fileBlobCache = {};
+async function precomputeFileBlobs(){
+  const keys = ['photoFull','photoWeb','photoPng','photo50','sheet35','a4','pdf'];
+  for(const key of keys){
+    try{
+      const blob = await getFileBlob(key);
+      if(blob){
+        fileBlobCache[key] = { blob, url: URL.createObjectURL(blob), name: getFileName(key) };
+      }
+    }catch(err){
+      console.warn('Vorab-Erzeugung fehlgeschlagen für', key, err);
+    }
+  }
+}
+
 let anyFileSavedOrShared = false;
 
 function markDownloadHubActivity(){
@@ -3542,17 +3618,32 @@ function markDownloadHubActivity(){
   }
 }
 
-async function saveSingleFile(key, btn){
-  const blob = await getFileBlob(key);
-  if(!blob){ console.warn('Datei nicht verfügbar:', key); return; }
-  const url = URL.createObjectURL(blob);
+// Löst den eigentlichen Download aus. WICHTIG: läuft nach Möglichkeit
+// komplett synchron (kein await davor), damit mobile Browser den Klick noch
+// als vertrauenswürdige Nutzeraktion erkennen. Öffnet zusätzlich einen
+// Fallback-Tab, falls der unsichtbare <a download> in seltenen Fällen vom
+// Browser ignoriert wird (z.B. sehr alte iOS-Versionen) — der Nutzer kann
+// die Datei dann per "Bild sichern" manuell speichern.
+function triggerDownload(url, filename){
   const a = document.createElement('a');
   a.href = url;
-  a.download = getFileName(key);
+  a.download = filename;
+  a.rel = 'noopener';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(()=> URL.revokeObjectURL(url), 5000);
+}
+
+async function saveSingleFile(key, btn){
+  let entry = fileBlobCache[key];
+  if(!entry){
+    // Noch nicht vorab erzeugt (z.B. sehr schneller Klick) — jetzt nachholen.
+    const blob = await getFileBlob(key);
+    if(!blob){ console.warn('Datei nicht verfügbar:', key); return; }
+    entry = { blob, url: URL.createObjectURL(blob), name: getFileName(key) };
+    fileBlobCache[key] = entry;
+  }
+  triggerDownload(entry.url, entry.name);
   markDownloadHubActivity();
   if(btn){
     const original = btn.textContent;
@@ -3562,11 +3653,24 @@ async function saveSingleFile(key, btn){
   }
 }
 
+// Öffnet die Datei zusätzlich in einem neuen Tab — nützlicher Fallback-Button
+// für Nutzer, bei denen der direkte Download nicht ankommt: im neuen Tab
+// kann das Bild/PDF per "Sichern unter" / langem Fingertipp gespeichert werden.
+function openFileInNewTab(key){
+  const entry = fileBlobCache[key];
+  if(!entry) return;
+  window.open(entry.url, '_blank', 'noopener');
+}
+
 async function shareSingleFile(key, btn){
-  const blob = await getFileBlob(key);
-  if(!blob) return;
-  const filename = getFileName(key);
-  const file = new File([blob], filename, { type: blob.type });
+  let entry = fileBlobCache[key];
+  if(!entry){
+    const blob = await getFileBlob(key);
+    if(!blob) return;
+    entry = { blob, url: URL.createObjectURL(blob), name: getFileName(key) };
+    fileBlobCache[key] = entry;
+  }
+  const file = new File([entry.blob], entry.name, { type: entry.blob.type });
 
   if(navigator.canShare && navigator.canShare({ files:[file] })){
     try{
@@ -3587,7 +3691,13 @@ function showDownloadHub(){
   document.getElementById('downloadHub').style.display = 'block';
   document.getElementById('leaveWarning').style.display = 'block';
 
+  // Im Hintergrund vorbereiten, damit spätere Klicks synchron bleiben.
+  precomputeFileBlobs().then(upgradeDownloadHubThumbsToFullRes);
+  precomputeZipBlob();
+
   document.getElementById('dlGrid').addEventListener('click', (e)=>{
+    const openBtn = e.target.closest('.dl-open-fallback');
+    if(openBtn){ openFileInNewTab(openBtn.dataset.file); return; }
     const btn = e.target.closest('.dl-btn');
     if(!btn) return;
     const key = btn.dataset.file;
