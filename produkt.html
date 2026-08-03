@@ -843,7 +843,13 @@ async function getSegmenter(onProgress){
   const { pipeline, env } = await loadTransformers();
   env.allowLocalModels = false;
   if (!segmenterPromise){
-    segmenterPromise = pipeline('background-removal', AI_MODEL_ID, { progress_callback: onProgress });
+    segmenterPromise = pipeline('background-removal', AI_MODEL_ID, {
+      progress_callback: onProgress,
+      device: 'wasm' // erzwingt WASM statt WebGPU: WebGPU lädt sonst standardmäßig
+                      // die volle fp32-Präzision (4x mehr Speicher), WASM automatisch
+                      // die komprimierte q8-Variante — und umgeht einen bekannten,
+                      // gemeldeten BEN2-WebGPU-Fehler (Geister-Artefakte in der Maske)
+    });
   }
   return segmenterPromise;
 }
