@@ -111,20 +111,10 @@
     touch-action:none;
   }
   .compare svg{width:100%;height:100%;display:block;}
-  .frame-before{position:absolute;inset:0;}
-  .frame-after-wrap{
-    position:absolute;inset:0 auto 0 0;
-    width:var(--pos,52%);
-    overflow:hidden;
-  }
-  .frame-after-wrap svg{
-    width:0;min-width:100%;
-  }
-  .compare > .frame-after-wrap svg{
-    width: var(--frame-w, 100%);
-  }
+  .frame-layer{position:absolute;inset:0;}
+  .frame-after{clip-path: inset(0 0 0 var(--pos, 50%));}
   .divider{
-    position:absolute;top:0;bottom:0;left:var(--pos,52%);
+    position:absolute;top:0;bottom:0;left:var(--pos,50%);
     width:0;pointer-events:none;
   }
   .divider::before{
@@ -132,7 +122,7 @@
     background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,0.15);
   }
   .grip{
-    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    position:absolute;top:50%;left:var(--pos,50%);transform:translate(-50%,-50%);
     width:40px;height:40px;border-radius:50%;background:#fff;
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 4px 10px rgba(0,0,0,0.25);
@@ -300,6 +290,12 @@
     width:28px;height:28px;display:flex;align-items:center;justify-content:center;
     cursor:pointer;font-size:0.9rem;
   }
+  .thumb-edit{
+    position:absolute;top:6px;right:40px;z-index:2;
+    background:rgba(255,255,255,0.92);border:1px solid var(--line);border-radius:8px;
+    width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:0.85rem;
+  }
   .thumb-name{
     position:absolute;bottom:6px;left:6px;z-index:2;font-family:var(--mono);font-size:0.6rem;
     background:rgba(255,255,255,0.85);padding:2px 6px;border-radius:4px;color:var(--muted);
@@ -380,6 +376,33 @@
   .field-check input{margin-top:3px;}
   .field-check a{color:var(--ink);}
 
+  /* ---------- EDITOR (Pinsel-Werkzeug) ---------- */
+  .editor-modal{max-width:640px;}
+  .editor-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:16px 0;}
+  .editor-tool-group{display:flex;gap:8px;}
+  .editor-mode-btn{
+    font-family:var(--body);font-size:0.85rem;padding:8px 14px;border-radius:8px;
+    border:1.5px solid var(--line);background:#fff;cursor:pointer;
+  }
+  .editor-mode-btn.active{border-color:var(--accent);color:var(--accent-dark);background:#FFF5F2;}
+  .editor-size{font-family:var(--mono);font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:8px;}
+  .editor-size input{width:110px;}
+  .editor-canvas-wrap{
+    background-color:#fff;
+    background-image:
+      linear-gradient(45deg, #E7E7E4 25%, transparent 25%),
+      linear-gradient(-45deg, #E7E7E4 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #E7E7E4 75%),
+      linear-gradient(-45deg, transparent 75%, #E7E7E4 75%);
+    background-size:16px 16px;
+    background-position:0 0, 0 8px, 8px -8px, -8px 0px;
+    border-radius:10px;overflow:hidden;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    touch-action:none;
+  }
+  #editorCanvas{width:100%;height:auto;display:block;cursor:crosshair;max-height:56vh;touch-action:none;}
+  .editor-hint{font-size:0.8rem;color:var(--muted);margin:12px 0 16px;}
+
   /* ---------- TOAST ---------- */
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -425,7 +448,7 @@
         <span>Nachher</span>
       </div>
       <div class="compare" id="compareBox">
-        <div class="frame-before">
+        <div class="frame-layer frame-before">
           <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foto einer Tasse auf einem unaufgeräumten Tisch, vor dem Freistellen">
             <rect width="600" height="400" fill="#D8CFC0"/>
             <rect x="0" y="260" width="600" height="140" fill="#B9A388"/>
@@ -441,7 +464,7 @@
             <ellipse cx="300" cy="230" rx="45" ry="12" fill="#FFFFFF"/>
           </svg>
         </div>
-        <div class="frame-after-wrap" id="afterWrap">
+        <div class="frame-layer frame-after" id="afterLayer">
           <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dieselbe Tasse freigestellt auf transparentem Hintergrund">
             <defs>
               <pattern id="checker" width="24" height="24" patternUnits="userSpaceOnUse">
@@ -458,7 +481,7 @@
         </div>
         <div class="divider"></div>
         <div class="grip" aria-hidden="true">↔</div>
-        <input type="range" min="0" max="100" value="52" class="compare-range" id="compareRange" aria-label="Vorher/Nachher-Vergleich verschieben">
+        <input type="range" min="0" max="100" value="50" class="compare-range" id="compareRange" aria-label="Vorher/Nachher-Vergleich verschieben">
       </div>
       <div class="compare-caption">
         <span>Original</span>
@@ -717,6 +740,30 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="editorOverlay" aria-hidden="true">
+  <div class="modal editor-modal" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+    <button class="modal-close" id="editorClose" aria-label="Schließen">✕</button>
+    <p class="section-kicker">Bearbeiten</p>
+    <h3 id="editorTitle" style="font-family:var(--display);font-weight:400;font-size:1.6rem;margin:0 0 4px;">Manuell nachbessern</h3>
+    <div class="editor-toolbar">
+      <div class="editor-tool-group">
+        <button type="button" class="editor-mode-btn active" data-mode="erase">🧽 Entfernen</button>
+        <button type="button" class="editor-mode-btn" data-mode="restore">🖌️ Wiederherstellen</button>
+      </div>
+      <label class="editor-size">Pinselgröße
+        <input type="range" min="6" max="80" value="24" id="brushSize">
+      </label>
+      <button type="button" class="btn btn-ghost" id="editorUndo">Rückgängig</button>
+      <button type="button" class="btn btn-ghost" id="editorReset">Zurücksetzen</button>
+    </div>
+    <div class="editor-canvas-wrap">
+      <canvas id="editorCanvas"></canvas>
+    </div>
+    <p class="editor-hint">"Entfernen" malt zusätzlichen Hintergrund weg, "Wiederherstellen" holt vom Original zurück, was die KI fälschlich entfernt hat.</p>
+    <button type="button" class="btn btn-primary" id="editorApply" style="width:100%;justify-content:center;">Übernehmen</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -827,6 +874,7 @@ async function processItem(item){
   try{
     const canvas = await runAI(item.sourceUrl, updateAIStatus);
     item.cutout = canvas;
+    item.originalCanvas = await buildOriginalCanvas(item.sourceUrl, canvas.width, canvas.height);
     item.status = 'done';
     hideAIStatus();
   }catch(err){
@@ -836,6 +884,20 @@ async function processItem(item){
     showAIErrorBanner();
   }
   renderThumbs();
+}
+
+function buildOriginalCanvas(url, w, h){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c);
+    };
+    img.onerror = ()=> reject(new Error('Originalbild konnte nicht geladen werden'));
+    img.src = url;
+  });
 }
 
 async function saveSettings(){ await Store.set('toolSettings', toolSettings); }
@@ -925,6 +987,126 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e)=>{
   showToast((target === 'ultimate' ? 'Ultimate' : 'Pro') + ' freigeschaltet 🎉');
   e.target.reset();
 });
+
+/* ---------- Editor: manuell mit dem Pinsel nachbessern ---------- */
+const editorOverlay = document.getElementById('editorOverlay');
+const editorCanvas = document.getElementById('editorCanvas');
+const ectx = editorCanvas.getContext('2d');
+let currentEditItem = null;
+let editorInitialSnapshot = null;
+let editorMode = 'erase';
+let brushSize = 24;
+let undoStack = [];
+let drawing = false;
+let lastPoint = null;
+
+function openEditor(item){
+  if (!item.cutout) return;
+  currentEditItem = item;
+  editorCanvas.width = item.cutout.width;
+  editorCanvas.height = item.cutout.height;
+  ectx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+  ectx.drawImage(item.cutout, 0, 0);
+  editorInitialSnapshot = ectx.getImageData(0, 0, editorCanvas.width, editorCanvas.height);
+  undoStack = [];
+  editorOverlay.classList.add('open');
+  editorOverlay.setAttribute('aria-hidden', 'false');
+}
+function closeEditor(){
+  editorOverlay.classList.remove('open');
+  editorOverlay.setAttribute('aria-hidden', 'true');
+  currentEditItem = null;
+  drawing = false;
+  lastPoint = null;
+}
+document.getElementById('editorClose').addEventListener('click', closeEditor);
+editorOverlay.addEventListener('click', (e)=>{ if (e.target === editorOverlay) closeEditor(); });
+
+document.querySelectorAll('.editor-mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.editor-mode-btn').forEach(b=> b.classList.remove('active'));
+    btn.classList.add('active');
+    editorMode = btn.dataset.mode;
+  });
+});
+document.getElementById('brushSize').addEventListener('input', (e)=>{
+  brushSize = Number(e.target.value);
+});
+
+function pushUndoState(){
+  undoStack.push(ectx.getImageData(0, 0, editorCanvas.width, editorCanvas.height));
+  if (undoStack.length > 15) undoStack.shift();
+}
+document.getElementById('editorUndo').addEventListener('click', ()=>{
+  if (!undoStack.length) return;
+  ectx.putImageData(undoStack.pop(), 0, 0);
+});
+document.getElementById('editorReset').addEventListener('click', ()=>{
+  if (editorInitialSnapshot) ectx.putImageData(editorInitialSnapshot, 0, 0);
+  undoStack = [];
+});
+document.getElementById('editorApply').addEventListener('click', ()=>{
+  if (!currentEditItem) return;
+  const applied = document.createElement('canvas');
+  applied.width = editorCanvas.width;
+  applied.height = editorCanvas.height;
+  applied.getContext('2d').drawImage(editorCanvas, 0, 0);
+  currentEditItem.cutout = applied;
+  closeEditor();
+  renderThumbs();
+  showToast('Bearbeitung übernommen');
+});
+
+function getCanvasPos(e){
+  const rect = editorCanvas.getBoundingClientRect();
+  const scaleX = editorCanvas.width / rect.width;
+  const scaleY = editorCanvas.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
+}
+function stampAt(x, y){
+  const r = brushSize / 2;
+  ectx.save();
+  if (editorMode === 'erase'){
+    ectx.globalCompositeOperation = 'destination-out';
+    ectx.beginPath();
+    ectx.arc(x, y, r, 0, Math.PI * 2);
+    ectx.fill();
+  } else if (currentEditItem && currentEditItem.originalCanvas){
+    ectx.beginPath();
+    ectx.arc(x, y, r, 0, Math.PI * 2);
+    ectx.clip();
+    ectx.drawImage(currentEditItem.originalCanvas, 0, 0);
+  }
+  ectx.restore();
+}
+function strokeTo(x, y){
+  const last = lastPoint || { x, y };
+  const dist = Math.hypot(x - last.x, y - last.y);
+  const steps = Math.max(1, Math.ceil(dist / 3));
+  for (let i = 1; i <= steps; i++){
+    const t = i / steps;
+    stampAt(last.x + (x - last.x) * t, last.y + (y - last.y) * t);
+  }
+  lastPoint = { x, y };
+}
+editorCanvas.addEventListener('pointerdown', (e)=>{
+  drawing = true;
+  editorCanvas.setPointerCapture(e.pointerId);
+  const p = getCanvasPos(e);
+  lastPoint = p;
+  pushUndoState();
+  stampAt(p.x, p.y);
+});
+editorCanvas.addEventListener('pointermove', (e)=>{
+  if (!drawing) return;
+  e.preventDefault();
+  const p = getCanvasPos(e);
+  strokeTo(p.x, p.y);
+});
+window.addEventListener('pointerup', ()=>{ drawing = false; lastPoint = null; });
 
 /* ---------- Toast ---------- */
 function showToast(msg){
@@ -1023,6 +1205,18 @@ function renderThumbs(){
       });
       thumb.appendChild(dl);
 
+      const editBtn = document.createElement('button');
+      editBtn.className = 'thumb-edit';
+      editBtn.type = 'button';
+      editBtn.title = 'Manuell bearbeiten';
+      editBtn.setAttribute('aria-label', 'Manuell bearbeiten');
+      editBtn.textContent = '✏️';
+      editBtn.addEventListener('click', ()=>{
+        if (plan !== 'ultimate'){ openCheckout('ultimate'); return; }
+        openEditor(item);
+      });
+      thumb.appendChild(editBtn);
+
       const nameTag = document.createElement('span');
       nameTag.className = 'thumb-name';
       nameTag.textContent = item.name;
@@ -1041,9 +1235,6 @@ function renderThumbs(){
 
 function renderComposite(item){
   const src = item.cutout;
-  const filter = (plan === 'ultimate')
-    ? `brightness(${toolSettings.brightness}%) contrast(${toolSettings.contrast}%)`
-    : 'none';
   let w = src.width, h = src.height;
   if (plan === 'free'){
     const maxSide = Math.max(w, h);
@@ -1060,13 +1251,30 @@ function renderComposite(item){
     ctx.fillStyle = toolSettings.bg;
     ctx.fillRect(0, 0, w, h);
   }
-  ctx.filter = filter;
   ctx.drawImage(src, 0, 0, w, h);
-  ctx.filter = 'none';
+  if (plan === 'ultimate' && (toolSettings.brightness !== 100 || toolSettings.contrast !== 100)){
+    applyBrightnessContrast(ctx, w, h, toolSettings.brightness, toolSettings.contrast);
+  }
   if (plan === 'free'){
     drawWatermark(ctx, w, h);
   }
   return out;
+}
+
+function applyBrightnessContrast(ctx, w, h, brightnessPct, contrastPct){
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  const brightness = brightnessPct / 100;
+  const contrast = contrastPct / 100;
+  for (let i = 0; i < data.length; i += 4){
+    // Alpha (data[i+3]) bleibt unverändert, damit die Freistellung erhalten bleibt
+    for (let c = 0; c < 3; c++){
+      let v = data[i + c] * brightness;
+      v = (v - 128) * contrast + 128;
+      data[i + c] = v < 0 ? 0 : (v > 255 ? 255 : v);
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
 }
 
 function drawWatermark(ctx, w, h){
@@ -1098,6 +1306,12 @@ function downloadName(item){
 }
 
 /* ---------- Individueller Hintergrund ---------- */
+function debounce(fn, delay){
+  let t;
+  return (...args)=>{ clearTimeout(t); t = setTimeout(()=> fn(...args), delay); };
+}
+const renderThumbsSoon = debounce(renderThumbs, 60);
+
 document.querySelectorAll('.swatch').forEach(sw=>{
   sw.addEventListener('click', ()=>{
     toolSettings.bg = sw.dataset.color;
@@ -1111,19 +1325,19 @@ document.getElementById('customColor').addEventListener('input', (e)=>{
   toolSettings.bg = e.target.value;
   document.querySelectorAll('.swatch').forEach(s=> s.classList.remove('active'));
   saveSettings();
-  renderThumbs();
+  renderThumbsSoon();
 });
 
 /* ---------- Bearbeitungstools ---------- */
 document.getElementById('brightnessRange').addEventListener('input', (e)=>{
   toolSettings.brightness = Number(e.target.value);
   saveSettings();
-  renderThumbs();
+  renderThumbsSoon();
 });
 document.getElementById('contrastRange').addEventListener('input', (e)=>{
   toolSettings.contrast = Number(e.target.value);
   saveSettings();
-  renderThumbs();
+  renderThumbsSoon();
 });
 
 /* ---------- Batch-Export als ZIP (echte freigestellte Fotos) ---------- */
@@ -1171,13 +1385,6 @@ const box = document.getElementById('compareBox');
 function updateCompare(v){ box.style.setProperty('--pos', v + '%'); }
 range.addEventListener('input', (e) => updateCompare(e.target.value));
 updateCompare(range.value);
-const afterWrap = document.getElementById('afterWrap');
-function syncWidth(){
-  const full = box.clientWidth;
-  afterWrap.querySelector('svg').style.width = full + 'px';
-}
-window.addEventListener('resize', syncWidth);
-syncWidth();
 </script>
 
 </body>
