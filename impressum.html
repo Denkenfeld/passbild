@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>fotoselbermachen.de – KI-Fototools für jeden Anlass</title>
+<style>
+  :root {
+    --bg: #f7f3ed;
+    --card: #fffdfa;
+    --text: #3d3530;
+    --text-soft: #7a6e65;
+    --accent: #d97855;
+    --accent-dark: #c15f3c;
+    --line: #e7ddd0;
+    --c-bio: #d97855;
+    --c-team: #4f7f7a;
+    --c-produkt: #c99a3c;
+    --c-schule: #6a7bbf;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* ---------- HEADER / LOGO ---------- */
+  header {
+    padding: 36px 20px 22px;
+    text-align: center;
+  }
+
+  .logo-svg {
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+  }
+
+  .brand-text {
+    font-size: 30px;
+    font-weight: 300;
+    fill: var(--text);
+    letter-spacing: 1.5px;
+  }
+
+  .brand-bold {
+    font-weight: 900;
+    fill: var(--accent);
+  }
+
+  .logo-line {
+    stroke-dasharray: 460;
+    stroke-dashoffset: 460;
+    animation: drawLine 0.8s cubic-bezier(0.4,0,0.2,1) forwards;
+  }
+
+  @keyframes drawLine {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .tagline {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-soft);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(-14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .intro {
+    max-width: 480px;
+    margin: 18px auto 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-soft);
+    opacity: 0;
+    animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.95s forwards;
+  }
+
+  /* ---------- CARD GRID ---------- */
+  main {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 8px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  @media (min-width: 720px) {
+    main {
+      max-width: 920px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 18px 18px 20px;
+    box-shadow: 0 2px 10px rgba(61,53,48,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .icon-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 260px;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  /* Viewfinder-Ecken: das wiederkehrende Signatur-Element */
+  .corner {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--corner-color, var(--accent));
+    opacity: 0.85;
+    animation: pulseCorner 2.2s ease-in-out infinite;
+  }
+  .corner.tl { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 6px 0 0 0; }
+  .corner.tr { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 6px 0 0; animation-delay: 0.15s; }
+  .corner.bl { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 6px; animation-delay: 0.3s; }
+  .corner.br { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 6px 0; animation-delay: 0.45s; }
+
+  @keyframes pulseCorner {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50%      { opacity: 1;    transform: scale(1.12); }
+  }
+
+  .icon-svg { width: 78%; height: 78%; }
+
+  .card h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 4px 0 6px;
+    letter-spacing: 0.2px;
+  }
+
+  .card p {
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--text-soft);
+    margin: 0 0 16px;
+    max-width: 30ch;
+  }
+
+  .cta {
+    display: inline-block;
+    text-decoration: none;
+    background: var(--accent);
+    color: #fff8f3;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 11px 26px;
+    border-radius: 999px;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .cta:hover, .cta:focus-visible { background: var(--accent-dark); transform: translateY(-1px); }
+  .cta:active { transform: translateY(0); }
+
+  footer {
+    text-align: center;
+    padding: 10px 20px 20px;
+    font-size: 12px;
+    color: var(--text-soft);
+  }
+
+  .legal-links {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 4px;
+    font-size: 12px;
+  }
+
+  .legal-links button {
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    font: inherit;
+    color: var(--text-soft);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .legal-links button:hover,
+  .legal-links button:focus-visible {
+    color: var(--accent-dark);
+  }
+  .legal-links .sep {
+    color: var(--line);
+  }
+
+  /* ---------- RECHTS-POPUP ---------- */
+  .legal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(61,53,48,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .legal-overlay.open { display: flex; }
+
+  .legal-modal {
+    background: var(--card);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 640px;
+    height: min(80vh, 720px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(61,53,48,0.25);
+  }
+
+  .legal-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .legal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--text-soft);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+  }
+  .legal-close:hover, .legal-close:focus-visible {
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .legal-modal iframe {
+    flex: 1;
+    width: 100%;
+    border: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .logo-line, .tagline, .intro, .corner { animation: none !important; opacity: 1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <svg class="logo-svg" viewBox="0 0 520 60">
+    <text x="50%" y="32" text-anchor="middle" class="brand-text">
+      FOTO<tspan class="brand-bold">SELBER</tspan>MACHEN<tspan class="brand-bold">.</tspan>DE
+    </text>
+    <line class="logo-line" x1="30" y1="46" x2="490" y2="46" stroke="#d97855" stroke-width="2"/>
+  </svg>
+  <div class="tagline">4 Foto-Apps. Ein Handy. Fertig in Sekunden.</div>
+  <p class="intro">Wähle deine Foto-App und mach professionelle Fotos ganz einfach selbst – mit KI, direkt am Handy.</p>
+</header>
+
+<main>
+
+  <!-- 1: Biometrische Fotos -->
+  <div class="card">
+    <div class="icon-wrap">
+      <span class="corner tl" style="--corner-color: var(--c-bio)"></span>
+      <span class="corner tr" style="--corner-color: var(--c-bio)"></span>
+      <span class="corner bl" style="--corner-color: var(--c-bio)"></span>
+      <span class="corner br" style="--corner-color: var(--c-bio)"></span>
+      <svg class="icon-svg" viewBox="0 0 200 150">
+        <rect x="60" y="18" width="80" height="104" rx="6" fill="none" stroke="var(--c-bio)" stroke-width="3"/>
+        <circle cx="100" cy="58" r="20" fill="var(--c-bio)" opacity="0.15"/>
+        <circle cx="100" cy="52" r="14" fill="none" stroke="var(--c-bio)" stroke-width="3"/>
+        <path d="M76 108c0-16 11-26 24-26s24 10 24 26" fill="none" stroke="var(--c-bio)" stroke-width="3" stroke-linecap="round"/>
+        <line x1="60" y1="40" x2="140" y2="40" stroke="var(--c-bio)" stroke-width="1.5" opacity="0.4"/>
+        <line x1="100" y1="18" x2="100" y2="122" stroke="var(--c-bio)" stroke-width="1.5" opacity="0.3" stroke-dasharray="3 4"/>
+      </svg>
+    </div>
+    <h2>Biometrische Fotos</h2>
+    <p>Für Führerschein, Visa und offizielle Dokumente in 5 Sekunden – KI geprüft nach amtlichen Normen.</p>
+    <a class="cta" href="https://fotoselbermachen.de/biometrisch">Jetzt selber machen</a>
+  </div>
+
+  <!-- 2: Mitarbeiterfotos -->
+  <div class="card">
+    <div class="icon-wrap">
+      <span class="corner tl" style="--corner-color: var(--c-team)"></span>
+      <span class="corner tr" style="--corner-color: var(--c-team)"></span>
+      <span class="corner bl" style="--corner-color: var(--c-team)"></span>
+      <span class="corner br" style="--corner-color: var(--c-team)"></span>
+      <svg class="icon-svg" viewBox="0 0 200 150">
+        <rect x="30" y="24" width="46" height="60" rx="4" fill="none" stroke="var(--c-team)" stroke-width="2.5"/>
+        <rect x="77" y="16" width="46" height="60" rx="4" fill="var(--c-team)" opacity="0.12" stroke="var(--c-team)" stroke-width="2.5"/>
+        <rect x="124" y="24" width="46" height="60" rx="4" fill="none" stroke="var(--c-team)" stroke-width="2.5"/>
+        <circle cx="53" cy="44" r="8" fill="none" stroke="var(--c-team)" stroke-width="2.5"/>
+        <path d="M41 70c0-8 6-13 12-13s12 5 12 13" fill="none" stroke="var(--c-team)" stroke-width="2.5"/>
+        <circle cx="100" cy="36" r="9" fill="none" stroke="var(--c-team)" stroke-width="2.5"/>
+        <path d="M87 64c0-9 6-14 13-14s13 5 13 14" fill="none" stroke="var(--c-team)" stroke-width="2.5"/>
+        <circle cx="147" cy="44" r="8" fill="none" stroke="var(--c-team)" stroke-width="2.5"/>
+        <path d="M135 70c0-8 6-13 12-13s12 5 12 13" fill="none" stroke="var(--c-team)" stroke-width="2.5"/>
+      </svg>
+    </div>
+    <h2>Mitarbeiterfotos</h2>
+    <p>Einheitliche Team-Porträts für Website &amp; Ausweis – gleicher Look für alle.</p>
+    <a class="cta" href="https://fotoselbermachen.de/mitarbeiter">Jetzt selber machen</a>
+  </div>
+
+  <!-- 3: Produktfotos -->
+  <div class="card">
+    <div class="icon-wrap">
+      <span class="corner tl" style="--corner-color: var(--c-produkt)"></span>
+      <span class="corner tr" style="--corner-color: var(--c-produkt)"></span>
+      <span class="corner bl" style="--corner-color: var(--c-produkt)"></span>
+      <span class="corner br" style="--corner-color: var(--c-produkt)"></span>
+      <svg class="icon-svg" viewBox="0 0 200 150">
+        <path d="M60 60 L100 40 L140 60 L140 100 L100 120 L60 100 Z" fill="var(--c-produkt)" opacity="0.14" stroke="var(--c-produkt)" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M60 60 L100 80 L140 60" fill="none" stroke="var(--c-produkt)" stroke-width="3" stroke-linejoin="round"/>
+        <line x1="100" y1="80" x2="100" y2="120" stroke="var(--c-produkt)" stroke-width="3"/>
+        <g>
+          <path d="M148 44l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="var(--c-produkt)"/>
+        </g>
+        <g>
+          <path d="M52 34l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="var(--c-produkt)" opacity="0.7"/>
+        </g>
+      </svg>
+    </div>
+    <h2>Produktfotos</h2>
+    <p>Shop-Fotos freigestellt &amp; ausgeleuchtet – ganz ohne Studio.</p>
+    <a class="cta" href="https://fotoselbermachen.de/produkt">Jetzt selber machen</a>
+  </div>
+
+  <!-- 4: Schulfotos -->
+  <div class="card">
+    <div class="icon-wrap">
+      <span class="corner tl" style="--corner-color: var(--c-schule)"></span>
+      <span class="corner tr" style="--corner-color: var(--c-schule)"></span>
+      <span class="corner bl" style="--corner-color: var(--c-schule)"></span>
+      <span class="corner br" style="--corner-color: var(--c-schule)"></span>
+      <svg class="icon-svg" viewBox="0 0 200 150">
+        <circle cx="60" cy="46" r="9" fill="none" stroke="var(--c-schule)" stroke-width="2.5"/>
+        <path d="M48 76c0-9 6-15 12-15s12 6 12 15" fill="none" stroke="var(--c-schule)" stroke-width="2.5"/>
+        <circle cx="100" cy="38" r="10" fill="none" stroke="var(--c-schule)" stroke-width="2.5"/>
+        <path d="M86 72c0-10 7-16 14-16s14 6 14 16" fill="none" stroke="var(--c-schule)" stroke-width="2.5"/>
+        <circle cx="140" cy="46" r="9" fill="none" stroke="var(--c-schule)" stroke-width="2.5"/>
+        <path d="M128 76c0-9 6-15 12-15s12 6 12 15" fill="none" stroke="var(--c-schule)" stroke-width="2.5"/>
+        <line x1="38" y1="90" x2="162" y2="90" stroke="var(--c-schule)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M70 108h60" stroke="var(--c-schule)" stroke-width="2" opacity="0.4" stroke-dasharray="2 5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h2>Schulfotos</h2>
+    <p>Schülerfotos bis zu 90&nbsp;% günstiger: Mit diesem System braucht es keinen Schulfotografen mehr.</p>
+    <a class="cta" href="https://fotoselbermachen.de/fotopause">Jetzt selber machen</a>
+  </div>
+
+</main>
+
+<footer>
+  fotoselbermachen.de – KI-Fototools für jeden Anlass
+  <nav class="legal-links" aria-label="Rechtliches">
+    <button type="button" onclick="openLegal('agb')">AGB</button>
+    <span class="sep">·</span>
+    <button type="button" onclick="openLegal('datenschutz')">Datenschutz</button>
+    <span class="sep">·</span>
+    <button type="button" onclick="openLegal('impressum')">Impressum</button>
+    <span class="sep">·</span>
+    <button type="button" onclick="openLegal('widerruf')">Widerruf</button>
+  </nav>
+</footer>
+
+<div class="legal-overlay" id="legalOverlay" onclick="if(event.target===this) closeLegal()">
+  <div class="legal-modal" role="dialog" aria-modal="true" aria-label="Rechtstexte">
+    <div class="legal-modal-head">
+      <button type="button" class="legal-close" aria-label="Schließen" onclick="closeLegal()">&times;</button>
+    </div>
+    <iframe id="legalFrame" src="" title="Rechtstexte"></iframe>
+  </div>
+</div>
+
+<script>
+  function openLegal(section) {
+    var overlay = document.getElementById('legalOverlay');
+    var frame = document.getElementById('legalFrame');
+    frame.src = 'rechtstexte.html#' + section;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLegal() {
+    var overlay = document.getElementById('legalOverlay');
+    document.getElementById('legalFrame').src = '';
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeLegal();
+  });
+</script>
+
+</body>
+</html>
