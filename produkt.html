@@ -811,7 +811,7 @@ const PLAN_PRICES = { pro:'4,99 €/Monat', ultimate:'12,99 €/Monat' };
    "small"-Modell-Preset (stark komprimiert). Kein Server, kein Upload.
    Modell-Dateien werden beim ersten Foto einmalig geladen und vom
    Browser zwischengespeichert. ---------- */
-const IMGLY_MODULE_URL = 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/index.mjs';
+const IMGLY_MODULE_URL = 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm'; // +esm statt direktem dist-Pfad: bündelt interne Abhängigkeiten (z.B. onnxruntime-web) automatisch mit ein, sonst kann der Browser ohne Bundler den bloßen Paketnamen nicht auflösen
 let imglyLib = null;
 let aiEverLoaded = false;
 
