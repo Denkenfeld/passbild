@@ -804,24 +804,16 @@ let uploadedItems = []; // { id, name, sourceUrl, status: 'processing'|'done'|'e
 let itemIdCounter = 0;
 const PLAN_PRICES = { pro:'4,99 €/Monat', ultimate:'12,99 €/Monat' };
 
-/* ---------- KI: Transformers.js lädt ein echtes Segmentierungsmodell
-   und führt es direkt im Browser aus (WebGPU, sonst WASM). Kein Server,
-   kein Upload. Beim ersten Foto wird das Modell einmalig geladen und
-   danach vom Browser zwischengespeichert. ---------- */
-const AI_MODEL_ID = 'onnx-community/BEN2-ONNX'; // exakt das Modell, das offiziell für Transformers.js 3.4.0 dokumentiert ist (ormbg-ONNX lieferte keine echte Maske — vermutlich ein Versions-Kompatibilitätsproblem)
-let transformersLib = null;
-let segmenterPromise = null;
+/* ---------- KI: @imgly/background-removal — eine Bibliothek, die
+   ausschließlich für Hintergrund-Freistellung im Browser gebaut ist
+   (nicht ein Universal-ML-Framework). Läuft komplett lokal, standardmäßig
+   auf CPU/WASM, mit einem extra für ressourcenschwache Geräte gedachten
+   "small"-Modell-Preset (stark komprimiert). Kein Server, kein Upload.
+   Modell-Dateien werden beim ersten Foto einmalig geladen und vom
+   Browser zwischengespeichert. ---------- */
+const IMGLY_MODULE_URL = 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/index.mjs';
+let imglyLib = null;
 let aiEverLoaded = false;
-
-// Sicherheitsgrenze gegen Handy-Abstürze: Handyfotos sind oft riesig (12–48MP),
-// die KI läuft deshalb auf einer verkleinerten Kopie. Das Ergebnis liegt in
-// dieser Auflösung vor (nicht in der vollen Fotoauflösung) — für Marktplatz-
-// Fotos (Vinted, eBay Kleinanzeigen, Etsy) ist das mehr als ausreichend.
-const AI_INFERENCE_MAX_SIDE = isMobileDevice() ? 768 : 1280;
-
-function isMobileDevice(){
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
 
 function loadImageElement(url){
   return new Promise((resolve, reject)=>{
@@ -832,32 +824,29 @@ function loadImageElement(url){
   });
 }
 
-async function loadTransformers(){
-  if (!transformersLib){
-    transformersLib = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.0');
+async function loadImgly(){
+  if (!imglyLib){
+    imglyLib = await import(IMGLY_MODULE_URL);
   }
-  return transformersLib;
-}
-
-async function getSegmenter(onProgress){
-  const { pipeline, env } = await loadTransformers();
-  env.allowLocalModels = false;
-  if (!segmenterPromise){
-    segmenterPromise = pipeline('background-removal', AI_MODEL_ID, {
-      progress_callback: onProgress,
-      device: 'wasm' // erzwingt WASM statt WebGPU: WebGPU lädt sonst standardmäßig
-                      // die volle fp32-Präzision (4x mehr Speicher), WASM automatisch
-                      // die komprimierte q8-Variante — und umgeht einen bekannten,
-                      // gemeldeten BEN2-WebGPU-Fehler (Geister-Artefakte in der Maske)
-    });
-  }
-  return segmenterPromise;
+  return imglyLib;
 }
 
 async function runAI(objectUrl, onProgress){
-  const segmenter = await getSegmenter(onProgress);
-  const output = await segmenter(objectUrl);
-  return await output[0].toCanvas();
+  const { removeBackground } = await loadImgly();
+  const blob = await removeBackground(objectUrl, {
+    device: 'cpu',   // vorhersehbarer als GPU/WebGPU, Standard der Bibliothek
+    model: 'small',  // isnet_quint8: kleinste, speicherschonendste Variante — extra für Handys gedacht
+    output: { format: 'image/png' },
+    progress: (key, current, total) => {
+      onProgress({ progress: total ? Math.round((current / total) * 100) : 0 });
+    }
+  });
+  const img = await loadImageElement(URL.createObjectURL(blob));
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  canvas.getContext('2d').drawImage(img, 0, 0);
+  return canvas;
 }
 
 // Prüft, ob die KI wirklich etwas maskiert hat (Alpha-Kanal variiert spürbar),
@@ -911,25 +900,8 @@ async function processItem(item){
   item.status = 'processing';
   item.errorMsg = '';
   renderThumbs();
-  let aiUrl = null;
   try{
-    const original = await loadImageElement(item.sourceUrl);
-    const srcW = original.naturalWidth, srcH = original.naturalHeight;
-
-    // Für die KI verkleinern — das ist der Hauptgrund für Handy-Abstürze:
-    // Handyfotos sind riesig, und die KI auf voller Auflösung laufen zu lassen
-    // kann den Speicher sprengen. PNG statt JPEG, um keine Kompressions-
-    // Artefakte in die Segmentierung einzubringen.
-    const aiScale = Math.min(1, AI_INFERENCE_MAX_SIDE / Math.max(srcW, srcH));
-    const aiW = Math.max(1, Math.round(srcW * aiScale));
-    const aiH = Math.max(1, Math.round(srcH * aiScale));
-    const aiCanvas = document.createElement('canvas');
-    aiCanvas.width = aiW; aiCanvas.height = aiH;
-    aiCanvas.getContext('2d').drawImage(original, 0, 0, aiW, aiH);
-    const aiBlob = await new Promise(resolve => aiCanvas.toBlob(resolve, 'image/png'));
-    aiUrl = URL.createObjectURL(aiBlob);
-
-    item.cutout = await runAI(aiUrl, updateAIStatus);
+    item.cutout = await runAI(item.sourceUrl, updateAIStatus);
     if (!hasMeaningfulAlpha(item.cutout)){
       throw new Error('Die KI hat keinen erkennbaren Ausschnitt geliefert (Bild blieb komplett undurchsichtig).');
     }
@@ -941,8 +913,6 @@ async function processItem(item){
     item.status = 'error';
     item.errorMsg = (err && err.message) ? err.message : 'Freistellen fehlgeschlagen';
     showAIErrorBanner();
-  } finally {
-    if (aiUrl) URL.revokeObjectURL(aiUrl);
   }
   renderThumbs();
 }

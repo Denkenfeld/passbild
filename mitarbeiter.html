@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="theme-color" content="#f6f4ef">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>fotoselbermachen.de — Mitarbeiterfoto mit KI selber am Handy machen</title>
 <style>
 :root{
@@ -1101,10 +1104,14 @@ body{
 }
 .editor-preview-wrap{
   position:sticky;
-  top:calc(var(--topbar-h) + 8px);
+  top:calc(var(--topbar-h) + 4px);
   z-index:20;
-  margin:0 auto 14px;
-  max-width:280px;
+  margin:0 auto 18px;
+  max-width:230px;
+  max-height:30vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   border-radius:18px;
   overflow:hidden;
   box-shadow:0 12px 32px rgba(31,36,32,.18);
@@ -1116,7 +1123,9 @@ body{
 }
 .editor-preview-wrap canvas{
   display:block;
-  width:100%;
+  max-width:100%;
+  max-height:30vh;
+  width:auto;
   height:auto;
   user-select:none;
   -webkit-user-select:none;
@@ -1208,6 +1217,7 @@ body{
   width:26px; height:26px;
   border-radius:50%;
   display:block;
+  overflow:hidden;
 }
 .bg-swatch-rainbow{
   background:conic-gradient(red,orange,yellow,green,blue,violet,red);
@@ -1267,6 +1277,19 @@ body{
   white-space:nowrap;
   border:0;
   opacity:0;
+}
+.color-input-overlay{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  padding:0;
+  margin:0;
+  border:0;
+  opacity:0;
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
 }
 </style>
 </head>
@@ -1577,21 +1600,24 @@ body{
             <span class="bg-swatch-fill" style="background:#ffffff;border:1px solid #ddd;"></span>
             <span>Weiß</span>
           </button>
-          <button type="button" class="bg-swatch" data-bg="color">
-            <span class="bg-swatch-fill bg-swatch-rainbow"></span>
+          <label class="bg-swatch" data-bg="color" id="bgSwatchColor">
+            <span class="bg-swatch-fill bg-swatch-rainbow" style="position:relative;">
+              <input type="color" id="ctrlBgColor" value="#e9e0cf" class="color-input-overlay">
+            </span>
             <span>Individuell</span>
-          </button>
+          </label>
           <button type="button" class="bg-swatch" data-bg="original">
             <span class="bg-swatch-fill bg-swatch-photo"></span>
             <span>Original</span>
           </button>
-          <button type="button" class="bg-swatch" data-bg="custom">
-            <span class="bg-swatch-fill bg-swatch-upload">＋</span>
+          <label class="bg-swatch" data-bg="custom" id="bgSwatchCustom">
+            <span class="bg-swatch-fill bg-swatch-upload" style="position:relative;">
+              ＋
+              <input type="file" id="ctrlBgImageInput" accept="image/*" class="color-input-overlay">
+            </span>
             <span>Eigenes Bild</span>
-          </button>
+          </label>
         </div>
-        <input type="color" id="ctrlBgColor" value="#e9e0cf" class="visually-hidden-input">
-        <input type="file" id="ctrlBgImageInput" accept="image/*" style="display:none;">
         <p class="editor-hint-text">Ein transparentes PNG wird bei jedem Foto automatisch mit erzeugt.</p>
       </div>
 
@@ -1615,7 +1641,7 @@ body{
         </div>
         <div class="editor-row">
           <span class="editor-row-label">Haarkanten</span>
-          <input type="range" id="ctrlHair" min="0" max="100" value="20">
+          <input type="range" id="ctrlHair" min="0" max="100" value="0">
         </div>
         <p class="editor-hint-text">„Haarkanten" glättet unruhige Kanten im Haaransatz, falls die Freistellung dort mal nicht perfekt sitzt.</p>
       </div>
@@ -1853,7 +1879,7 @@ const editSettings = {
   contrast: 0,        // -40..40
   saturation: 0,       // -40..40
   smooth: 0,            // 0..100
-  hairSoften: 20        // 0..100 — glättet unruhige Haarkanten der Freistellung
+  hairSoften: 0          // 0..100 — glättet unruhige Haarkanten der Freistellung (Standard: aus)
 };
 let editBgImageEl = null; // geladenes <img> für editSettings.bgImageData
 let lastFgCanvas = null;   // freigestelltes Motiv (RGBA, Alpha = Person) im workCanvas-Raster
@@ -2468,7 +2494,7 @@ function getProcessedFgCanvas(){
     }
     actx.putImageData(alphaImg,0,0);
 
-    const blurPx = Math.max(1, Math.round(faceW * (0.02 + 0.06*(hairSoften/100))));
+    const blurPx = Math.max(1, Math.round(faceW * (0.008 + 0.03*(hairSoften/100))));
     const alphaBlurred = blurCanvas(alphaSrc, blurPx);
     const blurredAlphaData = alphaBlurred.getContext('2d').getImageData(0,0,w,h).data;
 
@@ -2476,9 +2502,9 @@ function getProcessedFgCanvas(){
     // über der Stirn bis knapp unter die Augenbrauen), etwas breiter als
     // das Gesicht, mit weichem Verlauf zum Rest des Fotos hin.
     const regionCx = forehead.x;
-    const regionCy = forehead.y - faceH*0.35;
-    const regionRx = faceW*0.95;
-    const regionRy = faceH*0.85;
+    const regionCy = forehead.y - faceH*0.4;
+    const regionRx = faceW*0.75;
+    const regionRy = faceH*0.7;
     const regionMaskSharp = document.createElement('canvas');
     regionMaskSharp.width=w; regionMaskSharp.height=h;
     const rmsctx = regionMaskSharp.getContext('2d');
@@ -3197,13 +3223,13 @@ document.getElementById('bgSwatchRow').addEventListener('click', (e)=>{
   const btn = e.target.closest('.bg-swatch');
   if(!btn) return;
   const mode = btn.dataset.bg;
-  if(mode==='color'){
-    bgColorInput.click();
-    return; // Modus wird erst gesetzt, sobald eine Farbe gewählt wurde (siehe unten)
-  }
-  if(mode==='custom'){
-    bgImageInput.click();
-    return; // Modus wird erst nach erfolgreichem Bild-Upload gesetzt
+  if(mode==='color' || mode==='custom'){
+    // "Individuell" und "Eigenes Bild" sind jetzt <label>, die direkt das
+    // echte <input type="color"/"file"> umschließen — der native Picker
+    // öffnet sich automatisch durch den Tap, kein JS-.click() nötig (das
+    // funktionierte auf manchen Handy-Browsern nicht zuverlässig). Modus
+    // wird erst gesetzt, sobald tatsächlich eine Farbe/Bild gewählt wurde.
+    return;
   }
   editSettings.bg = mode;
   document.querySelectorAll('.bg-swatch').forEach(s=> s.removeAttribute('data-active'));
@@ -3269,7 +3295,7 @@ document.getElementById('ctrlLoadSettings').addEventListener('change', (e)=>{
       document.getElementById('ctrlContrast').value = editSettings.contrast;
       document.getElementById('ctrlSaturation').value = editSettings.saturation;
       document.getElementById('ctrlSmooth').value = editSettings.smooth;
-      document.getElementById('ctrlHair').value = editSettings.hairSoften ?? 20;
+      document.getElementById('ctrlHair').value = editSettings.hairSoften ?? 0;
       bgColorInput.value = editSettings.bgColor;
       document.querySelectorAll('.bg-swatch').forEach(s=> s.removeAttribute('data-active'));
       const activeSwatch = document.querySelector('.bg-swatch[data-bg="'+editSettings.bg+'"]');
