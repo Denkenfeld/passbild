@@ -808,7 +808,7 @@ const PLAN_PRICES = { pro:'4,99 €/Monat', ultimate:'12,99 €/Monat' };
    und führt es direkt im Browser aus (WebGPU, sonst WASM). Kein Server,
    kein Upload. Beim ersten Foto wird das Modell einmalig geladen und
    danach vom Browser zwischengespeichert. ---------- */
-const AI_MODEL_ID = 'onnx-community/ormbg-ONNX'; // leichteres Modell (isnet-basiert) für bessere Handy-Stabilität; bei Bedarf z.B. gegen 'onnx-community/BEN2-ONNX' tauschen (größer, evtl. präziser)
+const AI_MODEL_ID = 'onnx-community/BEN2-ONNX'; // exakt das Modell, das offiziell für Transformers.js 3.4.0 dokumentiert ist (ormbg-ONNX lieferte keine echte Maske — vermutlich ein Versions-Kompatibilitätsproblem)
 let transformersLib = null;
 let segmenterPromise = null;
 let aiEverLoaded = false;
@@ -852,6 +852,21 @@ async function runAI(objectUrl, onProgress){
   const segmenter = await getSegmenter(onProgress);
   const output = await segmenter(objectUrl);
   return await output[0].toCanvas();
+}
+
+// Prüft, ob die KI wirklich etwas maskiert hat (Alpha-Kanal variiert spürbar),
+// statt einfach ein komplett undurchsichtiges Bild als "erfolgreich" durchzuwinken.
+function hasMeaningfulAlpha(canvas){
+  const ctx = canvas.getContext('2d');
+  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let minA = 255, maxA = 0;
+  for (let i = 3; i < data.length; i += 4 * 37){
+    const a = data[i];
+    if (a < minA) minA = a;
+    if (a > maxA) maxA = a;
+    if (minA < 15 && maxA > 240) return true;
+  }
+  return (maxA - minA) > 40;
 }
 
 function updateAIStatus(data){
@@ -909,13 +924,16 @@ async function processItem(item){
     aiUrl = URL.createObjectURL(aiBlob);
 
     item.cutout = await runAI(aiUrl, updateAIStatus);
+    if (!hasMeaningfulAlpha(item.cutout)){
+      throw new Error('Die KI hat keinen erkennbaren Ausschnitt geliefert (Bild blieb komplett undurchsichtig).');
+    }
     item.originalCanvas = await buildOriginalCanvas(item.sourceUrl, item.cutout.width, item.cutout.height);
     item.status = 'done';
     hideAIStatus();
   }catch(err){
     console.error('Freistellen fehlgeschlagen:', err);
     item.status = 'error';
-    item.errorMsg = 'Freistellen fehlgeschlagen';
+    item.errorMsg = (err && err.message) ? err.message : 'Freistellen fehlgeschlagen';
     showAIErrorBanner();
   } finally {
     if (aiUrl) URL.revokeObjectURL(aiUrl);
