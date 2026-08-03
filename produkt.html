@@ -813,12 +813,11 @@ let transformersLib = null;
 let segmenterPromise = null;
 let aiEverLoaded = false;
 
-// Sicherheitsgrenzen gegen Handy-Abstürze: Handyfotos sind oft riesig (12–48MP),
-// und iOS Safari hat ein hartes Canvas-Größenlimit (~4096px pro Seite). Deshalb
-// wird für die eigentliche KI-Berechnung stark verkleinert, und auch die finale
-// Ausgabe auf eine sichere Obergrenze gedeckelt.
+// Sicherheitsgrenze gegen Handy-Abstürze: Handyfotos sind oft riesig (12–48MP),
+// die KI läuft deshalb auf einer verkleinerten Kopie. Das Ergebnis liegt in
+// dieser Auflösung vor (nicht in der vollen Fotoauflösung) — für Marktplatz-
+// Fotos (Vinted, eBay Kleinanzeigen, Etsy) ist das mehr als ausreichend.
 const AI_INFERENCE_MAX_SIDE = isMobileDevice() ? 768 : 1280;
-const MAX_OUTPUT_SIDE = 3500;
 
 function isMobileDevice(){
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -896,45 +895,21 @@ async function processItem(item){
     const original = await loadImageElement(item.sourceUrl);
     const srcW = original.naturalWidth, srcH = original.naturalHeight;
 
-    // 1) Für die KI stark verkleinern — das ist der Hauptgrund für Handy-Abstürze:
-    //    Handyfotos sind riesig, und die KI auf voller Auflösung laufen zu lassen
-    //    kann den Speicher sprengen.
+    // Für die KI verkleinern — das ist der Hauptgrund für Handy-Abstürze:
+    // Handyfotos sind riesig, und die KI auf voller Auflösung laufen zu lassen
+    // kann den Speicher sprengen. PNG statt JPEG, um keine Kompressions-
+    // Artefakte in die Segmentierung einzubringen.
     const aiScale = Math.min(1, AI_INFERENCE_MAX_SIDE / Math.max(srcW, srcH));
     const aiW = Math.max(1, Math.round(srcW * aiScale));
     const aiH = Math.max(1, Math.round(srcH * aiScale));
     const aiCanvas = document.createElement('canvas');
     aiCanvas.width = aiW; aiCanvas.height = aiH;
     aiCanvas.getContext('2d').drawImage(original, 0, 0, aiW, aiH);
-    const aiBlob = await new Promise(resolve => aiCanvas.toBlob(resolve, 'image/jpeg', 0.9));
+    const aiBlob = await new Promise(resolve => aiCanvas.toBlob(resolve, 'image/png'));
     aiUrl = URL.createObjectURL(aiBlob);
 
-    const lowResCutout = await runAI(aiUrl, updateAIStatus);
-
-    // 2) Zielauflösung sicher deckeln (auch iOS-Canvas-Limits berücksichtigen),
-    //    dann die Alpha-Maske aus der KI hochskaliert auf das Originalbild legen.
-    const outScale = Math.min(1, MAX_OUTPUT_SIDE / Math.max(srcW, srcH));
-    const outW = Math.max(1, Math.round(srcW * outScale));
-    const outH = Math.max(1, Math.round(srcH * outScale));
-
-    const fullCanvas = document.createElement('canvas');
-    fullCanvas.width = outW; fullCanvas.height = outH;
-    const fctx = fullCanvas.getContext('2d');
-    fctx.drawImage(original, 0, 0, outW, outH);
-    const fullData = fctx.getImageData(0, 0, outW, outH);
-
-    const maskCanvas = document.createElement('canvas');
-    maskCanvas.width = outW; maskCanvas.height = outH;
-    const mctx = maskCanvas.getContext('2d');
-    mctx.drawImage(lowResCutout, 0, 0, outW, outH);
-    const maskData = mctx.getImageData(0, 0, outW, outH);
-
-    for (let i = 3; i < fullData.data.length; i += 4){
-      fullData.data[i] = maskData.data[i];
-    }
-    fctx.putImageData(fullData, 0, 0);
-
-    item.cutout = fullCanvas;
-    item.originalCanvas = await buildOriginalCanvas(item.sourceUrl, outW, outH);
+    item.cutout = await runAI(aiUrl, updateAIStatus);
+    item.originalCanvas = await buildOriginalCanvas(item.sourceUrl, item.cutout.width, item.cutout.height);
     item.status = 'done';
     hideAIStatus();
   }catch(err){
