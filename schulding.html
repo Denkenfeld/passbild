@@ -25,15 +25,15 @@
   .view{ display:none; flex-direction:column; flex:1; }
   .view.active{ display:flex; }
 
-  /* HEADER (shared) */
-  header{ position:sticky; top:0; z-index:30; background:rgba(255,255,255,0.92);
+  /* GLOBAL HEADER — persists across Feed/Deck/Chat/Profil and stays above sheets & overlays */
+  .global-header{ position:sticky; top:0; z-index:90; background:rgba(255,255,255,0.96);
     backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
   .header-top{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px 4px; }
   .brand{ display:flex; align-items:center; gap:8px; }
   .brand-logo{ font-family:'Quicksand',sans-serif; font-weight:700; font-size:19px; letter-spacing:-.2px; }
   .brand-logo .bracket, .brand-logo .ding{ color:var(--yellow); }
   .brand-logo .black-part{ color:#111827; }
-  .avatar-btn{ width:30px; height:30px; flex-shrink:0; }
+  .avatar-btn{ width:30px; height:30px; flex-shrink:0; border:none; background:none; padding:0; cursor:pointer; }
   .avatar-btn .avatar{ border-radius:50%; transform:none; }
   .avatar{ width:100%; height:100%; display:flex; align-items:center; justify-content:center;
     font-family:'Baloo 2'; font-weight:800; color:#fff; font-size:13px;
@@ -50,11 +50,11 @@
     width:34px; height:3px; border-radius:3px; background:var(--yellow); }
 
   /* MAIN TOP NAV (Feed / Deck / Chat) */
-  .main-tabs{ display:flex; padding:2px 8px 0; gap:4px; }
-  .main-tab{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
-    padding:11px 6px; font-size:13.5px; font-weight:800; color:var(--ink-soft);
+  .main-tabs{ display:flex; padding:2px 4px 0; gap:0; }
+  .main-tab{ flex:1; display:flex; align-items:center; justify-content:center; gap:5px;
+    padding:11px 2px; font-size:12.5px; font-weight:800; color:var(--ink-soft);
     background:none; border:none; font-family:inherit; position:relative; border-radius:12px 12px 0 0; }
-  .main-tab svg{ width:18px; height:18px; stroke:var(--ink-soft); fill:none; stroke-width:2; }
+  .main-tab svg{ width:17px; height:17px; stroke:var(--ink-soft); fill:none; stroke-width:2; }
   .main-tab.active{ color:var(--ink); }
   .main-tab.active svg{ stroke:var(--ink); }
   .main-tab.active::after{ content:""; position:absolute; bottom:0; left:18%; right:18%;
@@ -84,6 +84,59 @@
     color:var(--ink-soft); font-weight:600; }
   .feed-note svg{ width:13px; height:13px; stroke:var(--ink-soft); fill:none; stroke-width:2; }
 
+  /* Unified orientation strip — same position/weight in Feed, Deck & Chat so users always
+     know where they are and what this screen is for */
+  .context-bar{ display:flex; align-items:center; gap:9px; padding:10px 16px; font-size:12.5px;
+    color:var(--ink-soft); font-weight:600; background:var(--bg-soft); border-bottom:1px solid var(--line); }
+  .context-bar .ctx-icon{ width:22px; height:22px; border-radius:7px; display:flex; align-items:center;
+    justify-content:center; flex-shrink:0; }
+  .context-bar .ctx-icon svg{ width:12px; height:12px; stroke-width:2.4; fill:none; }
+  .context-bar.feed .ctx-icon{ background:var(--yellow-soft); }
+  .context-bar.feed .ctx-icon svg{ stroke:var(--yellow-ink); }
+  .context-bar.deck .ctx-icon{ background:var(--blue-soft); }
+  .context-bar.deck .ctx-icon svg{ stroke:var(--blue-ink); }
+  .context-bar.chat .ctx-icon{ background:var(--purple-soft); }
+  .context-bar.chat .ctx-icon svg{ stroke:var(--purple-ink); }
+  .context-bar strong{ color:var(--ink); font-weight:800; }
+  .context-bar.profil .ctx-icon{ background:var(--green-soft); }
+  .context-bar.profil .ctx-icon svg{ stroke:var(--green-ink); }
+
+  /* ---------- PROFIL ---------- */
+  .profil-hero{ display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:26px 20px 22px; border-bottom:8px solid var(--bg-soft); }
+  .profil-hero .avatar{ width:72px; height:72px; font-size:24px; border-radius:26%; margin-bottom:12px; }
+  .profil-name{ font-family:'Baloo 2'; font-weight:700; font-size:19px; }
+  .profil-role{ font-size:12.5px; color:var(--ink-soft); font-weight:600; margin-top:3px; }
+  .profil-role .role-badge{ margin-left:5px; vertical-align:1px; }
+
+  .profil-children{ padding:16px; border-bottom:8px solid var(--bg-soft); }
+  .profil-section-title{ font-size:12px; font-weight:800; color:var(--ink-soft); text-transform:uppercase;
+    letter-spacing:.4px; margin-bottom:10px; }
+  .child-row{ display:flex; align-items:center; gap:11px; padding:10px 0; }
+  .child-row .avatar{ width:38px; height:38px; font-size:13px; }
+  .child-row-info{ flex:1; min-width:0; }
+  .child-row-name{ font-weight:800; font-size:14px; }
+  .child-row-sub{ font-size:12px; color:var(--ink-soft); margin-top:1px; }
+
+  .profil-menu{ padding:6px 16px 30px; }
+  .menu-row{ display:flex; align-items:center; gap:13px; padding:13px 2px; border-bottom:1px solid var(--line);
+    font-size:14px; font-weight:700; color:var(--ink); }
+  .menu-row:last-child{ border-bottom:none; }
+  .menu-icon{ width:34px; height:34px; border-radius:11px; background:var(--bg-soft); display:flex;
+    align-items:center; justify-content:center; flex-shrink:0; }
+  .menu-icon svg{ width:17px; height:17px; stroke:var(--ink-soft); stroke-width:2; fill:none; }
+  .menu-row.danger .menu-icon svg{ stroke:#D5304A; }
+  .menu-row.danger{ color:#D5304A; }
+  .menu-chevron{ margin-left:auto; width:16px; height:16px; stroke:#C7D0DB; stroke-width:2.2; fill:none; }
+
+  /* ---------- CHAT: participants & read receipts ---------- */
+  .thread-participants{ display:flex; align-items:center; padding:2px 16px 12px; gap:-6px; }
+  .thread-participants .avatar{ width:26px; height:26px; font-size:9.5px; border:2px solid var(--bg);
+    margin-right:-8px; }
+  .thread-participants-label{ font-size:11.5px; color:var(--ink-soft); font-weight:600; margin-left:10px; }
+  .group-sender-name{ font-size:11px; font-weight:800; color:var(--ink-soft); margin:0 4px 3px; }
+  .read-receipt{ font-size:10px; color:var(--ink-soft); margin:3px 6px 0; }
+
   .feed{ padding-bottom:100px; }
   .post{ display:flex; gap:10px; padding:14px 16px; border-bottom:1px solid var(--line); }
   .post .avatar{ width:42px; height:42px; font-size:14px; flex-shrink:0; }
@@ -101,10 +154,15 @@
     color:var(--yellow-ink); margin-bottom:4px; }
   .pinned-row svg{ width:12px; height:12px; }
   .post-text{ font-size:14.5px; line-height:1.45; margin-top:2px; }
-  .photo-grid{ margin-top:10px; border-radius:16px; overflow:hidden; border:1px solid var(--line); }
-  .photo-grid.single svg{ width:100%; display:block; aspect-ratio:16/11; }
+  .photo-grid{ margin-top:10px; border-radius:16px; overflow:hidden; border:1px solid var(--line); background:var(--bg-soft); }
+  .photo-grid img, .photo-grid svg{ width:100%; display:block; object-fit:cover; }
+  .photo-grid.single img, .photo-grid.single svg{ aspect-ratio:16/11; }
   .photo-grid.two{ display:grid; grid-template-columns:1fr 1fr; gap:2px; }
-  .photo-grid.two svg{ width:100%; height:100%; aspect-ratio:1/1.05; display:block; }
+  .photo-grid.two img, .photo-grid.two svg{ width:100%; height:100%; aspect-ratio:1/1.05; object-fit:cover; display:block; }
+  .photo-grid.three{ display:grid; grid-template-columns:1.3fr 1fr; gap:2px; }
+  .photo-grid.three .big img, .photo-grid.three .big svg{ width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-grid.three .stack{ display:grid; grid-template-rows:1fr 1fr; gap:2px; }
+  .photo-grid.three .stack img, .photo-grid.three .stack svg{ width:100%; height:100%; object-fit:cover; display:block; }
   .post-actions{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; max-width:340px; }
   .action{ display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--ink-soft);
     font-size:12.5px; font-weight:700; padding:6px; border-radius:8px; }
@@ -118,7 +176,7 @@
   .role-badge.eltern{ background:var(--purple-soft); color:var(--purple-ink); }
 
   /* ---------- POST DETAIL OVERLAY ---------- */
-  .detail-overlay{ display:none; flex-direction:column; position:fixed; inset:0; z-index:60;
+  .detail-overlay{ display:none; flex-direction:column; position:fixed; inset:0; z-index:92;
     background:var(--bg); }
   .detail-overlay.open{ display:flex; }
   .detail-overlay-inner{ width:100%; max-width:460px; margin:0 auto; height:100%; display:flex; flex-direction:column; }
@@ -138,7 +196,7 @@
     background:rgba(255,255,255,0.97); backdrop-filter:blur(10px); border-top:1px solid var(--line);
     display:flex; align-items:center; gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); z-index:65; }
   .reply-input{ flex:1; background:var(--bg-soft); border:1px solid var(--line); border-radius:999px;
-    padding:10px 15px; font-size:14px; color:var(--ink-soft); }
+    padding:10px 15px; font-size:14px; color:var(--ink); font-family:inherit; outline:none; }
 
   /* ---------- COMPOSE SHEET ---------- */
   .sheet-overlay{ display:none; position:fixed; inset:0; z-index:80; background:rgba(17,20,27,0);
@@ -174,6 +232,78 @@
 
   /* ---------- DECK ---------- */
   .deck-chips{ display:flex; gap:8px; padding:2px 16px 14px; overflow-x:auto; }
+
+  /* MINI-APPS (single compact row) */
+  .miniapps-wrap{ padding:14px 0 4px; border-bottom:8px solid var(--bg-soft); }
+  .miniapps-title{ padding:0 16px 10px; font-size:12.5px; font-weight:800; color:var(--ink); }
+  .miniapps-title span{ display:block; font-size:11px; font-weight:600; color:var(--ink-soft); margin-top:1px; }
+  .miniapps-row{ display:flex; align-items:flex-start; gap:8px; padding:0 16px 14px; overflow-x:auto; }
+  .miniapps-divider{ flex-shrink:0; width:1px; height:52px; background:var(--line); margin:2px 3px 0; align-self:center; }
+  .miniapp-tile{ flex-shrink:0; width:68px; display:flex; flex-direction:column; align-items:center; gap:6px;
+    background:none; border:none; font-family:inherit; }
+  .miniapp-icon{ width:48px; height:48px; border-radius:15px; display:flex; align-items:center; justify-content:center;
+    position:relative; }
+  .miniapp-icon svg{ width:21px; height:21px; stroke-width:2; fill:none; }
+  .miniapp-icon.active-app{ background:linear-gradient(135deg,#FFCB70,var(--yellow)); box-shadow:0 4px 10px rgba(255,182,39,0.35); }
+  .miniapp-icon.active-app svg{ stroke:var(--ink); }
+  .miniapp-icon.soon{ background:var(--bg-soft); border:1.5px dashed #D7DEE7; }
+  .miniapp-icon.soon svg{ stroke:var(--ink-soft); }
+  .miniapp-label{ font-size:10.5px; font-weight:700; color:var(--ink); text-align:center; line-height:1.2; }
+  .soon-tag{ font-size:8.5px; font-weight:800; color:var(--ink-soft); background:var(--bg-soft);
+    padding:1px 6px; border-radius:999px; }
+
+  .deck-list-heading{ padding:16px 16px 4px; font-size:14px; font-weight:800; color:var(--ink); }
+  .deck-list-heading span{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft); margin-top:1px; }
+  /* TOAST */
+  .toast{ position:fixed; left:50%; bottom:100px; transform:translateX(-50%) translateY(20px); opacity:0;
+    max-width:380px; width:calc(100% - 40px); background:var(--ink); color:#fff; font-size:13px; font-weight:600;
+    padding:12px 16px; border-radius:14px; z-index:95; pointer-events:none; transition:all .25s; text-align:center; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* KRANKMELDUNG SHEET */
+  .sheet-field-label{ font-size:12px; font-weight:800; color:var(--ink-soft); margin:16px 0 8px; }
+  .child-chips{ display:flex; gap:8px; flex-wrap:wrap; }
+  .child-chip{ display:flex; align-items:center; gap:7px; padding:8px 14px 8px 8px; border-radius:999px;
+    border:1.5px solid var(--line); background:var(--bg); font-family:inherit; font-size:13px; font-weight:700; color:var(--ink); }
+  .child-chip .avatar{ width:26px; height:26px; font-size:10.5px; }
+  .child-chip.active{ border-color:var(--yellow); background:var(--yellow-soft); }
+  .date-row{ display:flex; gap:10px; }
+  .date-field{ flex:1; }
+  .date-field label{ display:block; font-size:11px; font-weight:700; color:var(--ink-soft); margin-bottom:5px; }
+  .date-field input{ width:100%; border:1.5px solid var(--line); border-radius:12px; padding:10px 12px;
+    font-family:inherit; font-size:13.5px; color:var(--ink); background:var(--bg-soft); }
+  .reason-input{ width:100%; border:1.5px solid var(--line); border-radius:12px; padding:11px 13px;
+    font-family:inherit; font-size:13.5px; color:var(--ink); background:var(--bg-soft); resize:none; min-height:64px; }
+  .notify-note{ display:flex; align-items:flex-start; gap:8px; margin-top:14px; padding:11px 12px;
+    background:var(--green-soft); border-radius:12px; font-size:12px; color:var(--green-ink); font-weight:600; line-height:1.4; }
+  .notify-note svg{ width:15px; height:15px; stroke:var(--green-ink); stroke-width:2; fill:none; flex-shrink:0; margin-top:1px; }
+
+  /* Krankmeldung entries on the Deck */
+  .deck-icon.sick{ background:#FFE7EA; } .deck-icon.sick svg{ stroke:#D5304A; }
+
+  /* ---------- SCHULFOTOS SHEET ---------- */
+  .photo-upload-box{ margin-top:10px; border:1.5px dashed #D7DEE7; border-radius:16px; padding:26px 16px;
+    display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--ink-soft); background:var(--bg-soft); }
+  .photo-upload-box svg{ width:26px; height:26px; stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .photo-upload-box span{ font-size:12.5px; font-weight:700; }
+  .photo-upload-box.has-photo{ border-style:solid; border-color:var(--yellow); background:var(--yellow-soft); color:var(--yellow-ink); }
+  .photo-upload-box.has-photo svg{ stroke:var(--yellow-ink); }
+  .photo-status-row{ display:flex; align-items:center; gap:10px; padding:9px 0; }
+  .photo-status-row .avatar{ width:32px; height:32px; font-size:11.5px; }
+  .photo-status-name{ flex:1; font-size:13px; font-weight:700; }
+  .photo-status-pill{ font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:999px; }
+  .photo-status-pill.pending{ background:var(--bg-soft); color:var(--ink-soft); }
+  .photo-status-pill.done{ background:var(--green-soft); color:var(--green-ink); }
+  .teacher-only-note{ display:flex; align-items:flex-start; gap:9px; margin-top:8px; padding:12px 13px;
+    background:var(--bg-soft); border-radius:12px; font-size:12px; color:var(--ink-soft); font-weight:600; line-height:1.45; }
+  .teacher-only-note svg{ width:16px; height:16px; stroke:var(--ink-soft); stroke-width:2; fill:none; flex-shrink:0; margin-top:1px; }
+  .order-row{ display:flex; align-items:center; gap:11px; padding:10px 0; opacity:.65; }
+  .order-icon{ width:36px; height:36px; border-radius:11px; background:var(--bg-soft); display:flex;
+    align-items:center; justify-content:center; flex-shrink:0; }
+  .order-icon svg{ width:17px; height:17px; stroke:var(--ink-soft); stroke-width:2; fill:none; }
+  .order-info{ flex:1; min-width:0; }
+  .order-title{ font-size:13px; font-weight:800; }
+  .order-sub{ font-size:11px; color:var(--ink-soft); margin-top:1px; }
   .chip{ flex-shrink:0; padding:8px 14px; border-radius:999px; font-size:13px; font-weight:700;
     background:var(--bg-soft); color:var(--ink-soft); border:1px solid var(--line); white-space:nowrap; }
   .chip.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
@@ -224,9 +354,11 @@
   .group-tag{ font-size:9.5px; font-weight:800; background:var(--purple-soft); color:var(--purple-ink);
     padding:1.5px 6px; border-radius:999px; }
 
-  /* chat thread */
+  /* chat thread — fixed overlay so it sits cleanly above the persistent global header */
+  #chat-thread-screen{ position:fixed; inset:0; z-index:92; background:var(--bg); }
+  #chat-thread-screen .thread-inner{ width:100%; max-width:460px; margin:0 auto; height:100%; display:flex; flex-direction:column; }
   .thread-header{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line);
-    position:sticky; top:0; background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); z-index:20; }
+    background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); }
   .back-btn{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
   .back-btn svg{ width:19px; height:19px; stroke:var(--ink); stroke-width:2.3; fill:none; }
   .thread-header .avatar{ width:36px; height:36px; font-size:13px; }
@@ -244,7 +376,7 @@
     background:rgba(255,255,255,0.97); backdrop-filter:blur(10px); border-top:1px solid var(--line);
     display:flex; align-items:center; gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); z-index:40; }
   .thread-input{ flex:1; background:var(--bg-soft); border:1px solid var(--line); border-radius:999px;
-    padding:10px 15px; font-size:14px; color:var(--ink-soft); }
+    padding:10px 15px; font-size:14px; color:var(--ink); font-family:inherit; outline:none; }
   .send-btn{ width:38px; height:38px; border-radius:50%; background:var(--yellow); display:flex; align-items:center;
     justify-content:center; flex-shrink:0; border:none; }
   .send-btn svg{ width:17px; height:17px; stroke:var(--ink); stroke-width:2.3; fill:none; }
@@ -262,35 +394,36 @@
 <body>
 <div class="app">
 
+  <div class="global-header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-logo"><span class="bracket">{</span><span class="black-part">schul</span><span class="ding">ding</span><span class="black-part">.de</span></div>
+      </div>
+      <button class="avatar-btn" id="open-profil-global"><div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div></button>
+    </div>
+    <div class="main-tabs" id="global-tabs">
+      <button class="main-tab active" data-view="feed">
+        <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>
+        Feed
+      </button>
+      <button class="main-tab" data-view="deck">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+        Deck
+      </button>
+      <button class="main-tab" data-view="chat">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Chat
+        <span class="nav-dot"></span>
+      </button>
+    </div>
+  </div>
+
   <!-- ================= FEED VIEW ================= -->
   <section class="view active" id="view-feed">
-    <header>
-      <div class="header-top">
-        <div class="brand">
-          <div class="brand-logo"><span class="bracket">{</span><span class="black-part">schul</span><span class="ding">ding</span><span class="black-part">.de</span></div>
-        </div>
-        <div class="avatar-btn"><div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div></div>
-      </div>
-      <div class="main-tabs">
-        <button class="main-tab active" data-view="feed">
-          <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>
-          Feed
-        </button>
-        <button class="main-tab" data-view="deck">
-          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
-          Deck
-        </button>
-        <button class="main-tab" data-view="chat">
-          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          Chat
-          <span class="nav-dot"></span>
-        </button>
-      </div>
-    </header>
 
-    <div class="feed-note">
-      <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3M12 3a9 9 0 100 18 9 9 0 000-18z"/></svg>
-      Chronologisch &middot; kein Algorithmus, keine Werbung
+    <div class="context-bar feed">
+      <div class="ctx-icon"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3M12 3a9 9 0 100 18 9 9 0 000-18z"/></svg></div>
+      <span><strong>Feed:</strong> Neuigkeiten aus deiner Schule &middot; chronologisch, kein Algorithmus</span>
     </div>
 
     <main class="feed" id="feed-list">
@@ -305,8 +438,8 @@
           </div>
           <div class="post-text">Kulissenbau für "Der zerbrochne Krug" läuft auf Hochtouren 🎭 Premiere in 3 Wochen!</div>
           <div class="photo-grid two">
-            <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><rect width="200" height="200" fill="#FFE3AC"/><rect x="30" y="70" width="140" height="110" rx="8" fill="#FF9F43"/><circle cx="100" cy="45" r="34" fill="#FFCB70"/></svg>
-            <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><rect width="200" height="200" fill="#DCEBFF"/><circle cx="140" cy="45" r="45" fill="#8FC5FF"/><rect x="15" y="80" width="120" height="70" rx="8" fill="#3DA9FC"/></svg>
+            <img src="https://picsum.photos/seed/theaterbau1/500/520" alt="Kulissenbau" loading="lazy">
+            <img src="https://picsum.photos/seed/theaterbau2/500/520" alt="Bühnenprobe" loading="lazy">
           </div>
           <div class="post-actions">
             <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>8</button>
@@ -351,18 +484,102 @@
           </div>
           <div class="post-text">Bezirksfinale gewonnen! 🏐 Danke an alle Fans auf der Tribüne 💛</div>
           <div class="photo-grid single">
-            <svg viewBox="0 0 400 275" preserveAspectRatio="xMidYMid slice">
-              <rect width="400" height="275" fill="#FFE3AC"/>
-              <circle cx="80" cy="220" r="60" fill="#FFD27E"/>
-              <circle cx="340" cy="50" r="90" fill="#FFCB70"/>
-              <rect x="150" y="110" width="100" height="140" rx="10" fill="#FF9F43"/>
-              <circle cx="200" cy="100" r="34" fill="#fff" opacity=".85"/>
-            </svg>
+            <img src="https://picsum.photos/seed/volleyballsieg/700/480" alt="Volleyball Bezirksfinale" loading="lazy">
           </div>
           <div class="post-actions">
             <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>23</button>
             <button class="action"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>14</button>
             <button class="action"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.6 2 5 5.5 5c2 0 3.5 1.3 4.5 3 1-1.7 2.5-3 4.5-3 3.5 0 4.7 3.6 3 7-2.5 4.5-9.5 9-9.5 9z"/></svg>156</button>
+            <button class="action share"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="post">
+        <div class="avatar" style="background:linear-gradient(135deg,#FF9FB8,#F0507A)">MA</div>
+        <div class="post-main">
+          <div class="post-head">
+            <span class="name">Mira Adler</span>
+            <span class="role-badge schueler">9c</span>
+            <span class="handle">@mira_a</span>
+            <span class="time">6 Std.</span>
+          </div>
+          <div class="post-text">Ausflug ins Naturkundemuseum heute — Dino-Halle war der Hit 🦖</div>
+          <div class="photo-grid two">
+            <img src="https://picsum.photos/seed/naturkunde1/500/520" alt="Naturkundemuseum" loading="lazy">
+            <img src="https://picsum.photos/seed/naturkunde2/500/520" alt="Ausstellung" loading="lazy">
+          </div>
+          <div class="post-actions">
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>3</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>2</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.6 2 5 5.5 5c2 0 3.5 1.3 4.5 3 1-1.7 2.5-3 4.5-3 3.5 0 4.7 3.6 3 7-2.5 4.5-9.5 9-9.5 9z"/></svg>37</button>
+            <button class="action share"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="post">
+        <div class="avatar" style="background:linear-gradient(135deg,#8FC5FF,#3DA9FC)">FS</div>
+        <div class="post-main">
+          <div class="post-head">
+            <span class="name">Frau Sommer</span>
+            <span class="role-badge lehrer">Lehrkraft</span>
+            <span class="handle">@fsommer</span>
+            <span class="time">7 Std.</span>
+          </div>
+          <div class="post-text">Erinnerung 8a: bitte morgen eure Kunstmappen mitbringen — wir starten "Farben unserer Stadt" 🎨</div>
+          <div class="post-actions">
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>5</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>1</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.6 2 5 5.5 5c2 0 3.5 1.3 4.5 3 1-1.7 2.5-3 4.5-3 3.5 0 4.7 3.6 3 7-2.5 4.5-9.5 9-9.5 9z"/></svg>41</button>
+            <button class="action share"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="post">
+        <div class="avatar" style="background:linear-gradient(135deg,#C9A6FF,#8B6BFF)">KS</div>
+        <div class="post-main">
+          <div class="post-head">
+            <span class="name">Kunst-AG</span>
+            <span class="role-badge schueler">AG</span>
+            <span class="handle">@kunst_talblick</span>
+            <span class="time">9 Std.</span>
+          </div>
+          <div class="post-text">Erste Werke für die Ausstellung "Farben unserer Stadt" sind fertig 🎨 Vernissage am Freitag in der Aula!</div>
+          <div class="photo-grid single">
+            <img src="https://picsum.photos/seed/kunstprojekt-stadt/700/480" alt="Kunstprojekt" loading="lazy">
+          </div>
+          <div class="post-actions">
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>6</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>4</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.6 2 5 5.5 5c2 0 3.5 1.3 4.5 3 1-1.7 2.5-3 4.5-3 3.5 0 4.7 3.6 3 7-2.5 4.5-9.5 9-9.5 9z"/></svg>68</button>
+            <button class="action share"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="post">
+        <div class="avatar" style="background:linear-gradient(135deg,#8FD3B6,#3FAE7C)">GT</div>
+        <div class="post-main">
+          <div class="post-head">
+            <span class="name">Gesamtschule Talblick</span>
+            <span class="role-badge schule">SCHULE</span>
+            <span class="handle">@talblick</span>
+            <span class="time">1 Tag</span>
+          </div>
+          <div class="post-text">Rückblick Sommerfest: Danke an alle Eltern, die mit Kuchen, Ständen und guter Laune dabei waren 🎉</div>
+          <div class="photo-grid three">
+            <div class="big"><img src="https://picsum.photos/seed/schulfest-buehne/460/620" alt="Sommerfest Bühne" loading="lazy"></div>
+            <div class="stack">
+              <img src="https://picsum.photos/seed/schulfest-stand/460/300" alt="Kuchenstand" loading="lazy">
+              <img src="https://picsum.photos/seed/schulfest-kinder/460/300" alt="Sommerfest" loading="lazy">
+            </div>
+          </div>
+          <div class="post-actions">
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>19</button>
+            <button class="action"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>9</button>
+            <button class="action liked"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.6 2 5 5.5 5c2 0 3.5 1.3 4.5 3 1-1.7 2.5-3 4.5-3 3.5 0 4.7 3.6 3 7-2.5 4.5-9.5 9-9.5 9z"/></svg>211</button>
             <button class="action share"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
           </div>
         </div>
@@ -379,35 +596,79 @@
 
   <!-- ================= DECK VIEW ================= -->
   <section class="view" id="view-deck">
-    <header>
-      <div class="header-top">
-        <div class="brand">
-          <div class="brand-logo"><span class="bracket">{</span><span class="black-part">schul</span><span class="ding">ding</span><span class="black-part">.de</span></div>
-        </div>
-        <div class="avatar-btn"><div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div></div>
+
+    <div class="context-bar deck">
+      <div class="ctx-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></div>
+      <span><strong>Deck:</strong> dein Orga-Brett für Hausaufgaben, Ausflüge, Infos &amp; Mini-Apps</span>
+    </div>
+
+    <div class="miniapps-wrap">
+      <div class="miniapps-title">Mini-Apps <span>Kurzwege für deinen Schulalltag</span></div>
+      <div class="miniapps-row">
+        <button class="miniapp-tile" id="open-krankmeldung">
+          <div class="miniapp-icon active-app">
+            <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 015 5v2a5 5 0 01-10 0V7a5 5 0 015-5z"/><path d="M6 21v-2a6 6 0 0112 0v2"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="miniapp-label">Krankmeldung</div>
+        </button>
+        <button class="miniapp-tile" id="open-schulfotos">
+          <div class="miniapp-icon active-app">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.2"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+          </div>
+          <div class="miniapp-label">Schulfotos</div>
+        </button>
+
+        <div class="miniapps-divider" aria-hidden="true"></div>
+
+        <button class="miniapp-tile" data-soon="Beurlaubung">
+          <div class="miniapp-icon soon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/><path d="M8 15h8"/></svg>
+          </div>
+          <div class="miniapp-label">Beurlaubung</div>
+        </button>
+        <button class="miniapp-tile" data-soon="Stundenplan">
+          <div class="miniapp-icon soon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+          </div>
+          <div class="miniapp-label">Stundenplan</div>
+        </button>
+        <button class="miniapp-tile" data-soon="Mensa">
+          <div class="miniapp-icon soon">
+            <svg viewBox="0 0 24 24"><path d="M6 2v20M6 2a3 3 0 013 3v4a3 3 0 01-3 3M18 2v20M15 8c0-3.3 1.3-6 3-6v20"/></svg>
+          </div>
+          <div class="miniapp-label">Mensa</div>
+        </button>
+        <button class="miniapp-tile" data-soon="AGs">
+          <div class="miniapp-icon soon">
+            <svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.6L22 9l-5.4 4.6L18 22l-6-4-6 4 1.4-8.4L2 9l7.4-.4z"/></svg>
+          </div>
+          <div class="miniapp-label">AGs</div>
+        </button>
+        <button class="miniapp-tile" data-soon="Schuljahreskalender">
+          <div class="miniapp-icon soon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/><circle cx="8" cy="15" r="1.2"/><circle cx="12" cy="15" r="1.2"/><circle cx="16" cy="15" r="1.2"/></svg>
+          </div>
+          <div class="miniapp-label">Kalender</div>
+        </button>
+        <button class="miniapp-tile" data-soon="Schulfest-Helfer">
+          <div class="miniapp-icon soon">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <div class="miniapp-label">Helfer</div>
+        </button>
       </div>
-      <div class="main-tabs">
-        <button class="main-tab" data-view="feed">
-          <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>
-          Feed
-        </button>
-        <button class="main-tab active" data-view="deck">
-          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
-          Deck
-        </button>
-        <button class="main-tab" data-view="chat">
-          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          Chat
-          <span class="nav-dot"></span>
-        </button>
-      </div>
-    </header>
+    </div>
+
+    <div class="deck-list-heading">
+      Deine Einträge <span>Nach Kategorie filtern</span>
+    </div>
 
     <div class="deck-chips">
       <button class="chip active" data-filter="alle">Alle</button>
       <button class="chip" data-filter="hw">📘 Hausaufgaben</button>
       <button class="chip" data-filter="trip">🚌 Ausflüge</button>
       <button class="chip" data-filter="info">📌 Infos</button>
+      <button class="chip" data-filter="sick">🤒 Krankmeldungen</button>
     </div>
 
     <div style="padding-bottom:100px;">
@@ -485,6 +746,15 @@
           </div>
         </div>
       </div>
+
+      <div class="deck-section" data-cat="sick" id="sick-section">
+        <div class="deck-section-title">Krankmeldungen <span class="count" id="sick-count">0</span></div>
+        <div id="sick-empty" style="font-size:12.5px; color:var(--ink-soft); background:var(--bg-soft);
+          border-radius:14px; padding:14px; text-align:center;">
+          Noch keine Krankmeldung erfasst. Über die Mini-App "Krankmeldung" oben kannst du dein Kind direkt melden.
+        </div>
+        <div id="sick-list"></div>
+      </div>
     </div>
 
     <button class="fab" id="fab-deck"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -494,29 +764,11 @@
   <section class="view" id="view-chat">
 
     <div id="chat-list-screen">
-      <header>
-        <div class="header-top">
-          <div class="brand">
-            <div class="brand-logo"><span class="bracket">{</span><span class="black-part">schul</span><span class="ding">ding</span><span class="black-part">.de</span></div>
-          </div>
-          <div class="avatar-btn"><div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div></div>
-        </div>
-        <div class="main-tabs">
-          <button class="main-tab" data-view="feed">
-            <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>
-            Feed
-          </button>
-          <button class="main-tab" data-view="deck">
-            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
-            Deck
-          </button>
-          <button class="main-tab active" data-view="chat">
-            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            Chat
-            <span class="nav-dot"></span>
-          </button>
-        </div>
-      </header>
+
+      <div class="context-bar chat">
+        <div class="ctx-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+        <span><strong>Chat:</strong> direkt oder in Gruppen mit Eltern &amp; Lehrkräften</span>
+      </div>
 
       <div class="chat-list">
         <div class="chat-row unread" data-thread="sommer">
@@ -580,35 +832,88 @@
       <button class="fab" id="fab-chat"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     </div>
 
-    <div id="chat-thread-screen" style="display:none; flex-direction:column; flex:1;">
-      <div class="thread-header">
-        <button class="back-btn" id="thread-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
-        <div class="avatar" style="background:linear-gradient(135deg,#8FC5FF,#3DA9FC)">FS</div>
-        <div>
-          <div class="thread-title">Frau Sommer</div>
-          <div class="thread-sub">Klassenlehrerin 9b</div>
+    <div id="chat-thread-screen" style="display:none;">
+      <div class="thread-inner">
+        <div class="thread-header">
+          <button class="back-btn" id="thread-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="avatar" id="thread-avatar" style="background:linear-gradient(135deg,#8FC5FF,#3DA9FC)">FS</div>
+          <div>
+            <div class="thread-title" id="thread-title">Frau Sommer</div>
+            <div class="thread-sub" id="thread-sub">Klassenlehrerin 9b</div>
+          </div>
         </div>
-      </div>
-      <div class="thread-body">
-        <div class="bubble-row">
-          <div class="bubble">Guten Morgen! Kurze Frage: Kann Jonas morgen seine Kunstmappe vergessen, weil er sie noch fertig gestalten muss?</div>
-          <div class="bubble-time">10:31</div>
+        <div class="thread-participants" id="thread-participants" style="display:none;"></div>
+        <div class="thread-body" id="thread-body"></div>
+        <div class="thread-input-bar">
+          <input class="thread-input" id="thread-input" type="text" placeholder="Nachricht schreiben…">
+          <button class="send-btn" id="thread-send"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
         </div>
-        <div class="bubble-row me">
-          <div class="bubble">Guten Morgen Frau Sommer, ja genau — er braucht noch etwas Zeit 🙂</div>
-          <div class="bubble-time">10:35</div>
-        </div>
-        <div class="bubble-row">
-          <div class="bubble">Klar, kein Problem — bringen Sie die Mappe einfach am Montag mit 😊</div>
-          <div class="bubble-time">10:42</div>
-        </div>
-      </div>
-      <div class="thread-input-bar">
-        <div class="thread-input">Nachricht schreiben…</div>
-        <button class="send-btn"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </div>
     </div>
 
+  </section>
+
+  <!-- ================= PROFIL VIEW ================= -->
+  <section class="view" id="view-profil">
+
+    <div class="context-bar profil">
+      <div class="ctx-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+      <span><strong>Profil:</strong> deine Daten, deine Kinder, deine Einstellungen</span>
+    </div>
+
+    <div style="padding-bottom:40px;">
+      <div class="profil-hero">
+        <div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div>
+        <div class="profil-name">Lena Martin</div>
+        <div class="profil-role">Erziehungsberechtigte <span class="role-badge eltern">Eltern</span></div>
+      </div>
+
+      <div class="profil-children">
+        <div class="profil-section-title">Verknüpfte Kinder</div>
+        <div class="child-row">
+          <div class="avatar">JK</div>
+          <div class="child-row-info">
+            <div class="child-row-name">Jonas Keller</div>
+            <div class="child-row-sub">Klasse 10b · Gesamtschule Talblick</div>
+          </div>
+        </div>
+        <div class="child-row">
+          <div class="avatar" style="background:linear-gradient(135deg,#FF9FB8,#F0507A)">MK</div>
+          <div class="child-row-info">
+            <div class="child-row-name">Mia Keller</div>
+            <div class="child-row-sub">Klasse 5a · Gesamtschule Talblick</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profil-menu">
+        <div class="profil-section-title">Konto</div>
+        <div class="menu-row">
+          <div class="menu-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+          Eigene Beiträge
+          <svg class="menu-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="menu-row">
+          <div class="menu-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></div>
+          Benachrichtigungen
+          <svg class="menu-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="menu-row">
+          <div class="menu-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></div>
+          Kinder &amp; Klassen verwalten
+          <svg class="menu-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="menu-row">
+          <div class="menu-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M12 11v5"/></svg></div>
+          Hilfe &amp; Kontakt
+          <svg class="menu-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="menu-row danger">
+          <div class="menu-icon"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
+          Abmelden
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ================= POST DETAIL OVERLAY ================= -->
@@ -620,8 +925,9 @@
       </div>
       <div class="detail-scroll">
         <div class="detail-original" id="detail-original"></div>
-        <div class="replies-label">3 Antworten</div>
+        <div class="replies-label" id="replies-label">3 Antworten</div>
 
+        <div id="replies-list">
         <div class="reply">
           <div class="avatar" style="background:linear-gradient(135deg,#FF9FB8,#F0507A)">MA</div>
           <div class="reply-body">
@@ -657,10 +963,11 @@
             <div class="reply-text">Freuen uns schon sehr darauf 🎉</div>
           </div>
         </div>
+        </div>
       </div>
       <div class="reply-input-bar">
-        <div class="reply-input">Antworten…</div>
-        <button class="send-btn"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+        <input class="reply-input" id="reply-input" type="text" placeholder="Antworten…">
+        <button class="send-btn" id="reply-send"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </div>
     </div>
   </div>
@@ -696,12 +1003,140 @@
     </div>
   </div>
 
+  <!-- ================= KRANKMELDUNG SHEET ================= -->
+  <div class="sheet-overlay" id="sick-overlay">
+    <div class="sheet" id="sick-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <button class="sheet-cancel" id="sick-cancel">Abbrechen</button>
+        <div class="sheet-title">Krankmeldung</div>
+        <button class="sheet-submit" id="sick-submit" disabled>Melden</button>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-field-label">Für welches Kind?</div>
+        <div class="child-chips" id="child-chips">
+          <button class="child-chip" data-child="Jonas Keller" data-class="10b">
+            <div class="avatar">JK</div> Jonas · 10b
+          </button>
+          <button class="child-chip" data-child="Mia Keller" data-class="5a">
+            <div class="avatar" style="background:linear-gradient(135deg,#FF9FB8,#F0507A)">MK</div> Mia · 5a
+          </button>
+        </div>
+
+        <div class="sheet-field-label">Zeitraum</div>
+        <div class="date-row">
+          <div class="date-field">
+            <label>Von</label>
+            <input type="date" id="sick-from">
+          </div>
+          <div class="date-field">
+            <label>Bis (optional)</label>
+            <input type="date" id="sick-to">
+          </div>
+        </div>
+
+        <div class="sheet-field-label">Grund (optional, nur für dich sichtbar)</div>
+        <textarea class="reason-input" id="sick-reason" placeholder="z. B. Erkältung, Arzttermin…"></textarea>
+
+        <div class="notify-note">
+          <svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>
+          Klassenleitung wird automatisch benachrichtigt. Der Grund bleibt privat.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCHULFOTOS SHEET ================= -->
+  <div class="sheet-overlay" id="photos-overlay">
+    <div class="sheet" id="photos-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <button class="sheet-cancel" id="photos-cancel">Schließen</button>
+        <div class="sheet-title">Schulfotos</div>
+        <span style="width:60px;"></span>
+      </div>
+      <div class="sheet-body">
+
+        <div class="sheet-field-label">Ausweisfoto für dein Kind hochladen</div>
+        <div class="child-chips" id="photo-child-chips">
+          <button class="child-chip" data-child="Jonas Keller" data-class="10b">
+            <div class="avatar">JK</div> Jonas · 10b
+          </button>
+          <button class="child-chip" data-child="Mia Keller" data-class="5a">
+            <div class="avatar" style="background:linear-gradient(135deg,#FF9FB8,#F0507A)">MK</div> Mia · 5a
+          </button>
+        </div>
+
+        <div class="photo-upload-box" id="photo-upload-box">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.2"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+          <span>Foto auswählen</span>
+        </div>
+        <button class="sheet-submit" id="photo-upload-submit" style="width:100%; margin-top:10px;" disabled>Hochladen</button>
+
+        <div class="sheet-field-label">Eingereichte Fotos</div>
+        <div id="photo-status-list">
+          <div class="photo-status-row" data-status-for="Jonas Keller">
+            <div class="avatar">JK</div>
+            <span class="photo-status-name">Jonas · 10b</span>
+            <span class="photo-status-pill pending">Noch kein Foto</span>
+          </div>
+          <div class="photo-status-row" data-status-for="Mia Keller">
+            <div class="avatar" style="background:linear-gradient(135deg,#FF9FB8,#F0507A)">MK</div>
+            <span class="photo-status-name">Mia · 5a</span>
+            <span class="photo-status-pill pending">Noch kein Foto</span>
+          </div>
+        </div>
+
+        <div class="sheet-field-label">Klassenfoto</div>
+        <div class="teacher-only-note">
+          <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+          Nur die Klassenleitung kann hier jährlich das Klassenfoto für 10b hochladen. Sobald es online ist, erscheint es im Feed &amp; hier.
+        </div>
+
+        <div class="sheet-field-label">Bestellen</div>
+        <div class="order-row">
+          <div class="order-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="M20 15l-4.5-4.5L6 20"/></svg></div>
+          <div class="order-info"><div class="order-title">Fotoabzüge</div><div class="order-sub">Verfügbar sobald ein Foto hochgeladen ist</div></div>
+          <span class="soon-tag">bald</span>
+        </div>
+        <div class="order-row">
+          <div class="order-icon"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="16" rx="2"/><circle cx="12" cy="18.5" r="0.6"/></svg></div>
+          <div class="order-info"><div class="order-title">Passbilder (biometrisch)</div><div class="order-sub">Für Schülerausweis &amp; Bahncard</div></div>
+          <span class="soon-tag">bald</span>
+        </div>
+        <div class="order-row">
+          <div class="order-icon"><svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.6L22 9l-5.4 4.6L18 22l-6-4-6 4 1.4-8.4L2 9l7.4-.4z"/></svg></div>
+          <div class="order-info"><div class="order-title">Sticker &amp; Extras</div><div class="order-sub">Kleine Fotosticker zum Verschenken</div></div>
+          <span class="soon-tag">bald</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="app-toast"></div>
+
 </div>
 
 <script>
-  // top main-tab switching (Feed / Deck / Chat)
+  // close any open sheet/overlay — used whenever the user navigates via the global tabs or avatar
+  function closeAllOverlaysAndSheets(){
+    ['compose-overlay','sick-overlay','photos-overlay'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.classList.remove('open');
+    });
+    const detail = document.getElementById('post-detail');
+    if(detail) detail.classList.remove('open');
+    const threadScreen = document.getElementById('chat-thread-screen');
+    const listScreen = document.getElementById('chat-list-screen');
+    if(threadScreen) threadScreen.style.display = 'none';
+    if(listScreen) listScreen.style.display = 'block';
+  }
+
+  // top main-tab switching (Feed / Deck / Chat) — global, always visible
   document.querySelectorAll('.main-tab').forEach(item=>{
     item.addEventListener('click', ()=>{
+      closeAllOverlaysAndSheets();
       const target = item.dataset.view;
       document.querySelectorAll('.main-tab').forEach(i=>{
         i.classList.toggle('active', i.dataset.view === target);
@@ -711,6 +1146,19 @@
       window.scrollTo(0,0);
     });
   });
+
+  // Profil: opened via the avatar icon, not a main tab — tabs stay visible but none highlighted
+  let lastMainView = 'feed';
+  function openProfil(){
+    closeAllOverlaysAndSheets();
+    const active = document.querySelector('.view.active');
+    if(active && active.id !== 'view-profil') lastMainView = active.id.replace('view-','');
+    document.querySelectorAll('.main-tab').forEach(i=>i.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-profil').classList.add('active');
+    window.scrollTo(0,0);
+  }
+  document.getElementById('open-profil-global').addEventListener('click', openProfil);
 
   // like / repost toggles (deck & chat context posts have none; feed posts bound here)
   bindLikeRepost(document);
@@ -744,9 +1192,110 @@
     });
   });
 
-  // chat: open thread
+  // ---------- CHAT: dynamic threads ----------
+  const threadsData = {
+    sommer: {
+      title: 'Frau Sommer', sub: 'Klassenlehrerin 10b',
+      avatarInitials: 'FS', avatarBg: 'linear-gradient(135deg,#8FC5FF,#3DA9FC)',
+      isGroup: false,
+      messages: [
+        { text:'Guten Morgen! Kurze Frage: Kann Jonas morgen seine Kunstmappe vergessen, weil er sie noch fertig gestalten muss?', time:'10:31' },
+        { me:true, text:'Guten Morgen Frau Sommer, ja genau — er braucht noch etwas Zeit 🙂', time:'10:35', read:true },
+        { text:'Klar, kein Problem — bringen Sie die Mappe einfach am Montag mit 😊', time:'10:42' }
+      ]
+    },
+    klasse9b: {
+      title: 'Elterngruppe 9b', sub: '24 Mitglieder',
+      avatarInitials: '9b', avatarBg: 'linear-gradient(135deg,#C9A6FF,#8B6BFF)', isGroup:true,
+      participants: [
+        {i:'HB', bg:'linear-gradient(135deg,#FFD27A,#FF9F43)'},
+        {i:'MA', bg:'linear-gradient(135deg,#FF9FB8,#F0507A)'},
+        {i:'TK', bg:'linear-gradient(135deg,#8FC5FF,#3DA9FC)'},
+        {i:'SL', bg:'linear-gradient(135deg,#8FD3B6,#3FAE7C)'}
+      ],
+      messages: [
+        { sender:'Herr Bauer', text:'Vergesst nicht die Anmeldung für die Skifahrt bis 20.8. 🎿', time:'Gestern, 16:02' },
+        { sender:'Mira Adlers Mutter', text:'Danke für die Erinnerung! Ist die Zahlung auch über das Sekretariat möglich?', time:'Gestern, 16:20' },
+        { sender:'Herr Bauer', text:'Ja, Überweisung oder bar im Sekretariat, beides geht.', time:'Gestern, 16:24' },
+        { me:true, text:'Super, danke euch beiden 👍', time:'Gestern, 17:03', read:true }
+      ]
+    },
+    lehrerteam: {
+      title: 'Lehrerteam Talblick', sub: '12 Mitglieder',
+      avatarInitials: 'LT', avatarBg: 'linear-gradient(135deg,#8FD3B6,#3FAE7C)', isGroup:true,
+      participants: [
+        {i:'FS', bg:'linear-gradient(135deg,#8FC5FF,#3DA9FC)'},
+        {i:'HB', bg:'linear-gradient(135deg,#FFD27A,#FF9F43)'},
+        {i:'MV', bg:'linear-gradient(135deg,#C9A6FF,#8B6BFF)'}
+      ],
+      messages: [
+        { sender:'Frau Vogt', text:'Bitte Noten bis Freitag im System eintragen, danke!', time:'Gestern, 14:10' },
+        { sender:'Frau Sommer', text:'Erledigt für 9b ✅', time:'Gestern, 14:32' },
+        { me:true, text:'Für 10b trage ich sie heute Nachmittag ein.', time:'Gestern, 15:01', read:true }
+      ]
+    },
+    bauer: {
+      title: 'Herr Bauer', sub: 'Englischlehrer 9b',
+      avatarInitials: 'HB', avatarBg: 'linear-gradient(135deg,#FFD27A,#FF9F43)', isGroup:false,
+      messages: [
+        { me:true, text:'Guten Tag Herr Bauer, danke für die schnelle Info zur Skifahrt!', time:'Mo, 09:12', read:true },
+        { text:'Sehr gerne, danke für die schnelle Rückmeldung!', time:'Mo, 09:20' }
+      ]
+    },
+    adler: {
+      title: 'Familie Adler', sub: 'Eltern von Mira, 9c',
+      avatarInitials: 'MA', avatarBg: 'linear-gradient(135deg,#FF9FB8,#F0507A)', isGroup:false,
+      messages: [
+        { text:'Hallo! Können wir kurz wegen der Fahrgemeinschaft zum Training telefonieren?', time:'Fr, 18:04' },
+        { me:true, text:'Klar, ich rufe heute Abend gegen 19 Uhr an 📞', time:'Fr, 18:15', read:true }
+      ]
+    }
+  };
+
+  const threadAvatar = document.getElementById('thread-avatar');
+  const threadTitle = document.getElementById('thread-title');
+  const threadSub = document.getElementById('thread-sub');
+  const threadParticipants = document.getElementById('thread-participants');
+  const threadBody = document.getElementById('thread-body');
+
+  function renderThread(id){
+    const t = threadsData[id];
+    if(!t) return;
+    threadAvatar.textContent = t.avatarInitials;
+    threadAvatar.style.background = t.avatarBg;
+    threadAvatar.classList.toggle('group', !!t.isGroup);
+    threadTitle.textContent = t.title;
+    threadSub.textContent = t.sub;
+
+    if(t.isGroup && t.participants){
+      threadParticipants.style.display = 'flex';
+      threadParticipants.innerHTML = t.participants.map(p=>
+        `<div class="avatar" style="background:${p.bg}">${p.i}</div>`
+      ).join('') + `<span class="thread-participants-label">+ dir</span>`;
+    } else {
+      threadParticipants.style.display = 'none';
+      threadParticipants.innerHTML = '';
+    }
+
+    threadBody.innerHTML = t.messages.map((m,idx)=>{
+      const isLast = idx === t.messages.length - 1;
+      const senderLabel = (t.isGroup && !m.me && m.sender) ? `<div class="group-sender-name">${m.sender}</div>` : '';
+      const readLabel = (m.me && m.read && isLast) ? `<div class="read-receipt">Gelesen</div>` : '';
+      return `<div class="bubble-row${m.me ? ' me' : ''}">
+          ${senderLabel}
+          <div class="bubble">${m.text}</div>
+          <div class="bubble-time">${m.time}</div>
+          ${readLabel}
+        </div>`;
+    }).join('');
+  }
+
+  let currentThreadId = null;
+
   document.querySelectorAll('.chat-row').forEach(row=>{
     row.addEventListener('click', ()=>{
+      currentThreadId = row.dataset.thread;
+      renderThread(currentThreadId);
       document.getElementById('chat-list-screen').style.display='none';
       document.getElementById('chat-thread-screen').style.display='flex';
       row.classList.remove('unread');
@@ -757,6 +1306,31 @@
   document.getElementById('thread-back').addEventListener('click', ()=>{
     document.getElementById('chat-thread-screen').style.display='none';
     document.getElementById('chat-list-screen').style.display='block';
+  });
+
+  // send a chat message in the open thread
+  const threadInput = document.getElementById('thread-input');
+  function sendThreadMessage(){
+    const text = threadInput.value.trim();
+    if(!text || !currentThreadId) return;
+    threadsData[currentThreadId].messages.push({ me:true, text, time:'Gerade eben', read:false });
+    renderThread(currentThreadId);
+    threadInput.value = '';
+    threadBody.scrollTop = threadBody.scrollHeight;
+  }
+  document.getElementById('thread-send').addEventListener('click', sendThreadMessage);
+  threadInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') sendThreadMessage(); });
+
+  // ---------- PROFIL MENU ----------
+  document.querySelectorAll('.profil-menu .menu-row').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const label = row.textContent.trim();
+      if(row.classList.contains('danger')){
+        showToast('Abmelden ist im Prototyp deaktiviert 🔒');
+      } else {
+        showToast(`"${label}" wird in einer späteren Version verfügbar sein`);
+      }
+    });
   });
 
   // ---------- POST DETAIL ----------
@@ -780,6 +1354,34 @@
   document.getElementById('detail-back').addEventListener('click', ()=>{
     detailOverlay.classList.remove('open');
   });
+
+  // send a reply in the post detail view
+  const repliesList = document.getElementById('replies-list');
+  const repliesLabel = document.getElementById('replies-label');
+  const replyInput = document.getElementById('reply-input');
+  function sendReply(){
+    const text = replyInput.value.trim();
+    if(!text) return;
+    const reply = document.createElement('div');
+    reply.className = 'reply';
+    reply.innerHTML = `
+        <div class="avatar" style="background:linear-gradient(135deg,#FFD27A,#FF9F43)">LM</div>
+        <div class="reply-body">
+          <div class="reply-head">
+            <span class="reply-name">Lena Martin</span>
+            <span class="role-badge eltern">Eltern</span>
+            <span class="time">Gerade eben</span>
+          </div>
+          <div class="reply-text">${text.replace(/</g,'&lt;')}</div>
+        </div>`;
+    repliesList.appendChild(reply);
+    const count = repliesList.children.length;
+    repliesLabel.textContent = `${count} Antworten`;
+    replyInput.value = '';
+    reply.scrollIntoView({ behavior:'smooth', block:'end' });
+  }
+  document.getElementById('reply-send').addEventListener('click', sendReply);
+  replyInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') sendReply(); });
 
   // ---------- COMPOSE SHEET ----------
   const composeOverlay = document.getElementById('compose-overlay');
@@ -877,6 +1479,147 @@
       }
     });
   }
+
+  // ---------- TOAST ----------
+  const toastEl = document.getElementById('app-toast');
+  let toastTimer;
+  function showToast(msg){
+    clearTimeout(toastTimer);
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2600);
+  }
+
+  // ---------- MINI-APPS: "bald verfügbar" placeholders ----------
+  document.querySelectorAll('.miniapp-tile[data-soon]').forEach(tile=>{
+    tile.addEventListener('click', ()=>{
+      showToast(`"${tile.dataset.soon}" kommt als eigene Mini-App bald hierher ins Deck 🚧`);
+    });
+  });
+
+  // ---------- KRANKMELDUNG SHEET ----------
+  const sickOverlay = document.getElementById('sick-overlay');
+  const sickFrom = document.getElementById('sick-from');
+  const sickTo = document.getElementById('sick-to');
+  const sickReason = document.getElementById('sick-reason');
+  const sickSubmit = document.getElementById('sick-submit');
+  const sickList = document.getElementById('sick-list');
+  const sickEmpty = document.getElementById('sick-empty');
+  const sickCount = document.getElementById('sick-count');
+  let selectedChild = null;
+
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+  function openSickSheet(){
+    sickFrom.value = todayISO();
+    sickTo.value = '';
+    sickReason.value = '';
+    selectedChild = null;
+    document.querySelectorAll('.child-chip').forEach(c=>c.classList.remove('active'));
+    updateSickSubmitState();
+    sickOverlay.classList.add('open');
+  }
+  function closeSickSheet(){ sickOverlay.classList.remove('open'); }
+
+  document.getElementById('open-krankmeldung').addEventListener('click', openSickSheet);
+  document.getElementById('sick-cancel').addEventListener('click', closeSickSheet);
+  sickOverlay.addEventListener('click', (e)=>{ if(e.target === sickOverlay) closeSickSheet(); });
+
+  document.querySelectorAll('.child-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.child-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      selectedChild = { name: chip.dataset.child, klass: chip.dataset.class };
+      updateSickSubmitState();
+    });
+  });
+  function updateSickSubmitState(){
+    sickSubmit.disabled = !(selectedChild && sickFrom.value);
+  }
+  sickFrom.addEventListener('input', updateSickSubmitState);
+
+  function formatDateDE(iso){
+    if(!iso) return '';
+    const [y,m,d] = iso.split('-');
+    return `${d}.${m}.${y}`;
+  }
+
+  sickSubmit.addEventListener('click', ()=>{
+    if(!selectedChild || !sickFrom.value) return;
+    const range = sickTo.value && sickTo.value !== sickFrom.value
+      ? `${formatDateDE(sickFrom.value)} – ${formatDateDE(sickTo.value)}`
+      : formatDateDE(sickFrom.value);
+
+    const card = document.createElement('div');
+    card.className = 'deck-card';
+    card.innerHTML = `
+      <div class="deck-icon sick"><svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 015 5v2a5 5 0 01-10 0V7a5 5 0 015-5z"/><path d="M6 21v-2a6 6 0 0112 0v2"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div class="deck-body">
+        <div class="deck-top-row"><div class="deck-title">${selectedChild.name} krankgemeldet</div></div>
+        <div class="deck-sub">Klasse ${selectedChild.klass} · Klassenleitung informiert</div>
+        <div class="deck-meta"><span class="due-pill done">${range}</span></div>
+      </div>`;
+    sickList.insertBefore(card, sickList.firstChild);
+    sickEmpty.style.display = 'none';
+    sickCount.textContent = sickList.children.length;
+
+    showToast(`${selectedChild.name} wurde für ${range} krankgemeldet ✅`);
+    closeSickSheet();
+  });
+
+  // ---------- SCHULFOTOS SHEET ----------
+  const photosOverlay = document.getElementById('photos-overlay');
+  const photoUploadBox = document.getElementById('photo-upload-box');
+  const photoUploadSubmit = document.getElementById('photo-upload-submit');
+  let photoSelectedChild = null;
+  let photoAttached = false;
+
+  function openPhotosSheet(){
+    photoAttached = false;
+    photoSelectedChild = null;
+    document.querySelectorAll('#photo-child-chips .child-chip').forEach(c=>c.classList.remove('active'));
+    photoUploadBox.classList.remove('has-photo');
+    photoUploadBox.querySelector('span').textContent = 'Foto auswählen';
+    updatePhotoSubmitState();
+    photosOverlay.classList.add('open');
+  }
+  document.getElementById('open-schulfotos').addEventListener('click', openPhotosSheet);
+  document.getElementById('photos-cancel').addEventListener('click', ()=> photosOverlay.classList.remove('open'));
+  photosOverlay.addEventListener('click', (e)=>{ if(e.target === photosOverlay) photosOverlay.classList.remove('open'); });
+
+  document.querySelectorAll('#photo-child-chips .child-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#photo-child-chips .child-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      photoSelectedChild = chip.dataset.child;
+      updatePhotoSubmitState();
+    });
+  });
+
+  photoUploadBox.addEventListener('click', ()=>{
+    photoAttached = !photoAttached;
+    photoUploadBox.classList.toggle('has-photo', photoAttached);
+    photoUploadBox.querySelector('span').textContent = photoAttached ? 'Foto ausgewählt ✓' : 'Foto auswählen';
+    updatePhotoSubmitState();
+  });
+
+  function updatePhotoSubmitState(){
+    photoUploadSubmit.disabled = !(photoSelectedChild && photoAttached);
+  }
+
+  photoUploadSubmit.addEventListener('click', ()=>{
+    if(!photoSelectedChild || !photoAttached) return;
+    const row = document.querySelector(`.photo-status-row[data-status-for="${photoSelectedChild}"] .photo-status-pill`);
+    if(row){ row.textContent = 'Hochgeladen'; row.classList.remove('pending'); row.classList.add('done'); }
+    showToast(`Ausweisfoto für ${photoSelectedChild} hochgeladen ✅`);
+
+    photoAttached = false;
+    photoSelectedChild = null;
+    document.querySelectorAll('#photo-child-chips .child-chip').forEach(c=>c.classList.remove('active'));
+    photoUploadBox.classList.remove('has-photo');
+    photoUploadBox.querySelector('span').textContent = 'Foto auswählen';
+    updatePhotoSubmitState();
+  });
 </script>
 
 </body>
